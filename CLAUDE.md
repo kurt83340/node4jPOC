@@ -1,4 +1,4 @@
-# {{PROJECT_NAME}}
+# node4jPOC
 
 {{1-2 phrases qui résument le projet : "Automatisation X pour Y" / "App de gestion Z" / etc.}}
 

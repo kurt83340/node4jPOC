@@ -8,8 +8,7 @@ argument-hint: "[vX.Y.Z | chemin-du-template]"
 
 # /upgrade-template — Mettre à jour la méthode du projet (merge 3 voies)
 
-> **Quand ne PAS utiliser** : projet pas encore initialisé → `/init-from-template` · greffer le
-> template sur un projet existant → `/adopt-template` · auditer la doc → `/doc-health`.
+> **Quand ne PAS utiliser** : auditer la doc → `/doc-health`.
 > **Réversibilité** : 🟠 réécrit des fichiers de méthode (jamais `.claude/docs/` hors migrations)
 > sur un arbre git propre, en un commit — undo : `git revert <commit>` (ou `git checkout -- .` avant commit).
 

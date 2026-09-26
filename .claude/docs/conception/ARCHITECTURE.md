@@ -1,4 +1,4 @@
-# Architecture — {{PROJECT_NAME}} v1.0
+# Architecture — node4jPOC v1.0
 
 > 🛠️ **Pour qui** : {{owner tech / devs / futurs devs qui reprennent le code}}
 > 📋 **Ce fichier dit** : le **COMMENT technique** (composants, stack, modules, flux de données, sécurité, observabilité)

@@ -1,4 +1,4 @@
-# {{PROJECT_NAME}} — Méthode (template claude-Setup)
+# node4jPOC — Méthode (template claude-Setup)
 
 > Comment ce projet est outillé pour Claude Code. Le [`CLAUDE.md` racine](../CLAUDE.md) décrit le
 > **projet** (résumé, doc, conventions). Les deux sont chargés à chaque session : ce fichier reste court

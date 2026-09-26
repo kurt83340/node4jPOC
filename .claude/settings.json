@@ -15,8 +15,6 @@
       "Bash(date:*)",
       "Bash(git init:*)",
       "Bash(cp:*)",
-      "Bash(python3 .claude/skills/init-from-template/scripts/render.py:*)",
-      "Bash(python3 .claude/skills/init-from-template/scripts/cleanup-for-type.py:*)",
       "Bash(python3 .claude/skills/archive-projet/scripts/archive-projet.py:*)",
       "Edit(./**)"
     ],

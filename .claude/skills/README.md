@@ -1,6 +1,6 @@
 # `.claude/skills/` — Inventaire et organisation
 
-> 🗂️ **Inventaire canonique** (**17 skills cœur**) — source de vérité des skills du template, vérifiée
+> 🗂️ **Inventaire canonique** (**15 skills cœur**) — source de vérité des skills du template, vérifiée
 > par la CI (chaque dossier `.claude/skills/*` y figure ; compte déclaré = dossiers réels). Claude
 > Code liste déjà nativement nom + description de chaque skill : cet inventaire sert aux humains et
 > à la CI. Un skill ajouté au projet s'y recense.
@@ -30,11 +30,6 @@
 - `/doc-health` — audit hebdo (fraîcheur, ADR manquants, drift code-map, budget de contexte)
 - `/codemap` — met à jour code-map.md (vue macro + couplage) et détecte les violations
 - `/scaffold skill|agent|pipeline "<nom>"` — composant conforme aux conventions + référencement
-
-### Bootstrap (usage unique — retirés du projet après usage)
-
-- `/init-from-template` — initialise un projet depuis le template (from scratch)
-- `/adopt-template` — greffe le template sur un projet EXISTANT (brownfield, merges non destructifs)
 
 ## Convention
 

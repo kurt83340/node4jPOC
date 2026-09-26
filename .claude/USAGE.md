@@ -119,7 +119,6 @@ claude   # puis : /adopt-template
 
 - **Hook en erreur `python3: command not found`** → Python 3 absent du PATH (les hooks sont lancés via `python3`)
 - **`render.py: 0 fichiers à scanner`** → le rsync n'a rien copié (vérifie source)
-- **`/init-from-template` pas trouvé** → relance `claude` (skills scannés au démarrage)
 - **CORE manquants après render** → ajoute-les au vars.json et relance
 
 ## 🔄 Mettre à jour un projet existant (`/upgrade-template`)
@@ -288,8 +287,6 @@ Rapport généré → tu suis les actions par priorité.
 
 | Situation                                  | Skill / Action                                                                |
 | ------------------------------------------ | ----------------------------------------------------------------------------- |
-| Nouveau projet                             | `/init-from-template`                                                         |
-| Adopter le template sur un projet EXISTANT | `/adopt-template` (brownfield — merges non-destructifs + rétro-remplissage)   |
 | Mettre à jour la méthode (template récent) | `/upgrade-template [vX.Y.Z]` — merge 3 voies, conflits signalés, doc intacte  |
 | Démarrer une feature                       | `/spec "<titre>"` (scaffold 4 fichiers + ROADMAP)                             |
 | Dérouler le pipeline complet (avec gates)  | `/feature "<titre>" [standard·tdd·custom]` — enchaîne spec→conception→code→tests→review→done                             |

@@ -1,4 +1,6 @@
-# Stack — {{PROJECT_NAME}}
+# Stack — node4jPOC
+
+> Généré depuis le template claude-Setup v1.5.0 le 2026-09-26
 
 > **Catalogue technique pur** : langage, libs, services tiers, LLM, infra/deploy.
 > Le **POURQUOI** des choix vit dans [adr/](adr/). L'**ARCHI** globale (dont **sécurité** & **observabilité**) dans [conception/ARCHITECTURE.md](conception/ARCHITECTURE.md) ; les **conventions de test** dans [../rules/testing.md](../rules/testing.md).

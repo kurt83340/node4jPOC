@@ -1,4 +1,4 @@
-# Cadrage — {{PROJECT_NAME}}
+# Cadrage — node4jPOC
 
 > Ce dossier contient **tout ce qui sert à comprendre/définir le projet** + ses évolutions.
 > Ce README est la **synthèse vivante** ; le détail brut est dans `tickets/`, `documents/`, `reunions/`.

@@ -1,4 +1,4 @@
-# Plan d'exécution MVP — {{PROJECT_NAME}}
+# Plan d'exécution MVP — node4jPOC
 
 > ⚠️ **Stable après design** — ne modifier que sur **pivot majeur** (sinon désync avec ROADMAP).
 > Pour le status courant et les blockers → voir [../ROADMAP.md](../ROADMAP.md) (dashboard vivant).

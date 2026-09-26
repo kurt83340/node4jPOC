@@ -1,4 +1,4 @@
-# PRD — {{PROJECT_NAME}} v1.0
+# PRD — node4jPOC v1.0
 
 > 🎯 **Pour qui** : {{stakeholders business, décideurs, validateurs produit}}
 > 📋 **Ce fichier dit** : le **QUOI** + **POURQUOI** (vision, scope, personas, user stories, métriques, validations)

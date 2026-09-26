@@ -1,4 +1,4 @@
-# Roadmap — {{PROJECT_NAME}} (DASHBOARD)
+# Roadmap — node4jPOC (DASHBOARD)
 
 > **Vue dynamique** : status courant + blockers + ce qui bouge.
 > **Plan figé** (sous-phases, estimations, DoD) → [conception/tasks.md](conception/tasks.md).

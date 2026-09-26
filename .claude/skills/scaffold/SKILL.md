@@ -7,8 +7,7 @@ disable-model-invocation: false
 
 # /scaffold — créer un composant conforme (skill · agent · pipeline)
 
-> **Quand ne PAS utiliser** : une feature applicative → `/spec` (specs, pas composants template) ·
-> installer le template entier → `/init-from-template` ou `/adopt-template`.
+> **Quand ne PAS utiliser** : une feature applicative → `/spec` (specs, pas composants template).
 > **Réversibilité** : 🟢 crée 1 fichier composant + 1 ligne d'inventaire —
 > undo : supprimer le fichier + retirer la ligne.
 

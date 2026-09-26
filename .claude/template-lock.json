@@ -1,0 +1,8 @@
+{
+  "template": "claude-Setup",
+  "version": "1.5.0",
+  "profile": "other",
+  "mode": "greenfield",
+  "initialized": "2026-09-26",
+  "source": "https://github.com/kurt83340/claude-Setup"
+}

@@ -1,4 +1,4 @@
-# Changelog — {{PROJECT_NAME}}
+# Changelog — node4jPOC
 
 Format : [Keep a Changelog](https://keepachangelog.com/). Versionning : `vYYYY.MM.DD-HHMM` (tag de déploiement).
 

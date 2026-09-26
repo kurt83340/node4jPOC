@@ -1,4 +1,4 @@
-# {{PROJECT_NAME}}
+# node4jPOC
 
 {{1-2 phrases description}}
 
@@ -18,8 +18,8 @@
 ```bash
 # 1. Cloner et créer venv
 git clone <repo>
-cd {{PROJECT_FOLDER}}
-{{COMMANDE_INSTALL}}  # uv pip install -r requirements.txt | npm install | etc.
+cd node4jPOC
+# À définir  # uv pip install -r requirements.txt | npm install | etc.
 
 # 2. Variables d'env
 cp .env.example .env
@@ -29,10 +29,10 @@ cp .env.example .env
 pre-commit install   # prérequis : pipx install pre-commit (ou uv tool install pre-commit)
 
 # 4. Tests
-{{COMMANDE_TESTS}}  # pytest | npm test | etc.
+# À définir  # pytest | npm test | etc.
 
 # 5. Lancer en local
-{{COMMANDE_RUN}}  # python src/main.py | npm run dev | etc.
+# À définir  # python src/main.py | npm run dev | etc.
 ```
 
 ## Déploiement
@@ -49,8 +49,8 @@ Toute la doc dans [.claude/docs/](.claude/docs/) :
 
 ## Contact
 
-- Owner technique : {{TON_NOM}} ({{TON_EMAIL}})
-- Owner business {{CLIENT_NAME}} : {{NOM_DECIDEUR}} ({{EMAIL_DECIDEUR}})
+- Owner technique : Julien Leroy (fr.leroyjulien@gmail.com)
+- Owner business POC interne : Julien Leroy (fr.leroyjulien@gmail.com)
 
 ---
 
