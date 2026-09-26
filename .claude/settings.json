@@ -1,0 +1,122 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pytest:*)",
+      "Bash(ruff:*)",
+      "Bash(mypy:*)",
+      "Bash(alembic:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git worktree add:*)",
+      "Bash(git worktree list:*)",
+      "Bash(git worktree prune:*)",
+      "Bash(uv:*)",
+      "Bash(npm:*)",
+      "Bash(date:*)",
+      "Bash(git init:*)",
+      "Bash(cp:*)",
+      "Bash(python3 .claude/skills/init-from-template/scripts/render.py:*)",
+      "Bash(python3 .claude/skills/init-from-template/scripts/cleanup-for-type.py:*)",
+      "Bash(python3 .claude/skills/archive-projet/scripts/archive-projet.py:*)",
+      "Edit(./**)"
+    ],
+    "ask": [
+      "Bash(git push:*)",
+      "Bash(git reset:*)",
+      "Bash(git merge:*)",
+      "Bash(git worktree remove:*)",
+      "Bash(alembic downgrade:*)",
+      "Bash(./scripts/deploy:*)"
+    ],
+    "deny": [
+      "Bash(rm -rf:*)",
+      "Read(.env)",
+      "Read(.env.*)",
+      "Read(!.env.example)",
+      "Read(!.env.sample)",
+      "Read(!.env.template)",
+      "Read(!.env.*.example)",
+      "Read(!.env.*.sample)",
+      "Read(!.env.*.template)",
+      "Read(secrets.json)",
+      "Read(secrets.yaml)",
+      "Read(secrets.yml)",
+      "Read(secrets.toml)",
+      "Read(secrets.env)",
+      "Read(*.pem)",
+      "Read(*.key)"
+    ]
+  },
+  "hooks": {
+    "PreCompact": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PROJECT_DIR}\"/.claude/hooks/precompact-snapshot-handoff.py",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|clear|compact|fork",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PROJECT_DIR}\"/.claude/hooks/sessionstart-inject-handoff.py",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PROJECT_DIR}\"/.claude/hooks/sessionend-snapshot.py",
+            "timeout": 15
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PROJECT_DIR}\"/.claude/hooks/pretooluse-inject-codemap.py",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PROJECT_DIR}\"/.claude/hooks/posttooluse-growth-detection.py",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PROJECT_DIR}\"/.claude/hooks/stop-handoff-reminder.sh",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}

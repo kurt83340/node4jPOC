@@ -1,0 +1,51 @@
+# Secrets — tous les .env* (les gabarits *.example / *.sample / *.template restent versionnés)
+.env
+.env.*
+!.env.example
+!.env.sample
+!.env.template
+!.env.*.example
+!.env.*.sample
+!.env.*.template
+secrets.json
+secrets.y*ml
+secrets.toml
+secrets.env
+*.key
+*.pem
+credentials.json
+
+# Python
+__pycache__/
+*.py[cod]
+*.so
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+
+# Node (si applicable)
+node_modules/
+dist/
+build/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# n8n exports temporaires
+workflows/*.local.json
+
+# Logs
+*.log
+logs/
+
+# Claude Code
+.claude/settings.local.json
+.claude/.cache/
+.claude/.growth-suggestions.md

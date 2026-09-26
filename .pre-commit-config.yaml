@@ -1,0 +1,10 @@
+# Garde-fou secrets AVANT chaque commit (gitleaks) — stack-neutre.
+# Activer une fois par clone :  pipx install pre-commit && pre-commit install
+#                         (ou :  uv tool install pre-commit && pre-commit install)
+# Scanner tout le dépôt :        pre-commit run --all-files
+# Ajoute ici les hooks de ta stack (ruff, eslint…) — voir https://pre-commit.com/hooks.html
+repos:
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.1
+    hooks:
+      - id: gitleaks
