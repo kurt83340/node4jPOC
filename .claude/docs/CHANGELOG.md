@@ -18,6 +18,7 @@ Format : [Keep a Changelog](https://keepachangelog.com/). Versionning : `vYYYY.M
 - Environnement cible : Google Cloud, dbt hors POC ([ADR-0002](adr/0002-cadrage-environnement-cible-google-cloud.md))
 - Chargement des données en Cypher pur ([ADR-0003](adr/0003-mvp-chargement-cypher-pur.md))
 - Modèle du graphe : espèce + toutes les formes ([ADR-0004](adr/0004-mvp-modele-espece-formes.md))
+- Conventions de nommage du schéma : camelCase, `Pokemon`, relation vers la forme par défaut ([ADR-0005](adr/0005-mvp-conventions-nommage-schema.md))
 
 ---
 

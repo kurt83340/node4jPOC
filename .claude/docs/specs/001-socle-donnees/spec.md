@@ -1,6 +1,6 @@
 ---
 status: in-progress # draft | validated | in-progress | done | parked
-progress: 1/16 # X/Y tasks (compté depuis tasks.md) — MAJ par /feature-done ou à la main
+progress: 2/16 # X/Y tasks (compté depuis tasks.md) — MAJ par /feature-done ou à la main
 ---
 
 # Spec — Socle de données
@@ -83,5 +83,5 @@ Un graphe Pokémon fiable dans AuraDB, chargé par un script réexécutable, et 
 - Research : [research.md](research.md)
 - Plan technique : [plan.md](plan.md)
 - Tasks : [tasks.md](tasks.md)
-- ADRs liés : [ADR-0001](../../adr/0001-mvp-jeu-de-donnees-pokeapi.md) · [ADR-0002](../../adr/0002-cadrage-environnement-cible-google-cloud.md) · [ADR-0003](../../adr/0003-mvp-chargement-cypher-pur.md) · [ADR-0004](../../adr/0004-mvp-modele-espece-formes.md)
+- ADRs liés : [ADR-0001](../../adr/0001-mvp-jeu-de-donnees-pokeapi.md) · [ADR-0002](../../adr/0002-cadrage-environnement-cible-google-cloud.md) · [ADR-0003](../../adr/0003-mvp-chargement-cypher-pur.md) · [ADR-0004](../../adr/0004-mvp-modele-espece-formes.md) · [ADR-0005](../../adr/0005-mvp-conventions-nommage-schema.md)
 - Cadrage : [../../cadrage/README.md](../../cadrage/README.md)

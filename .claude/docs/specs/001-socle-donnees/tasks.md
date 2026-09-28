@@ -8,13 +8,13 @@
 > il « perd le fil » (échecs ×4 constatés en télémétrie, Morph 2026) → découper la phase.
 
 **Date :** 2026-09-28 (revue adverse intégrée)
-**Status :** [~] 1/16 tasks → MAJ au fil de l'eau
+**Status :** [~] 2/16 tasks → MAJ au fil de l'eau
 
 ## Phase 1 — Préparer (sans instance)
 
 - [x] **T1.1** : définir avec Julien les questions de référence : 30, en 6 catégories de 5, validées le 2026-09-29 ([questions/README.md](../../../../questions/README.md))
   - DoD : `manual: Julien valide questions/README.md`
-- [ ] **T1.2** : matrice question → labels et propriétés ; modèle documenté dans `ARCHITECTURE.md` (§ 1 schéma, § 5 correspondance CSV → graphe), figé avant la vérification
+- [x] **T1.2** : matrice question → labels et propriétés ; modèle v2 documenté dans `ARCHITECTURE.md` et validé le 2026-09-29, après une recherche sur les bonnes pratiques de modélisation (ADR-0005)
   - DoD : `manual: Julien valide le modèle documenté`
 - [ ] **T1.3** : installer Java 21 (`apt`) et `cypher-shell` 2026.09.0 (`.deb` de dist.neo4j.org, `sudo apt install ./…deb` en arrière-plan)
   - DoD : `command_passes: cypher-shell --version`
@@ -23,7 +23,7 @@
 
 - [ ] **T2.1** : `.env.example` (4 variables), `.claude/docs/ACCESS.md`, `Neo4j-*.txt` ignoré par git et interdit en lecture (`/update-config`), `scripts/charger.sh` (lecture des 4 variables, `set +x`, contrôle de sa propre sortie) ; vraie limite de l'instance notée
   - DoD : `command_passes: scripts/charger.sh --ping`
-- [ ] **T2.2** : go/no-go étendu, en lecture seule : `languages.csv` (14 lignes), descriptions FR (7 116 lignes, dont 7 115 multilignes), `pokemon_moves.csv` (638 321 lignes), `count(toInteger(trim(row.slot)))` = 2 943 sur `pokemon_abilities.csv` ; contrainte composite créée puis supprimée ; `ALTER DATABASE … SET DEFAULT LANGUAGE CYPHER 25`, contrôlé par `SHOW DATABASES`
+- [ ] **T2.2** : go/no-go étendu, en lecture seule : `languages.csv` (14 lignes), descriptions FR (7 116 lignes, dont 7 115 multilignes), `pokemon_moves.csv` (638 321 lignes), `count(toInteger(trim(row.slot)))` = 2 943 sur `pokemon_abilities.csv` ; `MATCH (t:Type)` accepté sans backticks (`TYPE` est un mot-clé) ; `ALTER DATABASE … SET DEFAULT LANGUAGE CYPHER 25`, contrôlé par `SHOW DATABASES`
   - DoD : `command_passes: scripts/charger.sh --go-no-go`
 
 ## Phase 3 — Vérification d'abord
@@ -37,9 +37,9 @@
   - DoD : `command_passes: scripts/verifier.sh --section contraintes`
 - [ ] **T4.2** : `cypher/01-types.cypher` (18 types, 120 efficacités)
   - DoD : `command_passes: scripts/verifier.sh --section types`
-- [ ] **T4.3** : `cypher/02-especes.cypher` (1 025 espèces, noms et catégories ; 484 `EVOLUE_EN` en seconde passe)
-  - DoD : `command_passes: scripts/verifier.sh --section especes`
-- [ ] **T4.4** : `cypher/03-formes.cypher` (1 351 formes, `FORME_DE`, stats, `A_LE_TYPE`, règle des noms)
+- [ ] **T4.3** : `cypher/02-pokemon.cypher` (1 025 Pokémon, noms et catégories ; 484 `EVOLUE_EN` en seconde passe)
+  - DoD : `command_passes: scripts/verifier.sh --section pokemon`
+- [ ] **T4.4** : `cypher/03-formes.cypher` (1 351 formes, `FORME_DE`, `A_POUR_FORME_PAR_DEFAUT`, stats, `A_LE_TYPE`, règle des noms)
   - DoD : `command_passes: scripts/verifier.sh --section formes`
 - [ ] **T4.5** : `cypher/04-talents.cypher` (313 talents utilisés, `A_LE_TALENT`)
   - DoD : `command_passes: scripts/verifier.sh --section talents`

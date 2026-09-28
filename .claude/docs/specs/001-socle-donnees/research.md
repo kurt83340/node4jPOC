@@ -98,6 +98,16 @@ Rapport `explore-docs` du 2026-09-28 (pages officielles consultées ce jour).
 - **Orchestration** : à la main pour le POC (`bq load` → `dbt build` → chargeur) ; version entreprise : un Cloud Run job, plus Workflows et Scheduler si besoin, ~0 $.
 - **Machine** : `gcloud`, `bq` et Java absents ; Docker présent mais muet (Docker Desktop éteint ?).
 
+**Modélisation** (rapport `explore-docs` du 2026-09-29, avant le gel du modèle) :
+
+- **Nommage** (manuel Cypher, Cypher 25) : labels en PascalCase, relations en SCREAMING_SNAKE_CASE, propriétés en camelCase ; accents permis mais déconseillés ; un identifiant inconnu ne donne qu'un avertissement, donc 0 ligne en silence. [naming](https://neo4j.com/docs/cypher-manual/current/syntax/naming/) · [styleguide](https://neo4j.com/docs/cypher-manual/current/styleguide/)
+- **GraphAcademy** : une valeur partagée devient un nœud ; relations spécifiques pour les cas importants, en gardant la générique ; les clés étrangères deviennent des relations, puis disparaissent. Nos degrés sont ordinaires : pas de super-nœud. [modeling fundamentals](https://graphacademy.neo4j.com/courses/modeling-fundamentals)
+- **Text-to-Cypher** : Neo4j recommande un schéma enrichi (descriptions, valeurs, exemples), mais `get-schema` de `neo4j/mcp` v1.6.0 ne transmet que labels, propriétés typées et relations. Les identifiants naturels sont corrélés à la justesse (SNAILS, PACMMOD 2025) ; l'effet de la langue du schéma n'a jamais été mesuré avec des LLM récents (Ozsoy et Tai, Neo4j, arXiv 2506.21445). [guide Text2Cypher](https://neo4j.com/blog/genai/text2cypher-guide/)
+- **`neo4j-graphrag` 1.21.0** : un index vectoriel sur n'importe quel label suffit ; `Description` reliée au Pokémon convient, sans « lexical graph » ; recherche par la clause `SEARCH` (préfixe `CYPHER 25`).
+- **Aura Agent** : agent généré à partir du schéma ; la recherche par similarité accepte `gemini-embedding-001`.
+- **`mcp-neo4j-data-modeling`** 0.8.2 (Neo4j Labs) : utile pour dessiner (Mermaid, Arrows) ; sa validation n'est que structurelle.
+- → Décisions : [ADR-0005](../../adr/0005-mvp-conventions-nommage-schema.md).
+
 ### Conventions du projet (projet vierge)
 
 Rapport `explore-code` du 2026-09-28 (projet vierge : conventions cibles du template).
