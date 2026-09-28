@@ -6,15 +6,11 @@ Format : [Keep a Changelog](https://keepachangelog.com/). Versionning : `vYYYY.M
 
 ### Added
 
-- {{Nouvelle feature 1}}
+- Initialisation du projet depuis le template claude-Setup v1.5.0 (2026-09-26)
 
 ### Changed
 
 - Pivot 2026-09-28 : environnement cible Google Cloud, découpage en 6 jalons ([CR](cadrage/reunions/2026-09-28-pivot.md))
-
-### Fixed
-
-- {{Bug fixé}}
 
 ### Decided
 
@@ -22,12 +18,6 @@ Format : [Keep a Changelog](https://keepachangelog.com/). Versionning : `vYYYY.M
 - Environnement cible : Google Cloud, dbt hors POC ([ADR-0002](adr/0002-cadrage-environnement-cible-google-cloud.md))
 - Chargement des données en Cypher pur ([ADR-0003](adr/0003-mvp-chargement-cypher-pur.md))
 - Modèle du graphe : espèce + toutes les formes ([ADR-0004](adr/0004-mvp-modele-espece-formes.md))
-
-## [v{{YYYY.MM.DD-HHMM}}] — {{YYYY-MM-DD}}
-
-### Added
-
-- {{Initialisation projet}}
 
 ---
 

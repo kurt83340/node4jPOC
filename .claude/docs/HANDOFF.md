@@ -20,8 +20,7 @@
 
 ## Blocked on
 
-- Instance AuraDB Free et `.env` (action de Julien) : bloquent la phase 2 ; la phase 1 peut commencer sans
-- Projet Google Cloud avec compte de facturation (action de Julien) : requis avant le jalon 2
+- Actions de Julien : instance AuraDB Free et `.env` (bloquent la phase 2, pas la phase 1) ; projet Google Cloud avec facturation (avant le jalon 2)
 
 ## Next (par ordre)
 

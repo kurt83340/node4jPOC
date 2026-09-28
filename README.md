@@ -1,8 +1,7 @@
 # node4jPOC
 
-{{1-2 phrases description}}
+POC perso d'apprentissage de l'écosystème agentique de Neo4j : un banc d'essai qui compare plusieurs techniques (Cypher à la main, agent text-to-Cypher via MCP, GraphRAG, Aura Agent) sur un même graphe Pokémon en français (PokéAPI) et 10 questions de référence. Livrable : un tableau comparatif (réponse juste, sources citées, temps de réponse, coût, effort de mise en place).
 
-> 🚀 **Tu débutes avec ce template ?** Lis [USAGE.md](.claude/USAGE.md) section "Setup d'un nouveau projet" (étapes 1 à 6 + `/init-from-template`).
 > 📐 **Convention complète** : [STRUCTURE.md](.claude/STRUCTURE.md) (arborescence, naming, patterns).
 
 ## Stack
@@ -54,4 +53,4 @@ Toute la doc dans [.claude/docs/](.claude/docs/) :
 
 ---
 
-> 💡 Ce projet utilise le **[template Claude Code](.claude/STRUCTURE.md)** (convention 2026). Usage quotidien : [USAGE.md](.claude/USAGE.md). Exemple rempli : [EXAMPLES/acme-sync-erp-notion-docs/](EXAMPLES/acme-sync-erp-notion-docs/).
+> 💡 Ce projet utilise le **[template Claude Code](.claude/STRUCTURE.md)** (convention 2026). Usage quotidien : [USAGE.md](.claude/USAGE.md).

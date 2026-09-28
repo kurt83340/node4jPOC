@@ -1,7 +1,7 @@
 # Roadmap — node4jPOC (DASHBOARD)
 
 > **Vue dynamique** : status courant + blockers + ce qui bouge.
-> **Plan figé** (sous-phases, estimations, DoD) → [conception/tasks.md](conception/tasks.md).
+> **Plan détaillé** (phases, DoD) → le `tasks.md` de chaque spec ; pas de plan macro séparé ([conception/tasks.md](conception/tasks.md)).
 > MAJ à chaque session ou via `/feature-done`.
 
 **Dernière MAJ :** 2026-09-28

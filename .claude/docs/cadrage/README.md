@@ -98,7 +98,7 @@
 - [x] Pivot : environnement cible Google Cloud (2026-09-28)
 - [ ] Instance AuraDB Free créée, vraie limite notée, identifiants dans `.env`
 - [ ] Projet Google Cloud avec compte de facturation (avant le jalon 2)
-- [ ] Jalon 1 : options de chargement et de modèle, puis décision (voir [ROADMAP](../ROADMAP.md))
+- [x] Jalon 1 : chargement en Cypher pur ([ADR-0003](../adr/0003-mvp-chargement-cypher-pur.md)) et modèle espèce + formes ([ADR-0004](../adr/0004-mvp-modele-espece-formes.md)) décidés, plan validé (2026-09-28)
 
 ---
 
