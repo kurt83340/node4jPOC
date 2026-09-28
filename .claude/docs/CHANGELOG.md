@@ -10,7 +10,7 @@ Format : [Keep a Changelog](https://keepachangelog.com/). Versionning : `vYYYY.M
 
 ### Changed
 
-- {{Modification feature existante}}
+- Pivot 2026-09-28 : environnement cible Google Cloud, découpage en 6 jalons ([CR](cadrage/reunions/2026-09-28-pivot.md))
 
 ### Fixed
 
@@ -18,7 +18,10 @@ Format : [Keep a Changelog](https://keepachangelog.com/). Versionning : `vYYYY.M
 
 ### Decided
 
-- {{Décision tech structurante}} ([ADR-00XX](adr/00XX-...md))
+- Jeu de données : Pokémon, CSV PokéAPI en français ([ADR-0001](adr/0001-mvp-jeu-de-donnees-pokeapi.md))
+- Environnement cible : Google Cloud, dbt hors POC ([ADR-0002](adr/0002-cadrage-environnement-cible-google-cloud.md))
+- Chargement des données en Cypher pur ([ADR-0003](adr/0003-mvp-chargement-cypher-pur.md))
+- Modèle du graphe : espèce + toutes les formes ([ADR-0004](adr/0004-mvp-modele-espece-formes.md))
 
 ## [v{{YYYY.MM.DD-HHMM}}] — {{YYYY-MM-DD}}
 
