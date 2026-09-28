@@ -8,11 +8,11 @@
 > il « perd le fil » (échecs ×4 constatés en télémétrie, Morph 2026) → découper la phase.
 
 **Date :** 2026-09-28 (revue adverse intégrée)
-**Status :** [ ] 0/16 tasks → MAJ au fil de l'eau
+**Status :** [~] 1/16 tasks → MAJ au fil de l'eau
 
 ## Phase 1 — Préparer (sans instance)
 
-- [ ] **T1.1** : définir avec Julien les 10 questions de référence : texte, technique visée, forme de la réponse (Q2 = requête qui vérifie une équipe proposée ; Q3 = ensembles « obligatoire » et « acceptable »)
+- [x] **T1.1** : définir avec Julien les questions de référence : 30, en 6 catégories de 5, validées le 2026-09-29 ([questions/README.md](../../../../questions/README.md))
   - DoD : `manual: Julien valide questions/README.md`
 - [ ] **T1.2** : matrice question → labels et propriétés ; modèle documenté dans `ARCHITECTURE.md` (§ 1 schéma, § 5 correspondance CSV → graphe), figé avant la vérification
   - DoD : `manual: Julien valide le modèle documenté`
@@ -58,7 +58,7 @@
 
 ## Phase 7 — Questions de référence et clôture
 
-- [ ] **T7.1** : `questions/qNN.cypher` × 10 et `scripts/questions.sh` (format déterministe, SHA du commit en en-tête) ; Q1 = Roche ×4 contre Dracaufeu
+- [ ] **T7.1** : `questions/qNN.cypher` × 27 (Q10, Q29 et Q30 se notent par une règle, sans requête) et `scripts/questions.sh` (format déterministe, SHA du commit en en-tête) ; Q1 = Roche ×4 contre Dracaufeu
   - DoD : `command_passes: scripts/questions.sh --verifier`
 - [ ] **T7.2** : `code-map.md` et `stack.md` à jour, ADR-0003 et ADR-0004 vérifiés, puis `/feature-done 001-socle-donnees`
   - DoD : `manual: Julien valide la livraison`

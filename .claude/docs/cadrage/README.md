@@ -51,13 +51,7 @@
 
 **Critères du tableau final :** réponse juste · sources citées · temps de réponse · coût · effort de mise en place.
 
-**Questions de référence** (3 sur 10 définies, à compléter au jalon 1) :
-
-| #   | Question                                                            | Réponse attendue                       | Technique visée           |
-| --- | ------------------------------------------------------------------- | -------------------------------------- | ------------------------- |
-| Q1  | « Quelles attaques font le plus mal à Dracaufeu ? »                 | Roche ×4, car Dracaufeu est Feu et Vol | Cypher                    |
-| Q2  | « Propose une équipe de 6 qui couvre les faiblesses de la mienne. » | à établir en Cypher (jalon 1)          | agent en plusieurs étapes |
-| Q3  | « Quel Pokémon vit près des volcans ? »                             | à établir en Cypher (jalon 1)          | GraphRAG (descriptions)   |
+**Questions de référence** : 30, en 6 catégories de 5 → [questions/README.md](../../../questions/README.md). Le brief en demandait 10 ; Julien a porté le banc à 30 le 2026-09-29 (plan de la spec 001, D12).
 
 ## Contexte
 

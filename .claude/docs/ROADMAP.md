@@ -24,21 +24,21 @@ Le POC devient transposable à une entreprise full Google Cloud ; dbt reste hors
 
 ## 📋 Jalon 1 — Socle de données (technique 1 : Cypher à la main)
 
-Instance créée ; données chargées en Cypher pur (`LOAD CSV`) par un script réexécutable sans doublons ; modèle espèce + formes documenté ; 10 questions de référence avec leurs réponses attendues, calculées en Cypher. Ces requêtes servent de vérité de référence aux jalons suivants.
+Instance créée ; données chargées en Cypher pur (`LOAD CSV`) par un script réexécutable sans doublons ; modèle espèce + formes documenté ; 30 questions de référence ([questions/README.md](../../questions/README.md)) avec leurs réponses attendues, calculées en Cypher. Ces requêtes servent de vérité de référence aux jalons suivants.
 
-- [ ] [001-socle-donnees](specs/001-socle-donnees/spec.md) — plan validé le 2026-09-28, pas commencé (0/16 tasks)
+- [~] [001-socle-donnees](specs/001-socle-donnees/spec.md) — **EN COURS** 1/16 tasks (démarrée le 2026-09-29)
 
 ## 📋 Jalon 2 — Agent text-to-Cypher via MCP
 
-- [ ] `neo4j/mcp` branché sur Claude Code et sur un agent ADK (LLM à choisir : Gemini ou Claude via Vertex), mesuré sur les 10 questions
+- [ ] `neo4j/mcp` branché sur Claude Code et sur un agent ADK (LLM à choisir : Gemini ou Claude via Vertex), mesuré sur les 30 questions
 
 ## 📋 Jalon 3 — GraphRAG sur les descriptions
 
-- [ ] Recherche vectorielle dans les descriptions en français (embeddings Gemini multilingues), puis parcours du graphe, mesurée sur les 10 questions
+- [ ] Recherche vectorielle dans les descriptions en français (embeddings Gemini multilingues), puis parcours du graphe, mesurée sur les 30 questions
 
 ## 📋 Jalon 4 — Agents gérés et tableau comparatif
 
-- [ ] Aura Agent face à un agent ADK hébergé sur Agent Runtime et publié dans Gemini Enterprise, mesurés sur les 10 questions
+- [ ] Aura Agent face à un agent ADK hébergé sur Agent Runtime et publié dans Gemini Enterprise, mesurés sur les 30 questions
 - [ ] Tableau comparatif final, technique × question : réponse juste, sources citées, temps de réponse, coût, effort de mise en place
 
 ## 💡 Jalon 5 (option) — Mémoire d'agent

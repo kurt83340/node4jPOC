@@ -72,7 +72,7 @@ Ici, les options ne s'excluent pas : le POC les compare toutes sur les mêmes qu
 - Vraie limite d'AuraDB Free ? → à la création de l'instance
 - Descriptions répétées : dédoublonner avant la recherche vectorielle ? → jalon 1 (modèle), jalon 3 (recherche)
 - Quel embedder multilingue ? → jalon 3
-- Les 7 autres questions de référence ? → jalon 1
+- Les 7 autres questions de référence ? → réglé le 2026-09-29 : 30 questions en 6 catégories ([questions/README.md](../../../questions/README.md))
 
 ### Hypothèses retenues
 

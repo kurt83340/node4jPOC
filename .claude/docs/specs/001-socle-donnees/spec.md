@@ -1,6 +1,6 @@
 ---
-status: validated # draft | validated | in-progress | done | parked
-progress: 0/16 # X/Y tasks (compté depuis tasks.md) — MAJ par /feature-done ou à la main
+status: in-progress # draft | validated | in-progress | done | parked
+progress: 1/16 # X/Y tasks (compté depuis tasks.md) — MAJ par /feature-done ou à la main
 ---
 
 # Spec — Socle de données
@@ -14,7 +14,7 @@ progress: 0/16 # X/Y tasks (compté depuis tasks.md) — MAJ par /feature-done o
 
 ## Vision
 
-Un graphe Pokémon fiable dans AuraDB, chargé par un script réexécutable, et 10 questions de référence résolues en Cypher : la vérité contre laquelle on mesurera les autres techniques du banc d'essai (jalons 2 à 4). C'est aussi la technique n°1 du comparatif, « Cypher à la main ».
+Un graphe Pokémon fiable dans AuraDB, chargé par un script réexécutable, et 30 questions de référence résolues en Cypher : la vérité contre laquelle on mesurera les autres techniques du banc d'essai (jalons 2 à 4). C'est aussi la technique n°1 du comparatif, « Cypher à la main ».
 
 ## User stories
 
@@ -44,13 +44,13 @@ Un graphe Pokémon fiable dans AuraDB, chargé par un script réexécutable, et 
 ### US3 — Questions de référence
 
 **En tant qu'**apprenant,
-**je veux** 10 questions de référence avec leur réponse attendue calculée en Cypher,
+**je veux** 30 questions de référence (6 catégories de 5) avec leur réponse attendue calculée en Cypher,
 **afin de** mesurer les autres techniques contre une vérité établie.
 
 **Critères d'acceptation :**
 
-- [ ] 10 questions, chacune avec sa technique visée (Cypher, agent en plusieurs étapes, GraphRAG…).
-- [ ] Chaque question a sa requête Cypher et sa réponse attendue, rejouables.
+- [x] 30 questions en 6 catégories, chacune avec sa technique visée ([questions/README.md](../../../../questions/README.md)).
+- [ ] Chaque question a sa requête Cypher (ou, pour Q10, Q29 et Q30, sa règle de notation) et sa réponse attendue, rejouables.
 - [ ] Q1 (« Quelles attaques font le plus mal à Dracaufeu ? ») donne bien Roche ×4.
 
 ## Scope IN
@@ -58,7 +58,7 @@ Un graphe Pokémon fiable dans AuraDB, chargé par un script réexécutable, et 
 - Instance AuraDB Free (créée par Julien) et vraie limite notée.
 - Chargement idempotent en Cypher pur (`LOAD CSV` depuis le commit figé), exécuté par `cypher-shell` ([ADR-0003](../../adr/0003-mvp-chargement-cypher-pur.md)).
 - Modèle espèce + toutes les formes ([ADR-0004](../../adr/0004-mvp-modele-espece-formes.md)), documenté.
-- 10 questions de référence : requêtes Cypher et réponses attendues.
+- 30 questions de référence : 27 requêtes Cypher et 3 règles de notation, avec leurs réponses attendues.
 
 ## Scope OUT
 
@@ -70,7 +70,7 @@ Un graphe Pokémon fiable dans AuraDB, chargé par un script réexécutable, et 
 
 - Nombres de nœuds et de relations chargés = nombres attendus, calculés depuis les CSV.
 - 2e exécution du script : 0 nœud et 0 relation créés.
-- 10 questions sur 10 avec une réponse attendue rejouable.
+- 30 questions sur 30 avec une réponse attendue rejouable (requête ou règle).
 - Volume total sous la vraie limite d'AuraDB Free.
 
 ## Dépendances

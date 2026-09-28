@@ -50,7 +50,7 @@ Modèle (notation Cypher ; propriétés figées après la matrice questions → 
 | `cypher/90-verification.cypher`                                            | nouveau | comptes par motif `(label)-[type]->(label)`, empreintes, doublons de noms                                                     |
 | `scripts/charger.sh`                                                       | nouveau | options `--ping`, `--go-no-go`, `--purge` ; chargement en arrière-plan journalisé                                             |
 | `scripts/verifier.sh`                                                      | nouveau | comptes, empreintes, limite de l'instance ; codes retour 0 / 1 / 2 ; option `--idempotence`                                   |
-| `scripts/questions.sh`                                                     | nouveau | rejoue les 10 requêtes et compare aux réponses enregistrées                                                                   |
+| `scripts/questions.sh`                                                     | nouveau | rejoue les 27 requêtes et compare aux réponses enregistrées                                                                   |
 | `questions/README.md`, `questions/qNN.cypher`, `questions/attendu/qNN.txt` | nouveau | le banc d'essai : question, technique visée, requête, réponse attendue                                                        |
 | `.env.example`, `.gitignore`                                               | modif   | 4 variables `NEO4J_*` sans valeur ; `Neo4j-*.txt` ignoré                                                                      |
 | `.claude/settings.json`                                                    | modif   | lecture de `Neo4j-*.txt` interdite (via `/update-config`)                                                                     |
@@ -130,7 +130,7 @@ CSV lus (commit figé) : `languages`, `types`, `type_names`, `type_efficacy`, `p
 
 ### D8 — Mode d'exécution : vérification d'abord
 
-**Choix :** écrire `verifier.sh` avant de charger. Codes retour : 0 conforme, 1 écart, 2 erreur technique ; comptes par motif `(label)-[type]->(label)` ; empreintes (`sum(size(r.methodes))`, `sum(r.niveau)`, `sum(size(d.jeux))`) ; noms en double ; volume comparé à la vraie limite de l'instance. Les réponses des 10 questions se vérifient après coup.
+**Choix :** écrire `verifier.sh` avant de charger. Codes retour : 0 conforme, 1 écart, 2 erreur technique ; comptes par motif `(label)-[type]->(label)` ; empreintes (`sum(size(r.methodes))`, `sum(r.niveau)`, `sum(size(d.jeux))`) ; noms en double ; volume comparé à la vraie limite de l'instance. Les réponses des 30 questions se vérifient après coup.
 **Pourquoi :** les comptes sont connus à l'avance (analyse du commit figé) ; le test rouge devient le point de vérification de chaque étape, et les empreintes détectent une relance qui ferait grossir les listes sans changer les comptes.
 
 ### D9 — Outillage : `cypher-shell` officiel
@@ -140,13 +140,19 @@ CSV lus (commit figé) : `languages`, `types`, `type_names`, `type_efficacy`, `p
 
 ### D10 — Les questions avant les propriétés
 
-**Choix :** les 10 questions (T1.1), puis une matrice question → labels et propriétés, et le modèle documenté dans `ARCHITECTURE.md` (T1.2), figé avant d'écrire la vérification.
+**Choix :** les questions (T1.1), puis une matrice question → labels et propriétés, et le modèle documenté dans `ARCHITECTURE.md` (T1.2), figé avant d'écrire la vérification.
 **Pourquoi :** des données probablement utiles ne sont pas encore au modèle (conditions d'évolution, habitat, génération, légendaire) : on ne charge que ce qu'une question demande.
 
 ### D11 — Réponses de référence rejouables
 
 **Choix :** `ORDER BY` total, listes triées (`COLLECT { … ORDER BY … }`), `--format plain`, SHA du commit PokéAPI en en-tête. Q2 (« équipe de 6 ») : une requête qui vérifie une équipe proposée, pas une réponse figée. Q3 (« volcans ») : un ensemble obligatoire (16 espèces citant « volcan ») et un ensemble acceptable (magma, cratère, lave…).
 **Pourquoi :** un diff texte n'est stable après rechargement qu'avec un ordre total ; certaines questions ont plusieurs bonnes réponses.
+
+### D12 — 30 questions en 6 catégories
+
+**Choix :** 30 questions de référence en 6 catégories de 5 : faits simples, multi-sauts, agrégats et négations, sémantique, raisonnement et mémoire, robustesse ([questions/README.md](../../../../questions/README.md)). Décision de Julien le 2026-09-29 ; le brief en demandait 10. Q18 et Q28 sont des seconds tours (après Q2 et Q27) ; Q10, Q29 et Q30 se notent par une règle, sans requête.
+**Pourquoi :** avec 10 questions, une technique n'était testée que sur 1 à 3 questions ciblées ; 30 questions donnent un score par catégorie.
+**Conséquence :** 27 requêtes de référence à écrire en T7.1, et 5 ensembles « obligatoire / acceptable » à trier à la main.
 
 ## Sécurité
 
@@ -168,7 +174,7 @@ CSV lus (commit figé) : `languages`, `types`, `type_names`, `type_efficacy`, `p
 - **Comptes et empreintes** : `scripts/verifier.sh` (voir D8). Attendus : 8 859 nœuds et 112 675 relations au total, sous la vraie limite de l'instance.
 - **Idempotence** : purge, chargement, empreinte, second chargement, même empreinte (`verifier.sh --idempotence`).
 - **Vraisemblance** : Q1 (Roche ×4 contre Dracaufeu), 16 espèces dont la description cite « volcan », aucun nom de forme en double.
-- **Questions** : `scripts/questions.sh` rejoue les 10 requêtes ; les sorties doivent être identiques aux réponses enregistrées.
+- **Questions** : `scripts/questions.sh` rejoue les 27 requêtes ; les sorties doivent être identiques aux réponses enregistrées. Les 3 questions comportementales (Q10, Q29, Q30) se notent par leur règle.
 
 ## Circuit breakers (conditions d'arrêt — à définir AVANT de coder)
 

@@ -1,6 +1,6 @@
 # node4jPOC
 
-POC perso d'apprentissage de l'écosystème agentique de Neo4j : un banc d'essai qui compare plusieurs techniques (Cypher à la main, agent text-to-Cypher via MCP, GraphRAG, Aura Agent) sur un même graphe Pokémon en français (PokéAPI) et 10 questions de référence. Livrable : un tableau comparatif (réponse juste, sources citées, temps de réponse, coût, effort de mise en place).
+POC perso d'apprentissage de l'écosystème agentique de Neo4j : un banc d'essai qui compare plusieurs techniques (Cypher à la main, agent text-to-Cypher via MCP, GraphRAG, Aura Agent) sur un même graphe Pokémon en français (PokéAPI) et 30 questions de référence. Livrable : un tableau comparatif (réponse juste, sources citées, temps de réponse, coût, effort de mise en place).
 
 **Mode de travail** : projet d'apprentissage. Expliquer chaque choix au fil de l'eau (le pourquoi, pas seulement le code) ; réponses en français. Aucune stack imposée : c'est le POC qui tranche.
 

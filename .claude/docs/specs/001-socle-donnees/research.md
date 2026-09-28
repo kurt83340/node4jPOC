@@ -8,7 +8,7 @@
 
 ## Problème à résoudre
 
-Charger les CSV PokéAPI (textes en français) dans AuraDB Free avec un script réexécutable sans doublons, selon un modèle de graphe documenté, puis établir en Cypher les réponses attendues des 10 questions de référence. Deux choix à trancher avant de coder : l'outil ou le langage du chargement, et la variante du modèle (espèces ou formes, descriptions, attaques).
+Charger les CSV PokéAPI (textes en français) dans AuraDB Free avec un script réexécutable sans doublons, selon un modèle de graphe documenté, puis établir en Cypher les réponses attendues des questions de référence (10 dans le brief, 30 depuis le 2026-09-29). Deux choix à trancher avant de coder : l'outil ou le langage du chargement, et la variante du modèle (espèces ou formes, descriptions, attaques).
 
 ## Contraintes retenues
 
