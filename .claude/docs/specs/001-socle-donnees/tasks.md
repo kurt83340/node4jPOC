@@ -8,7 +8,7 @@
 > il « perd le fil » (échecs ×4 constatés en télémétrie, Morph 2026) → découper la phase.
 
 **Date :** 2026-09-28 (revue adverse intégrée)
-**Status :** [~] 2/16 tasks → MAJ au fil de l'eau
+**Status :** [~] 3/16 tasks → MAJ au fil de l'eau
 
 ## Phase 1 — Préparer (sans instance)
 
@@ -16,7 +16,7 @@
   - DoD : `manual: Julien valide questions/README.md`
 - [x] **T1.2** : matrice question → labels et propriétés ; modèle v2 documenté dans `ARCHITECTURE.md` et validé le 2026-09-29, après une recherche sur les bonnes pratiques de modélisation (ADR-0005)
   - DoD : `manual: Julien valide le modèle documenté`
-- [ ] **T1.3** : installer Java 21 (`apt`) et `cypher-shell` 2026.09.0 (`.deb` de dist.neo4j.org, `sudo apt install ./…deb` en arrière-plan)
+- [x] **T1.3** : installer Java 21 (`apt`) et `cypher-shell` 2026.09.0 (`.deb` de dist.neo4j.org, `sudo apt install ./…deb` en arrière-plan)
   - DoD : `command_passes: cypher-shell --version`
 
 ## Phase 2 — Accès et go/no-go (nécessite l'instance de Julien)
