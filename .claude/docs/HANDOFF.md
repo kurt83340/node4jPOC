@@ -1,40 +1,40 @@
-# HANDOFF — 2026-09-28 21h05
+# HANDOFF — 2026-09-29 02h02
 
 > Court, narratif, versionné. Patterns techniques → auto-memory. Reprise précise → /resume.
 
 **Branche** : `feature/001-socle-donnees`
-**Spec en cours** : [001-socle-donnees](specs/001-socle-donnees/spec.md) (0/16 tasks, plan validé)
-**Goal session** : cadrer le POC et planifier le jalon 1 (aucun code)
+**Spec en cours** : [001-socle-donnees](specs/001-socle-donnees/spec.md) (3/16 tasks, phase 1 terminée)
+**Goal session** : audit doc-health, puis phase 1 de la spec 001 (questions, modèle, outillage)
 
 ## Status
 
-- ✅ Cadrage : brief archivé, pivot « environnement cible Google Cloud », ADR-0001 à 0004 acceptés
-- ✅ Spec 001 : research (données mesurées au commit PokéAPI `168b1e8`), plan revu par `reviewer`, 16 tâches
-- ⏳ Aucun code, aucun test : la phase 1 n'a pas commencé
+- ✅ Audit doc-health traité (PRD et plan macro en renvois, leçon classée, `workflows/` retiré)
+- ✅ T1.1 : 30 questions de référence en 6 catégories ([questions/README.md](../../questions/README.md))
+- ✅ T1.2 : modèle v2 validé après recherche (ADR-0005) ; T1.3 : Java 21 et `cypher-shell` 2026.09.0
+- ⏳ Aucun chargement ni test : la phase 2 attend l'instance Aura
 
 ## Échecs tentés (à ne pas refaire)
 
 - Normaliser les descriptions avec `\n` seul → 5 240 textes au lieu de 5 233 : remplacer aussi U+202F
-- Préfixer les requêtes par `CYPHER 25` → rejeté : régler la langue par défaut de la base (plan D7)
-- Re-proposer le chargement Python en deux étages → non : Julien a choisi le Cypher pur (ADR-0003)
+- Préfixer les requêtes par `CYPHER 25` → rejeté : langue par défaut de la base (plan D7)
+- Re-proposer le chargement Python ou le nommage v1 (`Espece`, snake_case) → non : ADR-0003 et ADR-0005
 
 ## Blocked on
 
-- Actions de Julien : instance AuraDB Free et `.env` (bloquent la phase 2, pas la phase 1) ; projet Google Cloud avec facturation (avant le jalon 2)
+- Actions de Julien : instance AuraDB Free et `.env` à la racine (bloquent T2.1) ; projet Google Cloud avec facturation (avant le jalon 2)
 
 ## Next (par ordre)
 
-1. **T1.1** : définir avec Julien les 10 questions de référence (3 déjà dans le cadrage)
-2. **T1.2** : matrice questions → propriétés, modèle documenté dans `ARCHITECTURE.md`
-3. **T1.3** : installer Java 21 et `cypher-shell` 2026.09.0 (`.deb` officiel, via `apt`)
-4. **T2.1** : dès que l'instance et `.env` existent
+1. **T2.1** : `.env.example`, `ACCESS.md`, protection de `Neo4j-*.txt`, `scripts/charger.sh --ping` ; noter la vraie limite
+2. **T2.2** : go/no-go (LOAD CSV depuis GitHub, multilignes, gros fichiers, `MATCH (t:Type)`, Cypher 25 par défaut)
+3. **T3.1** : `verifier.sh` d'abord (rouge sur base vide), puis la phase 4
 
 ## Continuation State (machine-readable — grammaire fixe `Clé: valeur`, 1 ligne chacune)
 
 Spec: 001-socle-donnees
-Task: T1.1
+Task: T2.1
 Fichiers en cours: aucun
-Bloqué sur: rien pour la phase 1 ; instance AuraDB Free + .env pour la phase 2
-Commande de reprise: lire .claude/docs/specs/001-socle-donnees/tasks.md puis démarrer T1.1 avec Julien
+Bloqué sur: instance AuraDB Free + .env (action de Julien)
+Commande de reprise: test -f .env, puis démarrer T2.1 selon .claude/docs/specs/001-socle-donnees/tasks.md
 
 → **Journal des sessions** (append-only) : [HANDOFF-journal.md](HANDOFF-journal.md) — non auto-chargé.
