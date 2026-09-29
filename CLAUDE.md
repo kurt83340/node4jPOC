@@ -19,7 +19,7 @@ POC perso d'apprentissage de l'écosystème agentique de Neo4j : un banc d'essai
 
 - 🗺️ **Roadmap** (dashboard) : [ROADMAP.md](.claude/docs/ROADMAP.md) — lu par `/spec`, `/conception`, `/feature-done`, `/doc-health`
 - 📥 **Cadrage** : [cadrage/README.md](.claude/docs/cadrage/README.md)
-- 🎨 **Conception** : [research](.claude/docs/conception/research.md) · [PRD](.claude/docs/conception/PRD.md) · [ARCHITECTURE](.claude/docs/conception/ARCHITECTURE.md) · [tasks (plan MVP)](.claude/docs/conception/tasks.md) · specs → `.claude/docs/specs/00X-feature/`
+- 🎨 **Conception** : [research](.claude/docs/conception/research.md) · [PRD](.claude/docs/conception/PRD.md) · [ARCHITECTURE](.claude/docs/conception/ARCHITECTURE.md) · [plan macro : renvoi à la ROADMAP](.claude/docs/conception/tasks.md) · specs → `.claude/docs/specs/00X-feature/`
 - 🔄 **Suivi** : [ACCESS](.claude/docs/ACCESS.md) · [CHANGELOG](.claude/docs/CHANGELOG.md) · [leçons](.claude/docs/lecons.md) · [stack](.claude/docs/stack.md)
 - 📚 **Transversaux** : [ADR](.claude/docs/adr/) · [GLOSSARY](.claude/docs/GLOSSARY.md) · [RUNBOOK](.claude/docs/RUNBOOK.md)
 

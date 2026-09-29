@@ -60,7 +60,7 @@
 
 - [ ] **T7.1** : `questions/qNN.cypher` × 27 (Q10, Q29 et Q30 se notent par une règle, sans requête) et `scripts/questions.sh` (format déterministe, SHA du commit en en-tête) ; Q1 = Roche ×4 contre Dracaufeu
   - DoD : `command_passes: scripts/questions.sh --verifier`
-- [ ] **T7.2** : `code-map.md` et `stack.md` à jour, ADR-0003 et ADR-0004 vérifiés, puis `/feature-done 001-socle-donnees`
+- [ ] **T7.2** : `code-map.md`, `stack.md` et la section Stack du `README.md` à jour, ADR-0003 à ADR-0005 vérifiés, puis `/feature-done 001-socle-donnees`
   - DoD : `manual: Julien valide la livraison`
 
 ## Definition of Done (global)

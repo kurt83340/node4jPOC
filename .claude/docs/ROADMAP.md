@@ -4,7 +4,7 @@
 > **Plan détaillé** (phases, DoD) → le `tasks.md` de chaque spec ; pas de plan macro séparé ([conception/tasks.md](conception/tasks.md)).
 > MAJ à chaque session ou via `/feature-done`.
 
-**Dernière MAJ :** 2026-09-28
+**Dernière MAJ :** 2026-09-29
 
 ## 🔄 Pivot 2026-09-28 — Environnement cible Google Cloud
 

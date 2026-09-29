@@ -24,12 +24,13 @@
 
 ### 🎨 mvp — Décisions projet structurantes
 
-| #                                              | Titre                                               | Statut   |
-| ---------------------------------------------- | --------------------------------------------------- | -------- |
-| [0001](0001-mvp-jeu-de-donnees-pokeapi.md)     | Jeu de données : Pokémon (CSV PokéAPI, en français) | Accepted |
-| [0003](0003-mvp-chargement-cypher-pur.md)      | Chargement des données : Cypher pur (`LOAD CSV`)    | Accepted |
-| [0004](0004-mvp-modele-espece-formes.md)       | Modèle du graphe : espèce + toutes les formes       | Accepted |
-| [0005](0005-mvp-conventions-nommage-schema.md) | Conventions de nommage du schéma                    | Accepted |
+| #                                              | Titre                                                    | Statut   |
+| ---------------------------------------------- | -------------------------------------------------------- | -------- |
+| [0001](0001-mvp-jeu-de-donnees-pokeapi.md)     | Jeu de données : Pokémon (CSV PokéAPI, en français)      | Accepted |
+| [0003](0003-mvp-chargement-cypher-pur.md)      | Chargement des données : Cypher pur (`LOAD CSV`)         | Accepted |
+| [0004](0004-mvp-modele-espece-formes.md)       | Modèle du graphe : espèce + toutes les formes            | Accepted |
+| [0005](0005-mvp-conventions-nommage-schema.md) | Conventions de nommage du schéma                         | Accepted |
+| [0006](0006-mvp-banc-essai-30-questions.md)    | Banc d'essai : 30 questions de référence en 6 catégories | Accepted |
 
 ### 🔧 features — Décisions promues depuis specs
 

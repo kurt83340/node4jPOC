@@ -38,8 +38,8 @@ Un graphe Pokémon fiable dans AuraDB, chargé par un script réexécutable, et 
 
 **Critères d'acceptation :**
 
-- [ ] Schéma du modèle et justification de chaque choix (espèces ou formes, descriptions, attaques…) documentés.
-- [ ] Une contrainte d'unicité par type de nœud.
+- [x] Schéma du modèle et justification de chaque choix (espèces ou formes, descriptions, attaques…) documentés.
+- [ ] Une contrainte d'unicité par type de nœud, sauf `Description` (sans clé : couple (Pokémon, texte) unique par `MERGE`, contrôlé par `verifier.sh`, plan D2).
 
 ### US3 — Questions de référence
 
@@ -83,5 +83,5 @@ Un graphe Pokémon fiable dans AuraDB, chargé par un script réexécutable, et 
 - Research : [research.md](research.md)
 - Plan technique : [plan.md](plan.md)
 - Tasks : [tasks.md](tasks.md)
-- ADRs liés : [ADR-0001](../../adr/0001-mvp-jeu-de-donnees-pokeapi.md) · [ADR-0002](../../adr/0002-cadrage-environnement-cible-google-cloud.md) · [ADR-0003](../../adr/0003-mvp-chargement-cypher-pur.md) · [ADR-0004](../../adr/0004-mvp-modele-espece-formes.md) · [ADR-0005](../../adr/0005-mvp-conventions-nommage-schema.md)
+- ADRs liés : [ADR-0001](../../adr/0001-mvp-jeu-de-donnees-pokeapi.md) · [ADR-0002](../../adr/0002-cadrage-environnement-cible-google-cloud.md) · [ADR-0003](../../adr/0003-mvp-chargement-cypher-pur.md) · [ADR-0004](../../adr/0004-mvp-modele-espece-formes.md) · [ADR-0005](../../adr/0005-mvp-conventions-nommage-schema.md) · [ADR-0006](../../adr/0006-mvp-banc-essai-30-questions.md)
 - Cadrage : [../../cadrage/README.md](../../cadrage/README.md)

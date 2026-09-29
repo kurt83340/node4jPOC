@@ -39,25 +39,25 @@ Modèle v2 (notation Cypher ; validé le 2026-09-29, détail dans [ARCHITECTURE 
 
 ## Modules / fichiers impactés
 
-| Fichier                                                                    | Action  | Notes                                                                                                                             |
-| -------------------------------------------------------------------------- | ------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| `cypher/00-contraintes.cypher`                                             | nouveau | une contrainte d'unicité sur `id` par label (sauf `Description`, sans clé), un index sur `nom`                                    |
-| `cypher/01-types.cypher`                                                   | nouveau | 18 types, 120 efficacités                                                                                                         |
-| `cypher/02-pokemon.cypher`                                                 | nouveau | 1 025 Pokémon (niveau espèce), noms et catégories FR ; `EVOLUE_EN` (484) en seconde passe                                         |
-| `cypher/03-formes.cypher`                                                  | nouveau | 1 351 formes, `FORME_DE`, `A_POUR_FORME_PAR_DEFAUT` (1 025), stats, `A_LE_TYPE` ; noms via `pokemon_forms` + `pokemon_form_names` |
-| `cypher/04-talents.cypher`                                                 | nouveau | 313 talents utilisés, `A_LE_TALENT`                                                                                               |
-| `cypher/05-attaques.cypher`                                                | nouveau | 919 attaques (sans les 18 attaques Obscur, jamais apprises), leur type ; `APPREND` agrégé : 638 321 lignes → 99 509 relations     |
-| `cypher/06-descriptions.cypher`                                            | nouveau | 5 233 descriptions normalisées et dédoublonnées, liste des jeux                                                                   |
-| `cypher/90-verification.cypher`                                            | nouveau | comptes par motif `(label)-[type]->(label)`, empreintes, doublons de noms                                                         |
-| `scripts/charger.sh`                                                       | nouveau | options `--ping`, `--go-no-go`, `--purge` ; chargement en arrière-plan journalisé                                                 |
-| `scripts/verifier.sh`                                                      | nouveau | comptes, empreintes, limite de l'instance ; codes retour 0 / 1 / 2 ; option `--idempotence`                                       |
-| `scripts/questions.sh`                                                     | nouveau | rejoue les 27 requêtes et compare aux réponses enregistrées                                                                       |
-| `questions/README.md`, `questions/qNN.cypher`, `questions/attendu/qNN.txt` | nouveau | le banc d'essai : question, technique visée, requête, réponse attendue                                                            |
-| `.env.example`, `.gitignore`                                               | modif   | 4 variables `NEO4J_*` sans valeur ; `Neo4j-*.txt` ignoré                                                                          |
-| `.claude/settings.json`                                                    | modif   | lecture de `Neo4j-*.txt` interdite (via `/update-config`)                                                                         |
-| `.claude/docs/ACCESS.md`                                                   | nouveau | où récupérer les identifiants Aura (jamais leur valeur)                                                                           |
-| `.claude/docs/conception/ARCHITECTURE.md`                                  | modif   | § 1 schéma du modèle, § 5 correspondance CSV → graphe (dès T1.2)                                                                  |
-| `.claude/docs/code-map.md`, `.claude/docs/stack.md`                        | modif   | vue macro et règles de couplage ; Neo4j, Cypher 25, cypher-shell, commit PokéAPI                                                  |
+| Fichier                                                                          | Action  | Notes                                                                                                                             |
+| -------------------------------------------------------------------------------- | ------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `cypher/00-contraintes.cypher`                                                   | nouveau | une contrainte d'unicité sur `id` par label (sauf `Description`, sans clé), un index sur `nom`                                    |
+| `cypher/01-types.cypher`                                                         | nouveau | 18 types, 120 efficacités                                                                                                         |
+| `cypher/02-pokemon.cypher`                                                       | nouveau | 1 025 Pokémon (niveau espèce), noms et catégories FR ; `EVOLUE_EN` (484) en seconde passe                                         |
+| `cypher/03-formes.cypher`                                                        | nouveau | 1 351 formes, `FORME_DE`, `A_POUR_FORME_PAR_DEFAUT` (1 025), stats, `A_LE_TYPE` ; noms via `pokemon_forms` + `pokemon_form_names` |
+| `cypher/04-talents.cypher`                                                       | nouveau | 313 talents utilisés, `A_LE_TALENT`                                                                                               |
+| `cypher/05-attaques.cypher`                                                      | nouveau | 919 attaques (sans les 18 attaques Obscur, jamais apprises), leur type ; `APPREND` agrégé : 638 321 lignes → 99 509 relations     |
+| `cypher/06-descriptions.cypher`                                                  | nouveau | 5 233 descriptions normalisées et dédoublonnées, liste des jeux                                                                   |
+| `cypher/90-verification.cypher`                                                  | nouveau | comptes par motif `(label)-[type]->(label)`, empreintes, doublons de noms                                                         |
+| `scripts/charger.sh`                                                             | nouveau | options `--ping`, `--go-no-go`, `--purge` ; chargement en arrière-plan journalisé                                                 |
+| `scripts/verifier.sh`                                                            | nouveau | comptes, empreintes, limite de l'instance ; codes retour 0 / 1 / 2 ; option `--idempotence`                                       |
+| `scripts/questions.sh`                                                           | nouveau | rejoue les 27 requêtes et compare aux réponses enregistrées                                                                       |
+| `questions/README.md`, `questions/qNN.cypher`, `questions/attendu/qNN.txt`       | nouveau | le banc d'essai : question, technique visée, requête, réponse attendue                                                            |
+| `.env.example`, `.gitignore`                                                     | modif   | 4 variables `NEO4J_*` sans valeur ; `Neo4j-*.txt` ignoré                                                                          |
+| `.claude/settings.json`                                                          | modif   | lecture de `Neo4j-*.txt` interdite (via `/update-config`)                                                                         |
+| `.claude/docs/ACCESS.md`                                                         | nouveau | où récupérer les identifiants Aura (jamais leur valeur)                                                                           |
+| `.claude/docs/conception/ARCHITECTURE.md`                                        | modif   | § 1 schéma du modèle, § 5 correspondance CSV → graphe (dès T1.2)                                                                  |
+| `.claude/docs/code-map.md`, `.claude/docs/stack.md`, `README.md` (section Stack) | modif   | vue macro et règles de couplage ; Neo4j, Cypher 25, cypher-shell, commit PokéAPI                                                  |
 
 CSV lus (commit figé) : `languages`, `types`, `type_names`, `type_efficacy`, `pokemon_species`, `pokemon_species_names`, `pokemon`, `pokemon_forms`, `pokemon_form_names`, `pokemon_stats`, `pokemon_types`, `abilities`, `ability_names`, `pokemon_abilities`, `moves`, `move_names`, `move_damage_class_prose`, `pokemon_moves`, `pokemon_move_method_prose`, `pokemon_species_flavor_text`, `versions` et `version_names` (jeux des descriptions). Liste figée par la matrice questions → propriétés de T1.2 ([ARCHITECTURE.md § 5](../../conception/ARCHITECTURE.md)).
 
@@ -81,7 +81,7 @@ CSV lus (commit figé) : `languages`, `types`, `type_names`, `type_efficacy`, `p
 | Nom FR manquant (méthode « train », 3 talents récents)                                                       | repli sur l'identifiant anglais (`coalesce`)                                                                                                                                                                                      |
 | Nom d'une forme                                                                                              | la `pokemon_form` par défaut, sinon l'unique (8 formes Koraidon/Miraidon n'ont qu'une `pokemon_form`, marquée non par défaut) ; forme par défaut sans nom de forme : nom de l'espèce ; contrôle des noms en double                |
 | Types hors des 18 classiques (Stellaire, ???, Obscur)                                                        | ignorés, ainsi que les 18 attaques Obscur (aucun Pokémon ne les apprend)                                                                                                                                                          |
-| Descriptions : sauts de ligne (7 115) et espaces fines insécables U+202F (310)                               | `trim(replace(replace(t, '\n', ' '), ' ', ' '))`, puis dédoublonnage par `MERGE` sur (espèce, texte) : 5 233 textes                                                                                                               |
+| Descriptions : sauts de ligne (7 115) et espaces fines insécables U+202F (310)                               | `trim(replace(replace(t, '\n', ' '), '\u202F', ' '))`, puis dédoublonnage par `MERGE` sur (espèce, texte) : 5 233 textes                                                                                                          |
 | Niveau d'`APPREND`                                                                                           | niveau minimal tous jeux confondus : 420 couples à 0 (appris à l'évolution), et 10 578 des 22 573 couples appris par montée de niveau changent de niveau selon le jeu. Documenté ; aucune réponse de référence ne s'appuie dessus |
 | Instance Free en pause (72 h) ou supprimée (30 jours de pause)                                               | la relancer depuis la console, ou la recréer puis tout recharger                                                                                                                                                                  |
 | Appel Bash coupé à 10 min                                                                                    | chargements lancés en arrière-plan, journal horodaté par fichier                                                                                                                                                                  |
@@ -110,7 +110,7 @@ CSV lus (commit figé) : `languages`, `types`, `type_names`, `type_efficacy`, `p
 
 ### D4 — Descriptions : une par texte distinct et par espèce
 
-**Choix :** normalisation `trim(replace(replace(t, '\n', ' '), ' ', ' '))`, `MERGE` sur le chemin (Pokémon, texte) (voir D2), liste des jeux en propriété.
+**Choix :** normalisation `trim(replace(replace(t, '\n', ' '), '\u202F', ' '))`, `MERGE` sur le chemin (Pokémon, texte) (voir D2), liste des jeux en propriété.
 **Pourquoi :** 26 % de nœuds en moins et pas de doublons dans la future recherche vectorielle (jalon 3). Sans la seconde substitution, on obtient 5 240 textes au lieu de 5 233.
 
 ### D5 — Attaques : type, puissance, catégorie
@@ -154,6 +154,7 @@ CSV lus (commit figé) : `languages`, `types`, `type_names`, `type_efficacy`, `p
 **Choix :** 30 questions de référence en 6 catégories de 5 : faits simples, multi-sauts, agrégats et négations, sémantique, raisonnement et mémoire, robustesse ([questions/README.md](../../../../questions/README.md)). Décision de Julien le 2026-09-29 ; le brief en demandait 10. Q18 et Q28 sont des seconds tours (après Q2 et Q27) ; Q10, Q29 et Q30 se notent par une règle, sans requête.
 **Pourquoi :** avec 10 questions, une technique n'était testée que sur 1 à 3 questions ciblées ; 30 questions donnent un score par catégorie.
 **Conséquence :** 27 requêtes de référence à écrire en T7.1, et 5 ensembles « obligatoire / acceptable » à trier à la main.
+**Promue en** [ADR-0006](../../adr/0006-mvp-banc-essai-30-questions.md) : le banc d'essai sert à tous les jalons.
 
 ### D13 — Facteur numérique sur les efficacités, index sur les noms
 
