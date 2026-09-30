@@ -10,7 +10,10 @@
 
 ## Globaux (injectés pour TOUTE édition de code — max 5 lignes)
 
-_(aucun pour l'instant)_
+- ⚠️ Mesurer une durée (journal de chargement, temps de réponse du banc d'essai) : horloge monotone,
+  `read -r t _ </proc/uptime` en bash (`scripts/charger.sh:118`), `time.monotonic()` en Python. Sous
+  WSL2, l'horloge murale recule par à-coups : `EPOCHREALTIME`, `SECONDS` et `date +%s` donnent des
+  durées fausses, voire négatives (« 0,-1 s » au go/no-go du 2026-09-30).
 
 ## Par zone
 

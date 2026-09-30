@@ -12,7 +12,7 @@
 
 Le POC devient transposable à une entreprise full Google Cloud ; dbt reste hors POC. Aucune spec abandonnée : la spec 001 reste valable.
 
-## 🚧 Phase 0 — Setup (en cours)
+## ✅ Phase 0 — Setup (terminée le 2026-09-30)
 
 - [x] Template claude-Setup v1.5.0 installé (2026-09-26)
 - [x] Cadrage : brief archivé, synthèse dans [cadrage/README.md](cadrage/README.md) (2026-09-28)

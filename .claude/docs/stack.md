@@ -10,11 +10,11 @@
 
 ## Langage(s) & runtime
 
-| Item           | Version | Notes                                                                                                        |
-| -------------- | ------- | ------------------------------------------------------------------------------------------------------------ |
-| Cypher         | 25      | langue par défaut de la base, à régler au go/no-go (T2.2, D7 du [plan 001](specs/001-socle-donnees/plan.md)) |
-| Bash           | —       | scripts de chargement et de vérification (à venir)                                                           |
-| Java (OpenJDK) | 21      | paquet `openjdk-21-jre` (apt), requis par `cypher-shell`                                                     |
+| Item           | Version | Notes                                                                                                                |
+| -------------- | ------- | -------------------------------------------------------------------------------------------------------------------- |
+| Cypher         | 25      | déjà la langue par défaut de la base, contrôlé au go/no-go (T2.2, D7 du [plan 001](specs/001-socle-donnees/plan.md)) |
+| Bash           | —       | `scripts/charger.sh` (`--ping`, `--go-no-go`) ; chargement complet et vérification à venir                           |
+| Java (OpenJDK) | 21      | paquet `openjdk-21-jre` (apt), requis par `cypher-shell`                                                             |
 
 ## Orchestration
 
@@ -32,10 +32,11 @@
 
 ## Librairies (rôles)
 
-| Lib              | Version   | Pour quoi                                                               | Module qui l'utilise                                  |
-| ---------------- | --------- | ----------------------------------------------------------------------- | ----------------------------------------------------- |
-| `cypher-shell`   | 2026.09.0 | client Neo4j en ligne de commande (`.deb` officiel de dist.neo4j.org)   | `scripts/charger.sh`, `scripts/verifier.sh` (à venir) |
-| _(aucune autre)_ | —         | bibliothèques des jalons 2 à 4 : à choisir au démarrage de chaque jalon | —                                                     |
+| Lib                         | Version   | Pour quoi                                                                                                        | Module qui l'utilise                                  |
+| --------------------------- | --------- | ---------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
+| `cypher-shell`              | 2026.09.0 | client Neo4j en ligne de commande (`.deb` officiel de dist.neo4j.org)                                            | `scripts/charger.sh`, `scripts/verifier.sh` (à venir) |
+| `gcloud` (Google Cloud SDK) | 587.0.0   | lecture du secret `neo4j-aura-poc` dans Secret Manager ([ADR-0007](adr/0007-infra-secrets-et-services-geres.md)) | `scripts/charger.sh`                                  |
+| _(aucune autre)_            | —         | bibliothèques des jalons 2 à 4 : à choisir au démarrage de chaque jalon                                          | —                                                     |
 
 ## LLM providers (par feature)
 
