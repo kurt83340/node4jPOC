@@ -23,6 +23,7 @@ Gros (> 1 sem), estimation de Claude à confirmer : détection des nouveaux comm
 - Où tourner : un service géré ([ADR-0007](../adr/0007-infra-secrets-et-services-geres.md)), par exemple Cloud Scheduler et un job Cloud Run, pas le poste local.
 - Alerting : canal à choisir (Cloud Monitoring, e-mail…), comme la fréquence X.
 - Effet de bord : une activité régulière évite la pause de l'instance Free après 72 h.
+- Brique 1 prévue : NEO-13, un job planifié qui garde l'instance éveillée et alerte par e-mail.
 
 ## Statut
 

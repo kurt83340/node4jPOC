@@ -8,12 +8,13 @@
 
 ## Checklist
 
-| Accès                      | État          | 🔒 Où le trouver                                                         |
-| -------------------------- | ------------- | ------------------------------------------------------------------------ |
-| Projet Google Cloud du POC | ✅            | `jleroy-labo`, facturation active                                        |
-| Console Aura               | ✅ 2026-09-30 | https://console.neo4j.io, connexion Google avec fr.julienleroy@gmail.com |
-| Instance AuraDB Free       | ✅ 2026-09-30 | console Aura → Instances → « Free instance »                             |
-| Identifiants de l'instance | ✅ 2026-09-30 | secret `neo4j-aura-poc` du projet `jleroy-labo`                          |
+| Accès                       | État              | 🔒 Où le trouver                                                         |
+| --------------------------- | ----------------- | ------------------------------------------------------------------------ |
+| Projet Google Cloud du POC  | ✅                | `jleroy-labo`, facturation active                                        |
+| Console Aura                | ✅ 2026-09-30     | https://console.neo4j.io, connexion Google avec fr.julienleroy@gmail.com |
+| Instance AuraDB Free        | ✅ 2026-09-30     | console Aura → Instances → « Free instance »                             |
+| Identifiants de l'instance  | ✅ 2026-09-30     | secret `neo4j-aura-poc` du projet `jleroy-labo`                          |
+| Job de réveil `reveil-aura` | ⏳ prévu (NEO-13) | projet `jleroy-labo`, compte de service qui ne lit que `neo4j-aura-poc`  |
 
 ## Instance AuraDB Free (NEO-6)
 
@@ -35,7 +36,8 @@
 - L'utilisateur **et** la base portent l'identifiant de l'instance, pas `neo4j` : lire `NEO4J_USERNAME` et
   `NEO4J_DATABASE`, ne jamais coder `neo4j` en dur.
 - Pause automatique après 72 h sans activité, suppression après 30 jours de pause : la relancer depuis
-  le menu de l'instance, sinon la recréer (ci-dessous) et tout recharger.
+  le menu de l'instance, sinon la recréer (ci-dessous) et tout recharger. Le job `reveil-aura` (NEO-13)
+  doit l'éviter.
 - Mot de passe perdu : menu de l'instance → « Recover Database Credentials », avant de penser à recréer.
 
 ## Secret `neo4j-aura-poc`
