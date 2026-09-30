@@ -20,8 +20,8 @@
 
 ### Niveau MICRO (une feature)
 
-| Dossier                        | Quoi                                                       |
-| ------------------------------ | ---------------------------------------------------------- |
+| Dossier                           | Quoi                                                       |
+| --------------------------------- | ---------------------------------------------------------- |
 | [`specs/00X-feature/`](../specs/) | 1 dossier par feature avec `{research,spec,plan,tasks}.md` |
 
 ### Diagrammes
@@ -37,11 +37,11 @@ Convention diagrammes détaillée : voir [diagrams/README.md](diagrams/README.md
 
 ## Statut courant
 
-- {{[ ] ou ✅}} Research initial : voir [research.md](research.md)
-- {{[ ] ou ✅}} PRD v1.0 validé {{décideur}} le {{YYYY-MM-DD}}
-- {{[ ] ou ✅}} Architecture validée {{owner tech}} le {{YYYY-MM-DD}}
-- {{[ ] ou ✅}} Plan MVP : voir [tasks.md](tasks.md)
-- {{🚧}} Specs en cours : voir [../ROADMAP.md](../ROADMAP.md) pour status courant
+- ✅ Research initial : voir [research.md](research.md) (2026-09-28)
+- ✅ Pas de PRD séparé : le brief, le cadrage et l'ADR-0002 en tiennent lieu ([PRD.md](PRD.md))
+- ✅ Architecture : modèle v2 validé le 2026-09-29, T1.2 de la spec 001 et ADR-0005 ([ARCHITECTURE.md](ARCHITECTURE.md))
+- ✅ Plan macro : la [ROADMAP](../ROADMAP.md) en 6 jalons ([tasks.md](tasks.md))
+- 🚧 Specs en cours : voir [../ROADMAP.md](../ROADMAP.md) pour status courant
 
 ## Pattern mirror MACRO ↔ MICRO
 

@@ -1,6 +1,8 @@
 # node4jPOC
 
-{{1-2 phrases qui résument le projet : "Automatisation X pour Y" / "App de gestion Z" / etc.}}
+POC perso d'apprentissage de l'écosystème agentique de Neo4j : un banc d'essai qui compare plusieurs techniques (Cypher à la main, agent text-to-Cypher via MCP, GraphRAG, Aura Agent) sur un même graphe Pokémon en français (PokéAPI) et 30 questions de référence. Livrable : un tableau comparatif (réponse juste, sources citées, temps de réponse, coût, effort de mise en place).
+
+**Mode de travail** : projet d'apprentissage. Expliquer chaque choix au fil de l'eau (le pourquoi, pas seulement le code) ; réponses en français. Aucune stack imposée : c'est le POC qui tranche.
 
 > 🧭 **Comment marche & vit ce template** (skills, structure, workflow, agent) → [.claude/CLAUDE.md](.claude/CLAUDE.md)
 
@@ -17,7 +19,7 @@
 
 - 🗺️ **Roadmap** (dashboard) : [ROADMAP.md](.claude/docs/ROADMAP.md) — lu par `/spec`, `/conception`, `/feature-done`, `/doc-health`
 - 📥 **Cadrage** : [cadrage/README.md](.claude/docs/cadrage/README.md)
-- 🎨 **Conception** : [research](.claude/docs/conception/research.md) · [PRD](.claude/docs/conception/PRD.md) · [ARCHITECTURE](.claude/docs/conception/ARCHITECTURE.md) · [tasks (plan MVP)](.claude/docs/conception/tasks.md) · specs → `.claude/docs/specs/00X-feature/`
+- 🎨 **Conception** : [research](.claude/docs/conception/research.md) · [PRD](.claude/docs/conception/PRD.md) · [ARCHITECTURE](.claude/docs/conception/ARCHITECTURE.md) · [plan macro : renvoi à la ROADMAP](.claude/docs/conception/tasks.md) · specs → `.claude/docs/specs/00X-feature/`
 - 🔄 **Suivi** : [ACCESS](.claude/docs/ACCESS.md) · [CHANGELOG](.claude/docs/CHANGELOG.md) · [leçons](.claude/docs/lecons.md) · [stack](.claude/docs/stack.md)
 - 📚 **Transversaux** : [ADR](.claude/docs/adr/) · [GLOSSARY](.claude/docs/GLOSSARY.md) · [RUNBOOK](.claude/docs/RUNBOOK.md)
 

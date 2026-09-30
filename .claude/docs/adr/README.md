@@ -18,13 +18,19 @@
 
 ### 📥 cadrage — Contraintes client
 
-- _(aucune pour l'instant — les contraintes initiales sont capturées dans [../cadrage/README.md](../cadrage/README.md))_
+| #                                                        | Titre                                            | Statut   |
+| -------------------------------------------------------- | ------------------------------------------------ | -------- |
+| [0002](0002-cadrage-environnement-cible-google-cloud.md) | Environnement cible : Google Cloud, dbt hors POC | Accepted |
 
 ### 🎨 mvp — Décisions projet structurantes
 
-| #                                                                        | Titre | Statut |
-| ------------------------------------------------------------------------ | ----- | ------ |
-| _(aucune pour l'instant — créer dès la 1ère décision tech structurante)_ |       |        |
+| #                                              | Titre                                                    | Statut   |
+| ---------------------------------------------- | -------------------------------------------------------- | -------- |
+| [0001](0001-mvp-jeu-de-donnees-pokeapi.md)     | Jeu de données : Pokémon (CSV PokéAPI, en français)      | Accepted |
+| [0003](0003-mvp-chargement-cypher-pur.md)      | Chargement des données : Cypher pur (`LOAD CSV`)         | Accepted |
+| [0004](0004-mvp-modele-espece-formes.md)       | Modèle du graphe : espèce + toutes les formes            | Accepted |
+| [0005](0005-mvp-conventions-nommage-schema.md) | Conventions de nommage du schéma                         | Accepted |
+| [0006](0006-mvp-banc-essai-30-questions.md)    | Banc d'essai : 30 questions de référence en 6 catégories | Accepted |
 
 ### 🔧 features — Décisions promues depuis specs
 

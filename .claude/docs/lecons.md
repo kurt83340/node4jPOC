@@ -48,4 +48,10 @@ Archive 📦 au bout de N mois (entries promues stables)
 
 ---
 
-_(Aucune leçon pour l'instant — append les tiennes ici au format ci-dessus.)_
+## 2026-09-28 — Hors-périmètre fixé sans connaître l'environnement cible
+
+**scope:** cadrage | **status:** 🧠 memory only
+
+Le brief a exclu les briques Google Cloud avant qu'on sache que l'entreprise de Julien est full GCP avec dbt : pivot le jour même du kickoff ([CR](cadrage/reunions/2026-09-28-pivot.md)).
+Solution : au kickoff, demander où le POC devra vivre ensuite (cloud, outils data, contraintes d'accès) avant de fixer le hors-périmètre.
+→ Décidé le 2026-09-29 : 🧠 memory only (vue une seule fois) ; la fiche « entreprise full GCP + dbt » de la mémoire globale le rappelle à chaque kickoff.
