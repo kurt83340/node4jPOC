@@ -21,12 +21,12 @@
 
 ## Blocked on
 
-- Action de Julien : NEO-6, instance AuraDB Free et `.env` à la racine (bloque NEO-7)
+- Action de Julien : NEO-6, instance AuraDB Free et identifiants dans Secret Manager (bloque NEO-7)
 
 ## Next (par ordre)
 
-1. **NEO-6** (Julien) : créer l'instance, noter la vraie limite, identifiants dans `.env`
-2. **NEO-7** : T2.1 puis T2.2 (go/no-go) ; passer NEO-7 En cours, commits suffixés `(NEO-7)`
+1. **NEO-6** (Julien) : créer l'instance, noter la vraie limite, identifiants dans Secret Manager (`jleroy-labo`)
+2. **NEO-7** : ADR-0007 (secrets et services gérés, plus de `.env`), T2.1 adaptée, puis T2.2 ; commits `(NEO-7)`
 3. **NEO-8** : T3.1, `verifier.sh` d'abord (rouge sur base vide), puis la phase 4
 
 ## Continuation State (machine-readable — grammaire fixe `Clé: valeur`, 1 ligne chacune)
@@ -34,7 +34,7 @@
 Spec: 001-socle-donnees
 Task: T2.1
 Fichiers en cours: aucun
-Bloqué sur: instance AuraDB Free + .env (NEO-6, action de Julien)
-Commande de reprise: test -f .env, puis démarrer T2.1 (NEO-7) selon .claude/docs/specs/001-socle-donnees/tasks.md
+Bloqué sur: instance AuraDB Free + secret neo4j-aura-poc (NEO-6, action de Julien)
+Commande de reprise: gcloud secrets versions list neo4j-aura-poc --project=jleroy-labo, puis écrire l'ADR-0007 (NEO-7)
 
 → **Journal des sessions** (append-only) : [HANDOFF-journal.md](HANDOFF-journal.md) — non auto-chargé.
