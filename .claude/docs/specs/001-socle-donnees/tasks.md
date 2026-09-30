@@ -8,7 +8,7 @@
 > il « perd le fil » (échecs ×4 constatés en télémétrie, Morph 2026) → découper la phase.
 
 **Date :** 2026-09-28 (revue adverse intégrée)
-**Status :** [~] 8/16 tasks → MAJ au fil de l'eau
+**Status :** [~] 9/16 tasks → MAJ au fil de l'eau
 
 ## Phase 1 — Préparer (sans instance)
 
@@ -37,7 +37,7 @@
   - DoD : `command_passes: scripts/verifier.sh --section contraintes`
 - [x] **T4.2** : `cypher/01-types.cypher` (18 types, 120 efficacités ; noms FR ; type de relation dynamique `$(…)` calculé par un `CASE` sur le pourcentage, un pourcentage inattendu arrête le chargement). Vert le 2026-09-30 ; relance sans effet ; Roche seul à ×4 contre Feu + Vol (Q1) ; vérification complète : 23 écarts sur 33
   - DoD : `command_passes: scripts/verifier.sh --section types`
-- [ ] **T4.3** : `cypher/02-pokemon.cypher` (1 025 Pokémon, noms et catégories ; 484 `EVOLUE_EN` en seconde passe)
+- [x] **T4.3** : `cypher/02-pokemon.cypher` (1 025 Pokémon, noms et catégories ; 484 `EVOLUE_EN` en seconde passe, pour les 17 bébés placés après leur évolution dans le CSV). Vert le 2026-09-30 ; relance sans effet ; Évoli à 8 évolutions, Pichu → Pikachu → Raichu, Dracaufeu « Pokémon Flamme » (Q23) ; vérification complète : 19 écarts sur 33
   - DoD : `command_passes: scripts/verifier.sh --section pokemon`
 - [ ] **T4.4** : `cypher/03-formes.cypher` (1 351 formes, `FORME_DE`, `A_POUR_FORME_PAR_DEFAUT`, stats, `A_LE_TYPE`, règle des noms)
   - DoD : `command_passes: scripts/verifier.sh --section formes`
