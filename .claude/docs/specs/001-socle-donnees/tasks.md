@@ -8,7 +8,7 @@
 > il « perd le fil » (échecs ×4 constatés en télémétrie, Morph 2026) → découper la phase.
 
 **Date :** 2026-09-28 (revue adverse intégrée)
-**Status :** [~] 13/16 tasks → MAJ au fil de l'eau
+**Status :** [~] 14/16 tasks → MAJ au fil de l'eau
 
 ## Phase 1 — Préparer (sans instance)
 
@@ -53,8 +53,8 @@
 
 ## Phase 6 — Idempotence
 
-- [ ] **T6.1** : purge, chargement complet, empreinte, second chargement, même empreinte
-  - DoD : `command_passes: scripts/verifier.sh --idempotence`
+- [x] **T6.1** : purge, chargement complet, empreinte, second chargement, même empreinte. Une commande, `scripts/charger.sh --idempotence` (décision de Julien le 2026-10-01 : `verifier.sh` reste en lecture seule). IDEMPOTENT le 2026-10-01 : chargement complet sur base vide en 37 s, second chargement en 58 s sans aucune création ni suppression, 33 contrôles sur 33 et empreintes identiques
+  - DoD : `command_passes: scripts/charger.sh --idempotence`
 
 ## Phase 7 — Questions de référence et clôture
 

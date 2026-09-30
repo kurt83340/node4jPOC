@@ -84,6 +84,7 @@ scripts/charger.sh --ping     # Aura répond ? 0 oui, 2 erreur technique
 scripts/charger.sh --go-no-go # contrôles en lecture seule avant chargement : 0 go, 1 no-go, 2 erreur technique
 scripts/charger.sh --tout     # charge les fichiers cypher/ dans l'ordre ; une relance ne crée rien ; journal dans logs/
 scripts/verifier.sh           # compare la base aux valeurs attendues : 0 conforme, 1 écart, 2 erreur technique
+scripts/charger.sh --idempotence # efface, charge deux fois et compare : 0 idempotent, 1 écart, 2 erreur technique
 ```
 
 Le chargement se complète au fil de la spec 001, un fichier `cypher/` par groupe de données : `scripts/verifier.sh --section <nom>` contrôle chaque étape.

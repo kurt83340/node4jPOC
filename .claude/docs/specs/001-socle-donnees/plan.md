@@ -49,8 +49,8 @@ Modèle v2 (notation Cypher ; validé le 2026-09-29, détail dans [ARCHITECTURE 
 | `cypher/05-attaques.cypher`                                                      | nouveau | 919 attaques (sans les 18 attaques Obscur, jamais apprises), leur type ; `APPREND` agrégé : 638 321 lignes → 99 509 relations     |
 | `cypher/06-descriptions.cypher`                                                  | nouveau | 5 233 descriptions normalisées et dédoublonnées, liste des jeux                                                                   |
 | `cypher/90-verification.cypher`                                                  | nouveau | comptes par motif `(label)-[type]->(label)`, empreintes, doublons de noms                                                         |
-| `scripts/charger.sh`                                                             | nouveau | options `--ping`, `--go-no-go`, `--purge` ; chargement en arrière-plan journalisé                                                 |
-| `scripts/verifier.sh`                                                            | nouveau | comptes, empreintes, limite de l'instance ; codes retour 0 / 1 / 2 ; option `--idempotence`                                       |
+| `scripts/charger.sh`                                                             | nouveau | options `--tout`, `--idempotence`, `--ping`, `--go-no-go`, `--purge` ; chargement journalisé dans `logs/`                         |
+| `scripts/verifier.sh`                                                            | nouveau | comptes, empreintes, limite de l'instance ; codes retour 0 / 1 / 2 ; option `--section`                                           |
 | `scripts/commun.sh`                                                              | nouveau | fonctions partagées par `charger.sh` et `verifier.sh` : identifiants, garde-fou de sortie, appels à `cypher-shell`                |
 | `scripts/questions.sh`                                                           | nouveau | rejoue les 27 requêtes et compare aux réponses enregistrées                                                                       |
 | `questions/README.md`, `questions/qNN.cypher`, `questions/attendu/qNN.txt`       | nouveau | le banc d'essai : question, technique visée, requête, réponse attendue                                                            |
@@ -186,7 +186,7 @@ CSV lus (commit figé) : `languages`, `types`, `type_names`, `type_efficacy`, `p
 ## Tests
 
 - **Comptes et empreintes** : `scripts/verifier.sh` (voir D8). Attendus : 8 859 nœuds et 113 700 relations au total (dont 1 025 `A_POUR_FORME_PAR_DEFAUT`), sous la vraie limite de l'instance.
-- **Idempotence** : purge, chargement, empreinte, second chargement, même empreinte (`verifier.sh --idempotence`).
+- **Idempotence** : purge, chargement, empreinte, second chargement, même empreinte (`charger.sh --idempotence` ; décision de Julien le 2026-10-01 : `verifier.sh` reste en lecture seule).
 - **Vraisemblance** : Q1 (Roche ×4 contre Dracaufeu), 16 Pokémon dont la description cite « volcan », pas d'autre nom de forme en double que les 2 hérités des données.
 - **Questions** : `scripts/questions.sh` rejoue les 27 requêtes ; les sorties doivent être identiques aux réponses enregistrées. Les 3 questions comportementales (Q10, Q29, Q30) se notent par leur règle.
 
