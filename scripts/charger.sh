@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Charge le graphe Pokémon dans AuraDB Free (spec 001). Pour l'instant : --ping (T2.1), --go-no-go
-# (T2.2) et --purge (T3.1).
+# Charge le graphe Pokémon dans AuraDB Free (spec 001) : --tout exécute les fichiers de cypher/ dans
+# l'ordre (depuis T4.1). Autour : --ping (T2.1), --go-no-go (T2.2) et --purge (T3.1).
 #
 # Identifiants, garde-fou de sortie et codes retour communs (0 = succès · 1 = écart constaté ·
 # 2 = erreur technique) : voir commun.sh (ADR-0007).
@@ -14,13 +14,17 @@ source "$(dirname "${BASH_SOURCE[0]}")/commun.sh"
 
 # CSV PokéAPI au commit figé (ADR-0001). POKEAPI_BASE sert au repli prévu par le plan (URL signée Cloud Storage).
 readonly BASE="${POKEAPI_BASE:-https://raw.githubusercontent.com/PokeAPI/pokeapi/168b1e89467054cda2e7df43ccebbb69b459497a/data/v2/csv}"
+# Fichiers de chargement : cypher/00 à 89, exécutés dans l'ordre de leur numéro ; 90 et au-delà vérifient.
+DOSSIER_CYPHER="$(dirname "${BASH_SOURCE[0]}")/../cypher"
+readonly DOSSIER_CYPHER
 ECARTS=0
 NOMS=()
 
 usage() {
   cat <<'EOF'
-Usage : scripts/charger.sh --ping | --go-no-go | --purge
+Usage : scripts/charger.sh --tout | --ping | --go-no-go | --purge
 
+  --tout       exécute dans l'ordre les fichiers de chargement de cypher/ (00 à 89) ; une relance ne crée rien
   --ping       vérifie qu'Aura répond, avec les identifiants lus dans Secret Manager
   --go-no-go   contrôles en lecture seule avant tout chargement (T2.2)
   --purge      efface tout le graphe, ses contraintes et ses index, pour repartir d'une base vide
@@ -152,8 +156,36 @@ purger() {
   printf '✓ Purge : %s supprimés, puis %d contrainte(s) et %d index.\n' "$avant" "$contraintes" "$index"
 }
 
+# Écrit : exécute dans l'ordre les fichiers de chargement, avec $base en paramètre. Chacun est idempotent
+# (MERGE sur une clé contrainte, IF NOT EXISTS) : une relance ne crée rien, et après une coupure on relance
+# tout. Au premier fichier en erreur, arrêt : les suivants dépendent de lui.
+charger() {
+  local fichier debut dixiemes
+  local fichiers=("$DOSSIER_CYPHER"/[0-8][0-9]-*.cypher)
+  if [[ ! -f "${fichiers[0]}" ]]; then
+    erreur "aucun fichier de chargement dans cypher/"
+    exit 2
+  fi
+  for fichier in "${fichiers[@]}"; do
+    debut="$(centiemes)"
+    if ! cypher_fichier "$fichier" -P "{base: '$BASE'}"; then
+      erreur "chargement arrêté à ${fichier##*/}"
+      printf '%s\n' "$SORTIE" >&2
+      exit 2
+    fi
+    dixiemes=$((($(centiemes) - debut) / 10))
+    printf '✓ %s (%d,%d s)\n' "${fichier##*/}" $((dixiemes / 10)) $((dixiemes % 10))
+  done
+}
+
 main() {
   case "${1:-}" in
+    --tout)
+      trouver_outils
+      lire_identifiants
+      ping_aura
+      charger
+      ;;
     --ping)
       trouver_outils
       lire_identifiants
