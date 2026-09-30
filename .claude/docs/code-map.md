@@ -25,8 +25,8 @@ Secret Manager ─┬─► scripts/ ─► cypher-shell ─► AuraDB Free ◄�
 ```
 
 → Orientation rapide : chargement → `cypher/NN-*.cypher` (ordre fixe : [ARCHITECTURE § 3](conception/ARCHITECTURE.md)) ;
-identifiants, purge, codes retour → `scripts/` ; banc d'essai → `questions/` ; réveil quotidien d'Aura et
-son alerte → `infra/reveil-aura/` (job Cloud Run, [RUNBOOK](RUNBOOK.md)). `cypher/` et `questions/qNN.cypher` : à venir (T3.1 à T7.1).
+identifiants, purge, codes retour → `scripts/` (fonctions partagées : `scripts/commun.sh`) ; banc d'essai → `questions/` ; réveil quotidien d'Aura et
+son alerte → `infra/reveil-aura/` (job Cloud Run, [RUNBOOK](RUNBOOK.md)). `cypher/00` à `06` et `questions/qNN.cypher` : à venir (T4.1 à T7.1).
 Le détail fichier-par-fichier se découvre à la demande (`grep`, lecture) — pas ici.
 
 ## Règles de couplage (⭐ le cœur — non déductible du code)
@@ -40,11 +40,11 @@ Le détail fichier-par-fichier se découvre à la demande (`grep`, lecture) — 
   ([ADR-0003](adr/0003-mvp-chargement-cypher-pur.md)) ; tout écart passe par Julien (circuit breaker du plan 001).
 - ✅ Seuls `scripts/` (poste local) et `infra/reveil-aura/` (Cloud Run) lisent les identifiants
   ([ADR-0007](adr/0007-infra-secrets-et-services-geres.md)). `scripts/` : secret lu au lancement, les 4 `NEO4J_*`
-  passés par l'environnement (`scripts/charger.sh:65`), jamais en argument ni sur le disque ; toute sortie de
-  `cypher-shell` passe par `filtrer` (`scripts/charger.sh:82`). Le job : secret monté en fichier par Cloud Run,
+  passés par l'environnement (`scripts/commun.sh:53`), jamais en argument ni sur le disque ; toute sortie de
+  `cypher-shell` passe par `filtrer` (`scripts/commun.sh:68`). Le job : secret monté en fichier par Cloud Run,
   sous un compte qui ne lit que lui ; tout message passe par `masquer` (`infra/reveil-aura/reveil.py:161`).
 - ✅ Seul le chargement (purge comprise) écrit dans la base : go/no-go, vérification et techniques du banc
-  d'essai lisent (`--access-mode read`, `scripts/charger.sh:129`), le réveil quotidien aussi (`accessMode: Read`,
+  d'essai lisent (`--access-mode read`, `scripts/verifier.sh:45`), le réveil quotidien aussi (`accessMode: Read`,
   `infra/reveil-aura/reveil.py:119`) ; exception prévue : la mémoire d'agent (jalon 5).
 
 ## Intention & décisions locales
@@ -56,8 +56,8 @@ Le détail fichier-par-fichier se découvre à la demande (`grep`, lecture) — 
   vide (code 1), chaque fichier `cypher/` le fait passer au vert section par section (`--section`).
 - Idempotence : `cypher/00-contraintes.cypher` passe avant tout `MERGE` ; chaque `MERGE` porte sur une clé
   contrainte (identifiant PokéAPI, D2) ou sur un chemin (`Description`) ; une relance ne crée rien (T6.1).
-- Codes retour communs à tous les scripts : 0 succès · 1 écart constaté · 2 erreur technique (`scripts/charger.sh:9`).
-- Reproductibilité : tout part du commit PokéAPI figé (`scripts/charger.sh:18`, [ADR-0001](adr/0001-mvp-jeu-de-donnees-pokeapi.md)) ;
+- Codes retour communs à tous les scripts : 0 succès · 1 écart constaté · 2 erreur technique (`scripts/commun.sh:8`).
+- Reproductibilité : tout part du commit PokéAPI figé (`scripts/charger.sh:16`, [ADR-0001](adr/0001-mvp-jeu-de-donnees-pokeapi.md)) ;
   changer de commit change les réponses de référence de `questions/`.
 
 ## Gotchas → `code-map-gotchas.md`

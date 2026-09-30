@@ -8,7 +8,7 @@
 > il « perd le fil » (échecs ×4 constatés en télémétrie, Morph 2026) → découper la phase.
 
 **Date :** 2026-09-28 (revue adverse intégrée)
-**Status :** [~] 5/16 tasks → MAJ au fil de l'eau
+**Status :** [~] 6/16 tasks → MAJ au fil de l'eau
 
 ## Phase 1 — Préparer (sans instance)
 
@@ -28,7 +28,7 @@
 
 ## Phase 3 — Vérification d'abord
 
-- [ ] **T3.1** : `cypher/90-verification.cypher` et `scripts/verifier.sh` (comptes par motif, empreintes, noms en double, limite ; codes retour 0 / 1 / 2) ; option `charger.sh --purge`
+- [x] **T3.1** : `cypher/90-verification.cypher` (33 contrôles en 8 sections : comptes par motif, empreintes, noms en double, volume sous la limite ; valeurs attendues calculées depuis les CSV par `LOAD CSV` en lecture seule) et `scripts/verifier.sh` (codes retour 0 / 1 / 2, `--section`) ; option `charger.sh --purge`, essayée sur un jeu jetable ; fonctions partagées dans `scripts/commun.sh`. Code 1 sur la base vide le 2026-09-30 (31 écarts sur 33)
   - DoD : `command_passes: scripts/verifier.sh; test $? -eq 1` (écart constaté sur base vide, pas une erreur technique)
 
 ## Phase 4 — Nœuds de référence

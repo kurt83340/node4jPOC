@@ -10,19 +10,19 @@
 
 ## Langage(s) & runtime
 
-| Item           | Version | Notes                                                                                                                |
-| -------------- | ------- | -------------------------------------------------------------------------------------------------------------------- |
-| Cypher         | 25      | déjà la langue par défaut de la base, contrôlé au go/no-go (T2.2, D7 du [plan 001](specs/001-socle-donnees/plan.md)) |
-| Bash           | —       | `scripts/charger.sh` (`--ping`, `--go-no-go`) ; chargement complet et vérification à venir                           |
-| Java (OpenJDK) | 21      | paquet `openjdk-21-jre` (apt), requis par `cypher-shell`                                                             |
-| Python         | 3.14    | `infra/reveil-aura/reveil.py`, bibliothèque standard seule ; image `python:3.14-slim`                                |
+| Item           | Version | Notes                                                                                                                                                      |
+| -------------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Cypher         | 25      | déjà la langue par défaut de la base, contrôlé au go/no-go (T2.2, D7 du [plan 001](specs/001-socle-donnees/plan.md))                                       |
+| Bash           | —       | `scripts/charger.sh` (`--ping`, `--go-no-go`, `--purge`), `scripts/verifier.sh`, fonctions partagées dans `scripts/commun.sh` ; chargement complet à venir |
+| Java (OpenJDK) | 21      | paquet `openjdk-21-jre` (apt), requis par `cypher-shell`                                                                                                   |
+| Python         | 3.14    | `infra/reveil-aura/reveil.py`, bibliothèque standard seule ; image `python:3.14-slim`                                                                      |
 
 ## Orchestration
 
-| Composant                  | Choix                                                                                                                         | Voir                                              |
-| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------- |
-| Chargement et vérification | **scripts bash** `scripts/charger.sh` et `scripts/verifier.sh` (à venir), qui passent les fichiers `cypher/` à `cypher-shell` | [ADR-0003](adr/0003-mvp-chargement-cypher-pur.md) |
-| Agents (jalons 2 à 4)      | à choisir au démarrage du jalon 2                                                                                             | [ROADMAP](ROADMAP.md)                             |
+| Composant                  | Choix                                                                                                               | Voir                                              |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------- |
+| Chargement et vérification | **scripts bash** `scripts/charger.sh` et `scripts/verifier.sh`, qui passent les fichiers `cypher/` à `cypher-shell` | [ADR-0003](adr/0003-mvp-chargement-cypher-pur.md) |
+| Agents (jalons 2 à 4)      | à choisir au démarrage du jalon 2                                                                                   | [ROADMAP](ROADMAP.md)                             |
 
 ## Stockage & data
 
@@ -33,12 +33,12 @@
 
 ## Librairies (rôles)
 
-| Lib                            | Version                     | Pour quoi                                                                                                                                                                                          | Module qui l'utilise                                  |
-| ------------------------------ | --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
-| `cypher-shell`                 | 2026.09.0                   | client Neo4j en ligne de commande (`.deb` officiel de dist.neo4j.org)                                                                                                                              | `scripts/charger.sh`, `scripts/verifier.sh` (à venir) |
-| `gcloud` (Google Cloud SDK)    | 587.0.0                     | lecture du secret `neo4j-aura-poc` dans Secret Manager ([ADR-0007](adr/0007-infra-secrets-et-services-geres.md)) ; déploiement du job `reveil-aura`, avec le composant `beta` pour le canal e-mail | `scripts/charger.sh`, `infra/reveil-aura/deploy.sh`   |
-| pytest, pytest-cov, ruff, mypy | 9.1.1, 7.1.0, 0.16.9, 2.3.1 | tests et contrôles du job `reveil-aura` (groupe `dev`, figé par `uv.lock`)                                                                                                                         | `infra/reveil-aura/`                                  |
-| _(aucune autre)_               | —                           | bibliothèques des jalons 2 à 4 : à choisir au démarrage de chaque jalon                                                                                                                            | —                                                     |
+| Lib                            | Version                     | Pour quoi                                                                                                                                                                                          | Module qui l'utilise                                |
+| ------------------------------ | --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------- |
+| `cypher-shell`                 | 2026.09.0                   | client Neo4j en ligne de commande (`.deb` officiel de dist.neo4j.org)                                                                                                                              | `scripts/charger.sh`, `scripts/verifier.sh`         |
+| `gcloud` (Google Cloud SDK)    | 587.0.0                     | lecture du secret `neo4j-aura-poc` dans Secret Manager ([ADR-0007](adr/0007-infra-secrets-et-services-geres.md)) ; déploiement du job `reveil-aura`, avec le composant `beta` pour le canal e-mail | `scripts/charger.sh`, `infra/reveil-aura/deploy.sh` |
+| pytest, pytest-cov, ruff, mypy | 9.1.1, 7.1.0, 0.16.9, 2.3.1 | tests et contrôles du job `reveil-aura` (groupe `dev`, figé par `uv.lock`)                                                                                                                         | `infra/reveil-aura/`                                |
+| _(aucune autre)_               | —                           | bibliothèques des jalons 2 à 4 : à choisir au démarrage de chaque jalon                                                                                                                            | —                                                   |
 
 ## LLM providers (par feature)
 
