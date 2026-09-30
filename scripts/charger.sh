@@ -1,124 +1,34 @@
 #!/usr/bin/env bash
-# Charge le graphe Pokémon dans AuraDB Free (spec 001). Pour l'instant : --ping (T2.1) et
-# --go-no-go (T2.2).
+# Charge le graphe Pokémon dans AuraDB Free (spec 001). Pour l'instant : --ping (T2.1), --go-no-go
+# (T2.2) et --purge (T3.1).
 #
-# Identifiants lus au lancement dans GCP Secret Manager (ADR-0007) : jamais écrits sur le disque ni
-# affichés. Seules les 4 variables NEO4J_* passent à cypher-shell, par l'environnement : un argument
-# de commande serait visible de tous les processus (ps).
-#
-# Codes retour, comme verifier.sh : 0 = succès · 1 = écart constaté · 2 = erreur technique
-# (Aura injoignable, configuration, garde-fou).
+# Identifiants, garde-fou de sortie et codes retour communs (0 = succès · 1 = écart constaté ·
+# 2 = erreur technique) : voir commun.sh (ADR-0007).
 
 set -euo pipefail
 set +x
 
-readonly SECRET="${NEO4J_SECRET:-neo4j-aura-poc}"
-readonly PROJET="${GCP_PROJET:-jleroy-labo}"
+# Fonctions partagées avec verifier.sh : identifiants, garde-fou de sortie, appels à cypher-shell.
+# shellcheck source=scripts/commun.sh
+source "$(dirname "${BASH_SOURCE[0]}")/commun.sh"
+
 # CSV PokéAPI au commit figé (ADR-0001). POKEAPI_BASE sert au repli prévu par le plan (URL signée Cloud Storage).
 readonly BASE="${POKEAPI_BASE:-https://raw.githubusercontent.com/PokeAPI/pokeapi/168b1e89467054cda2e7df43ccebbb69b459497a/data/v2/csv}"
-SORTIE=""
 ECARTS=0
+NOMS=()
 
 usage() {
   cat <<'EOF'
-Usage : scripts/charger.sh --ping | --go-no-go
+Usage : scripts/charger.sh --ping | --go-no-go | --purge
 
   --ping       vérifie qu'Aura répond, avec les identifiants lus dans Secret Manager
   --go-no-go   contrôles en lecture seule avant tout chargement (T2.2)
+  --purge      efface tout le graphe, ses contraintes et ses index, pour repartir d'une base vide
 
 Variables : NEO4J_SECRET (défaut neo4j-aura-poc), GCP_PROJET (défaut jleroy-labo),
 POKEAPI_BASE (défaut : CSV PokéAPI au commit 168b1e8).
 Codes retour : 0 = succès · 1 = écart constaté · 2 = erreur technique.
 EOF
-}
-
-erreur() {
-  printf 'charger.sh : %s\n' "$*" >&2
-}
-
-# gcloud est installé dans ~/google-cloud-sdk, absent du PATH des shells non interactifs.
-trouver_outils() {
-  if ! command -v gcloud >/dev/null 2>&1 && [[ -x "$HOME/google-cloud-sdk/bin/gcloud" ]]; then
-    PATH="$HOME/google-cloud-sdk/bin:$PATH"
-  fi
-  local outil
-  for outil in gcloud cypher-shell; do
-    if ! command -v "$outil" >/dev/null 2>&1; then
-      erreur "$outil introuvable"
-      exit 2
-    fi
-  done
-}
-
-# Le secret reste en mémoire : son contenu n'est jamais exécuté (ni source ni eval) et passe par
-# un tube, pas par un fichier temporaire. Seules les 4 clés NEO4J_* sont exportées.
-lire_identifiants() {
-  local contenu ligne cle
-  if ! contenu="$(gcloud secrets versions access latest --secret="$SECRET" --project="$PROJET")"; then
-    erreur "secret $SECRET illisible dans le projet $PROJET (gcloud auth login ?)"
-    exit 2
-  fi
-  while IFS= read -r ligne; do
-    ligne="${ligne%$'\r'}"
-    cle="${ligne%%=*}"
-    case "$cle" in
-      NEO4J_URI | NEO4J_USERNAME | NEO4J_PASSWORD | NEO4J_DATABASE)
-        printf -v "$cle" '%s' "${ligne#*=}"
-        export "${cle?}"
-        ;;
-    esac
-  done < <(printf '%s\n' "$contenu")
-  unset contenu ligne
-  for cle in NEO4J_URI NEO4J_USERNAME NEO4J_PASSWORD NEO4J_DATABASE; do
-    if [[ -z "${!cle:-}" ]]; then
-      erreur "clé $cle absente du secret $SECRET"
-      exit 2
-    fi
-  done
-}
-
-# Garde-fou de sortie : SORTIE reçoit le texte sûr. Le mot de passe arrête tout ; l'identifiant de
-# l'instance, qui est aussi l'utilisateur et le nom de la base, devient ‹instance›.
-filtrer() {
-  if [[ "$1" == *"$NEO4J_PASSWORD"* ]]; then
-    erreur "sortie masquée : elle contenait le mot de passe"
-    exit 2
-  fi
-  SORTIE="${1//"$NEO4J_USERNAME"/‹instance›}"
-}
-
-# Exécute une requête Cypher (options de cypher-shell en plus après la requête) : SORTIE reçoit
-# sa sortie filtrée, le code retour est celui de cypher-shell.
-cypher() {
-  local requete="$1" brut code=0
-  shift
-  brut="$(cypher-shell --non-interactive --format plain "$@" "$requete" 2>&1)" || code=$?
-  filtrer "$brut"
-  return "$code"
-}
-
-# Première ligne de résultat (la ligne 1 de SORTIE est l'en-tête), sans guillemets.
-valeur() {
-  local v="${SORTIE#*$'\n'}"
-  v="${v%%$'\n'*}"
-  printf '%s' "${v//\"/}"
-}
-
-ping_aura() {
-  if ! cypher "CALL dbms.components() YIELD versions, edition RETURN 'Neo4j ' + versions[0] + ' (' + edition + ')' AS aura"; then
-    erreur "Aura injoignable : instance en pause (console Aura → Resume) ou réseau coupé"
-    printf '%s\n' "$SORTIE" >&2
-    exit 2
-  fi
-  printf '✓ Aura répond : %s\n' "$(valeur)"
-}
-
-# Centièmes de seconde depuis le démarrage : l'horloge murale de WSL2 recule par à-coups
-# (EPOCHREALTIME et SECONDS avec elle), /proc/uptime jamais.
-centiemes() {
-  local depuis_demarrage _
-  read -r depuis_demarrage _ </proc/uptime
-  printf '%s' "${depuis_demarrage/./}"
 }
 
 # Un contrôle du go/no-go, en lecture seule (--access-mode read) : cypher-shell refuse toute écriture.
@@ -181,6 +91,67 @@ go_no_go() {
   printf 'GO : tous les contrôles passent.\n'
 }
 
+# NOMS reçoit les valeurs de SORTIE (une entre guillemets par ligne, après l'en-tête). La boucle tourne
+# dans le shell principal : un nom inattendu arrête vraiment tout, au lieu d'entrer dans un DROP.
+lire_noms() {
+  local nom
+  NOMS=()
+  while IFS= read -r nom; do
+    if [[ ! "$nom" =~ ^[A-Za-z0-9_]+$ ]]; then
+      erreur "nom de contrainte ou d'index inattendu : $nom"
+      exit 2
+    fi
+    NOMS+=("$nom")
+  done < <(printf '%s\n' "$SORTIE" | sed -n 's/^"\(.*\)"$/\1/p')
+}
+
+# Écrire : seul mode de charger.sh qui détruit (plan, étape 0). Relations d'abord, par lots, pour ménager
+# la mémoire d'Aura Free, puis nœuds ; enfin contraintes (leurs index partent avec elles) et index
+# restants, sauf les deux index LOOKUP qu'Aura crée d'office.
+purger() {
+  local nom avant contraintes=0 index=0
+  cypher "CALL () { MATCH (n) RETURN count(n) AS n } CALL () { MATCH ()-[r]->() RETURN count(r) AS r }
+    RETURN toString(n) + ' nœuds et ' + toString(r) + ' relations' AS avant" || {
+    erreur "comptage impossible : ${SORTIE%%$'\n'*}"
+    exit 2
+  }
+  avant="$(valeur)"
+  local requete
+  for requete in "MATCH ()-[r]->() CALL (r) { DELETE r } IN TRANSACTIONS OF 10000 ROWS" \
+    "MATCH (n) CALL (n) { DELETE n } IN TRANSACTIONS OF 10000 ROWS"; do
+    if ! cypher "$requete"; then
+      erreur "purge interrompue : ${SORTIE%%$'\n'*}"
+      exit 2
+    fi
+  done
+  cypher "SHOW CONSTRAINTS YIELD name RETURN name" || {
+    erreur "liste des contraintes illisible : ${SORTIE%%$'\n'*}"
+    exit 2
+  }
+  lire_noms
+  for nom in "${NOMS[@]}"; do
+    cypher "DROP CONSTRAINT \`$nom\` IF EXISTS" || {
+      erreur "contrainte $nom non supprimée : ${SORTIE%%$'\n'*}"
+      exit 2
+    }
+    contraintes=$((contraintes + 1))
+  done
+  cypher "SHOW INDEXES YIELD name, type, owningConstraint WHERE type <> 'LOOKUP' AND owningConstraint IS NULL
+    RETURN name" || {
+    erreur "liste des index illisible : ${SORTIE%%$'\n'*}"
+    exit 2
+  }
+  lire_noms
+  for nom in "${NOMS[@]}"; do
+    cypher "DROP INDEX \`$nom\` IF EXISTS" || {
+      erreur "index $nom non supprimé : ${SORTIE%%$'\n'*}"
+      exit 2
+    }
+    index=$((index + 1))
+  done
+  printf '✓ Purge : %s supprimés, puis %d contrainte(s) et %d index.\n' "$avant" "$contraintes" "$index"
+}
+
 main() {
   case "${1:-}" in
     --ping)
@@ -192,6 +163,12 @@ main() {
       trouver_outils
       lire_identifiants
       go_no_go
+      ;;
+    --purge)
+      trouver_outils
+      lire_identifiants
+      ping_aura
+      purger
       ;;
     -h | --help)
       usage
