@@ -8,7 +8,7 @@
 > il « perd le fil » (échecs ×4 constatés en télémétrie, Morph 2026) → découper la phase.
 
 **Date :** 2026-09-28 (revue adverse intégrée)
-**Status :** [~] 10/16 tasks → MAJ au fil de l'eau
+**Status :** [~] 11/16 tasks → MAJ au fil de l'eau
 
 ## Phase 1 — Préparer (sans instance)
 
@@ -41,7 +41,7 @@
   - DoD : `command_passes: scripts/verifier.sh --section pokemon`
 - [x] **T4.4** : `cypher/03-formes.cypher` (1 351 formes, `FORME_DE`, `A_POUR_FORME_PAR_DEFAUT`, stats, `A_LE_TYPE`, règle des noms). Règle de Julien du 2026-10-01 : forme par défaut = nom du Pokémon, forme alternative = nom de sa `pokemon_form` ; les 2 doublons hérités des données sont gardés (attendu « 1351, 2 »). Forme par défaut déduite du graphe ; stats pivotées par une clé dynamique `f[cle]`. Vert le 2026-10-01 ; relance sans effet ; vérification complète : 12 écarts sur 33
   - DoD : `command_passes: scripts/verifier.sh --section formes`
-- [ ] **T4.5** : `cypher/04-talents.cypher` (313 talents utilisés, `A_LE_TALENT`)
+- [x] **T4.5** : `cypher/04-talents.cypher` (313 talents utilisés, `A_LE_TALENT`). Talents créés depuis leurs relations, donc seulement les utilisés ; 3 talents récents nommés par leur identifiant ; « Osmose Équine » gardé en double (décision de Julien le 2026-10-01). Vert le 2026-10-01 ; relance sans effet ; phase 4 finie : 9 écarts sur 33 (attaques, descriptions, totaux)
   - DoD : `command_passes: scripts/verifier.sh --section talents`
 
 ## Phase 5 — Gros volumes (en arrière-plan, journal horodaté)
