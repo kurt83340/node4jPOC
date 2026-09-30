@@ -40,9 +40,9 @@
 
 ### 🚀 infra — Hébergement & deploy
 
-| #                     | Titre | Statut |
-| --------------------- | ----- | ------ |
-| _(à venir post-prod)_ |       |        |
+| #                                               | Titre                                                           | Statut   |
+| ----------------------------------------------- | --------------------------------------------------------------- | -------- |
+| [0007](0007-infra-secrets-et-services-geres.md) | Secrets dans Secret Manager, services gérés, poste local client | Accepted |
 
 ### 🛠️ operations — Post-prod & incidents
 
