@@ -26,7 +26,7 @@ Secret Manager ─┬─► scripts/ ─► cypher-shell ─► AuraDB Free ◄�
 
 → Orientation rapide : chargement → `cypher/NN-*.cypher` (ordre fixe : [ARCHITECTURE § 3](conception/ARCHITECTURE.md)) ;
 identifiants, purge, codes retour → `scripts/` (fonctions partagées : `scripts/commun.sh`) ; banc d'essai → `questions/` ; réveil quotidien d'Aura et
-son alerte → `infra/reveil-aura/` (job Cloud Run, [RUNBOOK](RUNBOOK.md)). `cypher/00` à `06` et `questions/qNN.cypher` : à venir (T4.1 à T7.1).
+son alerte → `infra/reveil-aura/` (job Cloud Run, [RUNBOOK](RUNBOOK.md)). `cypher/01` à `06` et `questions/qNN.cypher` : à venir (T4.2 à T7.1).
 Le détail fichier-par-fichier se découvre à la demande (`grep`, lecture) — pas ici.
 
 ## Règles de couplage (⭐ le cœur — non déductible du code)

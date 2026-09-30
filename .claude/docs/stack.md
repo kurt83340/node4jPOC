@@ -10,12 +10,12 @@
 
 ## Langage(s) & runtime
 
-| Item           | Version | Notes                                                                                                                                                      |
-| -------------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Cypher         | 25      | déjà la langue par défaut de la base, contrôlé au go/no-go (T2.2, D7 du [plan 001](specs/001-socle-donnees/plan.md))                                       |
-| Bash           | —       | `scripts/charger.sh` (`--ping`, `--go-no-go`, `--purge`), `scripts/verifier.sh`, fonctions partagées dans `scripts/commun.sh` ; chargement complet à venir |
-| Java (OpenJDK) | 21      | paquet `openjdk-21-jre` (apt), requis par `cypher-shell`                                                                                                   |
-| Python         | 3.14    | `infra/reveil-aura/reveil.py`, bibliothèque standard seule ; image `python:3.14-slim`                                                                      |
+| Item           | Version | Notes                                                                                                                                   |
+| -------------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| Cypher         | 25      | déjà la langue par défaut de la base, contrôlé au go/no-go (T2.2, D7 du [plan 001](specs/001-socle-donnees/plan.md))                    |
+| Bash           | —       | `scripts/charger.sh` (`--tout`, `--ping`, `--go-no-go`, `--purge`), `scripts/verifier.sh`, fonctions partagées dans `scripts/commun.sh` |
+| Java (OpenJDK) | 21      | paquet `openjdk-21-jre` (apt), requis par `cypher-shell`                                                                                |
+| Python         | 3.14    | `infra/reveil-aura/reveil.py`, bibliothèque standard seule ; image `python:3.14-slim`                                                   |
 
 ## Orchestration
 

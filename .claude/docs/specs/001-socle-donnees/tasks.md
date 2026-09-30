@@ -8,7 +8,7 @@
 > il « perd le fil » (échecs ×4 constatés en télémétrie, Morph 2026) → découper la phase.
 
 **Date :** 2026-09-28 (revue adverse intégrée)
-**Status :** [~] 6/16 tasks → MAJ au fil de l'eau
+**Status :** [~] 7/16 tasks → MAJ au fil de l'eau
 
 ## Phase 1 — Préparer (sans instance)
 
@@ -33,7 +33,7 @@
 
 ## Phase 4 — Nœuds de référence
 
-- [ ] **T4.1** : `cypher/00-contraintes.cypher`
+- [x] **T4.1** : `cypher/00-contraintes.cypher` (unicité de `id` pour 5 labels, chaque contrainte avec son index ; index RANGE sur `nom` ; `IF NOT EXISTS` et noms explicites) et `scripts/charger.sh --tout` (fichiers `cypher/00` à `89` dans l'ordre, arrêt à la première erreur). Vert le 2026-09-30 ; relance sans effet, cycle `--purge` puis `--tout` essayé ; vérification complète : 29 écarts sur 33
   - DoD : `command_passes: scripts/verifier.sh --section contraintes`
 - [ ] **T4.2** : `cypher/01-types.cypher` (18 types, 120 efficacités)
   - DoD : `command_passes: scripts/verifier.sh --section types`
