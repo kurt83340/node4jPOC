@@ -20,3 +20,10 @@ _(aucun pour l'instant)_
   Python (`chr(92) + "u202F"`), puis vérifier que le fichier ne contient aucun `chr(0x202F)`. La
   formule doit remplacer `\n` ET U+202F ([plan 001, D4](specs/001-socle-donnees/plan.md)) : avec
   `\n` seul, 5 240 descriptions au lieu de 5 233.
+- ⚠️ `scripts/charger.sh` — sur Aura, l'utilisateur et la base portent l'identifiant de l'instance,
+  pas `neo4j` : les lire dans le secret (`NEO4J_USERNAME`, `NEO4J_DATABASE`), rien en dur. Toute sortie
+  de `cypher-shell` passe par `filtrer` (mot de passe → arrêt, identifiant → ‹instance›) ; jamais de
+  `set -x`, de `--debug`, ni de mot de passe en argument ([ADR-0007](adr/0007-infra-secrets-et-services-geres.md)).
+- ⚠️ `scripts/charger.sh` — `dbms.components()` annonce Neo4j « 5.27-aura » quand la console affiche
+  2026.09 : ce n'est pas le signe d'un vieux Neo4j. Cypher 25 est disponible et déjà la langue par
+  défaut de la base (`SHOW DATABASES`).

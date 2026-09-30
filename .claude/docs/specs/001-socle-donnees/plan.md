@@ -128,6 +128,7 @@ CSV lus (commit figé) : `languages`, `types`, `type_names`, `type_efficacy`, `p
 **Choix :** `ALTER DATABASE <base> SET DEFAULT LANGUAGE CYPHER 25` au go/no-go, contrôlé par `SHOW DATABASES` ; nom de la base lu dans le fichier d'identifiants.
 **Pourquoi :** les agents des jalons suivants (MCP, Aura Agent, graphrag) ne préfixent pas leurs requêtes : ils doivent tourner dans le même Cypher que la vérité de référence. Un préfixe oublié ne donnerait aucune erreur.
 **Alternatives écartées :** préfixer chaque requête par `CYPHER 25`.
+**Constaté le 2026-09-30 :** une instance AuraDB Free neuve est déjà en Cypher 25 par défaut. Le go/no-go se contente donc de contrôler, et n'affiche la commande `ALTER` qu'en cas d'écart (instance recréée, par exemple).
 
 ### D8 — Mode d'exécution : vérification d'abord
 
