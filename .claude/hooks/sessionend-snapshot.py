@@ -17,7 +17,9 @@ passe toujours APRÈS /handoff, donc le snapshot était toujours « plus frais �
      lecture, revue…) → rien à rattraper.
   3. Hors dépôt git → pas de trace mesurable → pas de filet.
 Début de session = marqueur posé par SessionStart (startup/resume/clear), à défaut la 1re
-entrée datée du transcript.
+entrée datée du transcript. « HANDOFF mis à jour pendant la session » = sa signature (mtime_ns,
+taille) a changé depuis le marqueur, pas « mtime ≥ heure du marqueur » (l'horloge murale peut
+reculer entre les deux) ; la comparaison d'heures ne sert plus que de repli.
 
 Écrit : .claude/.cache/session-end-snapshot.md (non-versionné, OVERWRITE — 1 par checkout).
 Multi-sessions sur le MÊME checkout : last-write-wins, assumé (c'est un filet, pas la
@@ -37,8 +39,8 @@ import os
 import sys
 from pathlib import Path
 
-from snapshot_common import (build_snapshot, git_fingerprint, pop_session_start, run,
-                             transcript_started_at, work_after)
+from snapshot_common import (build_snapshot, git_fingerprint, handoff_signature, pop_session_start,
+                             run, transcript_started_at, work_after)
 
 
 def main():
@@ -69,7 +71,11 @@ def main():
             sys.exit(0)  # hors dépôt git : pas de trace mesurable → pas de filet (sinon alerte à chaque démarrage)
         kind = "fin de session"
         h_mtime = handoff.stat().st_mtime if handoff.is_file() else None
-        if started_at is not None and h_mtime is not None and h_mtime >= started_at:
+        if start and "handoff" in start:  # signature relevée au démarrage : aucune horloge comparée
+            touched = h_mtime is not None and start["handoff"] != handoff_signature(cwd)
+        else:  # marqueur d'avant la signature, ou 1re date du transcript : repli sur l'horloge
+            touched = started_at is not None and h_mtime is not None and h_mtime >= started_at
+        if touched:
             # HANDOFF mis à jour pendant la session (/handoff, /feature-done…) : filet seulement si du
             # travail a suivi cette mise à jour (sinon l'état est consigné).
             if not work_after(cwd, h_mtime):

@@ -31,13 +31,13 @@ STALE_CACHE_GLOBS = ("codemap-injected-*.json", "handoff-size-warned-*", "handof
 STALE_CACHE_DAYS = 7
 
 
-def run(cmd: str, cwd: str = None) -> str:
-    """Exécute un shell command, retourne stdout (trimmed)."""
+def run(cmd: str, cwd: str = None, strip: bool = True) -> str:
+    """Exécute un shell command, retourne stdout (trimmed, sauf strip=False)."""
     try:
         result = subprocess.run(
             cmd, shell=True, capture_output=True, text=True, cwd=cwd, timeout=10
         )
-        return result.stdout.strip()
+        return result.stdout.strip() if strip else result.stdout
     except Exception:
         return ""
 
@@ -133,9 +133,14 @@ def git_fingerprint(cwd) -> str:
 def work_after(cwd, since: float) -> bool:
     """Du travail (hors .claude/ — méthode, doc, cache) a-t-il été fait APRÈS `since` (epoch) ?
     Fichiers modifiés non commités + fichiers des commits postérieurs, dont le mtime est > since.
-    Un simple commit de ce qui existait déjà au /handoff ne compte pas (mtimes inchangés)."""
+    Un simple commit de ce qui existait déjà au /handoff ne compte pas (mtimes inchangés).
+    Limite assumée : mtimes comparés entre eux ; un recul d'horloge plus grand que l'écart entre
+    le /handoff et le travail voisin (en vrai : des secondes, voire des minutes) fausse le verdict."""
     files = set()
-    for line in run("git status --porcelain -- . ':(exclude).claude'", cwd=cwd).splitlines():
+    # strip=False : vécu 2026-09-30, la sortie rognée changeait la 1re ligne « ␣M app.py » en
+    # « M app.py » → chemin « pp.py », fichier ignoré → travail après /handoff non vu, sauf si un
+    # commit de la même seconde le listait (test H : rouge ~1 fois sur 5).
+    for line in run("git status --porcelain -- . ':(exclude).claude'", cwd=cwd, strip=False).splitlines():
         path = line[3:].strip().strip('"')
         files.add(path.split(" -> ")[-1])
     iso = datetime.fromtimestamp(since).strftime("%Y-%m-%d %H:%M:%S")
@@ -151,13 +156,28 @@ def work_after(cwd, since: float) -> bool:
     return False
 
 
+def handoff_signature(cwd):
+    """[mtime_ns, taille] de HANDOFF.md, None s'il manque. Relevée au début de session puis au
+    SessionEnd : si elle a changé, HANDOFF a été mis à jour pendant la session — sans comparer le
+    mtime du fichier à l'heure du marqueur. Vécu 2026-09-30 (WSL2) : l'horloge murale recule de
+    ~2,9 s toutes les ~30 s ; un HANDOFF écrit juste après un recul paraissait antérieur au début
+    de session → /handoff ignoré, filet écrit à tort."""
+    try:
+        st = (Path(cwd) / ".claude" / "docs" / "HANDOFF.md").stat()
+    except OSError:
+        return None
+    return [st.st_mtime_ns, st.st_size]
+
+
 def mark_session_start(cwd, session_id) -> None:
-    """SessionStart : horodate le début de session + empreinte git (relus au SessionEnd)."""
+    """SessionStart : horodate le début de session + empreinte git + signature de HANDOFF.md
+    (relus au SessionEnd)."""
     try:
         d = cache_dir(cwd)
         d.mkdir(parents=True, exist_ok=True)
         (d / f"session-start-{safe_sid(session_id)}.json").write_text(
-            json.dumps({"t": time.time(), "git": git_fingerprint(cwd)}), encoding="utf-8")
+            json.dumps({"t": time.time(), "git": git_fingerprint(cwd),
+                        "handoff": handoff_signature(cwd)}), encoding="utf-8")
     except OSError:
         pass
 
