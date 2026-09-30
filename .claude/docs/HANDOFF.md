@@ -1,40 +1,40 @@
-# HANDOFF — 2026-09-29 02h02
+# HANDOFF — 2026-09-30 03h32
 
 > Court, narratif, versionné. Patterns techniques → auto-memory. Reprise précise → /resume.
 
-**Branche** : `feature/001-socle-donnees`
+**Branche** : `feature/001-socle-donnees` (repartie de `main` après la PR n°1)
 **Spec en cours** : [001-socle-donnees](specs/001-socle-donnees/spec.md) (3/16 tasks, phase 1 terminée)
-**Goal session** : audit doc-health, puis phase 1 de la spec 001 (questions, modèle, outillage)
+**Goal session** : outiller Jira et GitHub avant de reprendre la spec 001
 
 ## Status
 
-- ✅ Audit doc-health traité (PRD et plan macro en renvois, leçon classée, `workflows/` retiré)
-- ✅ T1.1 : 30 questions de référence en 6 catégories ([questions/README.md](../../questions/README.md))
-- ✅ T1.2 : modèle v2 validé après recherche (ADR-0005) ; T1.3 : Java 21 et `cypher-shell` 2026.09.0
-- ⏳ Aucun chargement ni test : la phase 2 attend l'instance Aura
+- ✅ Jira NEO : epics NEO-1 à NEO-4 = jalons 1 à 4 ; tickets du jalon 1 NEO-5 à NEO-12 (NEO-5 fait)
+- ✅ Dépôt privé kurt83340/node4jPOC relié à NEO : la clé d'un commit ou d'un titre de PR remonte
+- ✅ `main` : doc de la phase 1 et README « initiative » (PR n°1) ; historique sans attribution à Claude
+- ⏳ Aucun chargement ni test : la phase 2 attend l'instance Aura (NEO-6)
 
 ## Échecs tentés (à ne pas refaire)
 
 - Normaliser les descriptions avec `\n` seul → 5 240 textes au lieu de 5 233 : remplacer aussi U+202F
 - Préfixer les requêtes par `CYPHER 25` → rejeté : langue par défaut de la base (plan D7)
-- Re-proposer le chargement Python ou le nommage v1 (`Espece`, snake_case) → non : ADR-0003 et ADR-0005
+- Re-proposer le chargement Python ou le nommage v1 → non : ADR-0003 et ADR-0005
 
 ## Blocked on
 
-- Actions de Julien : instance AuraDB Free et `.env` à la racine (bloquent T2.1) ; projet Google Cloud avec facturation (avant le jalon 2)
+- Action de Julien : NEO-6, instance AuraDB Free et `.env` à la racine (bloque NEO-7)
 
 ## Next (par ordre)
 
-1. **T2.1** : `.env.example`, `ACCESS.md`, protection de `Neo4j-*.txt`, `scripts/charger.sh --ping` ; noter la vraie limite
-2. **T2.2** : go/no-go (LOAD CSV depuis GitHub, multilignes, gros fichiers, `MATCH (t:Type)`, Cypher 25 par défaut)
-3. **T3.1** : `verifier.sh` d'abord (rouge sur base vide), puis la phase 4
+1. **NEO-6** (Julien) : créer l'instance, noter la vraie limite, identifiants dans `.env`
+2. **NEO-7** : T2.1 puis T2.2 (go/no-go) ; passer NEO-7 En cours, commits suffixés `(NEO-7)`
+3. **NEO-8** : T3.1, `verifier.sh` d'abord (rouge sur base vide), puis la phase 4
 
 ## Continuation State (machine-readable — grammaire fixe `Clé: valeur`, 1 ligne chacune)
 
 Spec: 001-socle-donnees
 Task: T2.1
 Fichiers en cours: aucun
-Bloqué sur: instance AuraDB Free + .env (action de Julien)
-Commande de reprise: test -f .env, puis démarrer T2.1 selon .claude/docs/specs/001-socle-donnees/tasks.md
+Bloqué sur: instance AuraDB Free + .env (NEO-6, action de Julien)
+Commande de reprise: test -f .env, puis démarrer T2.1 (NEO-7) selon .claude/docs/specs/001-socle-donnees/tasks.md
 
 → **Journal des sessions** (append-only) : [HANDOFF-journal.md](HANDOFF-journal.md) — non auto-chargé.
