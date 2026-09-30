@@ -14,6 +14,8 @@ secrets.env
 *.key
 *.pem
 credentials.json
+# Fichier d'identifiants téléchargé depuis la console Aura : il ne fait que transiter (ADR-0007)
+Neo4j-*.txt
 
 # Python
 __pycache__/

@@ -42,7 +42,8 @@
       "Read(secrets.toml)",
       "Read(secrets.env)",
       "Read(*.pem)",
-      "Read(*.key)"
+      "Read(*.key)",
+      "Read(//**/Neo4j-*.txt)"
     ]
   },
   "hooks": {

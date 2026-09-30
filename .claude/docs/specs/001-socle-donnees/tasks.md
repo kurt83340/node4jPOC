@@ -8,7 +8,7 @@
 > il « perd le fil » (échecs ×4 constatés en télémétrie, Morph 2026) → découper la phase.
 
 **Date :** 2026-09-28 (revue adverse intégrée)
-**Status :** [~] 3/16 tasks → MAJ au fil de l'eau
+**Status :** [~] 4/16 tasks → MAJ au fil de l'eau
 
 ## Phase 1 — Préparer (sans instance)
 
@@ -21,7 +21,7 @@
 
 ## Phase 2 — Accès et go/no-go (nécessite l'instance de Julien)
 
-- [ ] **T2.1** : `Neo4j-*.txt` ignoré par git et interdit en lecture (`/update-config`), `scripts/charger.sh` (lit le secret `neo4j-aura-poc` au lancement et n'en passe que les 4 variables `NEO4J_*` à `cypher-shell`, `set +x`, contrôle de sa propre sortie) ([ADR-0007](../../adr/0007-infra-secrets-et-services-geres.md)) ; `.claude/docs/ACCESS.md` et vraie limite (200 000 nœuds, 400 000 relations) faits le 2026-09-30 (NEO-6)
+- [x] **T2.1** : `Neo4j-*.txt` ignoré par git et interdit en lecture (`/update-config`), `scripts/charger.sh` (lit le secret `neo4j-aura-poc` au lancement et n'en passe que les 4 variables `NEO4J_*` à `cypher-shell`, `set +x`, contrôle de sa propre sortie) ([ADR-0007](../../adr/0007-infra-secrets-et-services-geres.md)) ; `.claude/docs/ACCESS.md` et vraie limite (200 000 nœuds, 400 000 relations) faits le 2026-09-30 (NEO-6)
   - DoD : `command_passes: scripts/charger.sh --ping`
 - [ ] **T2.2** : go/no-go étendu, en lecture seule : `languages.csv` (14 lignes), descriptions FR (7 116 lignes, dont 7 115 multilignes), `pokemon_moves.csv` (638 321 lignes), `count(toInteger(trim(row.slot)))` = 2 943 sur `pokemon_abilities.csv` ; `MATCH (t:Type)` accepté sans backticks (`TYPE` est un mot-clé) ; `ALTER DATABASE … SET DEFAULT LANGUAGE CYPHER 25`, contrôlé par `SHOW DATABASES`
   - DoD : `command_passes: scripts/charger.sh --go-no-go`

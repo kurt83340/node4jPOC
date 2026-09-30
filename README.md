@@ -78,11 +78,12 @@ Prérequis : Java 21, `cypher-shell` 2026.09.0, une instance AuraDB Free et `gcl
 ```bash
 git clone https://github.com/kurt83340/node4jPOC.git
 cd node4jPOC
-gcloud auth login      # identifiants lus dans Secret Manager : aucun fichier de secrets
-pre-commit install     # garde-fou secrets : gitleaks avant chaque commit
+gcloud auth login          # identifiants lus dans Secret Manager : aucun fichier de secrets
+pre-commit install         # garde-fou secrets : gitleaks avant chaque commit
+scripts/charger.sh --ping  # Aura répond ? codes retour : 0 oui, 1 injoignable, 2 configuration
 ```
 
-Les scripts de chargement et de vérification (`scripts/charger.sh`, `scripts/verifier.sh`) arrivent avec la spec 001.
+Le chargement complet (`scripts/charger.sh`) et la vérification (`scripts/verifier.sh`) arrivent avec la suite de la spec 001.
 
 ## Contact
 

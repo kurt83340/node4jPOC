@@ -26,7 +26,7 @@ Le POC devient transposable à une entreprise full Google Cloud ; dbt reste hors
 
 Instance créée ; données chargées en Cypher pur (`LOAD CSV`) par un script réexécutable sans doublons ; modèle espèce + formes documenté ; 30 questions de référence ([questions/README.md](../../questions/README.md)) avec leurs réponses attendues, calculées en Cypher. Ces requêtes servent de vérité de référence aux jalons suivants.
 
-- [~] [001-socle-donnees](specs/001-socle-donnees/spec.md) — **EN COURS** 3/16 tasks (démarrée le 2026-09-29)
+- [~] [001-socle-donnees](specs/001-socle-donnees/spec.md) — **EN COURS** 4/16 tasks (démarrée le 2026-09-29)
 
 ## 📋 Jalon 2 — Agent text-to-Cypher via MCP
 
