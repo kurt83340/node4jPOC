@@ -10,9 +10,13 @@
 
 ## Globaux (injectés pour TOUTE édition de code — max 5 lignes)
 
-- ⚠️ {{Piège transversal : ex. les montants sont en centimes int partout — jamais float}}
+_(aucun pour l'instant)_
 
 ## Par zone
 
-- ⚠️ `{{src/module/fichier.py}}` — {{comportement contre-intuitif : ex. l'API renvoie 200 même en erreur, vérifier le body}}
-- ⚠️ `{{src/autre/}}` — {{effet de bord : ex. modifier un fichier de ce dossier invalide le cache de X}}
+- ⚠️ `cypher/06-descriptions.cypher` — les outils d'écriture Write et Edit décodent la séquence
+  d'échappement de l'espace fine insécable U+202F en vrai caractère, invisible : la formule de
+  normalisation semble alors remplacer une espace par une espace. Écrire la séquence littérale via
+  Python (`chr(92) + "u202F"`), puis vérifier que le fichier ne contient aucun `chr(0x202F)`. La
+  formule doit remplacer `\n` ET U+202F ([plan 001, D4](specs/001-socle-donnees/plan.md)) : avec
+  `\n` seul, 5 240 descriptions au lieu de 5 233.

@@ -7,10 +7,15 @@ Format : [Keep a Changelog](https://keepachangelog.com/). Versionning : `vYYYY.M
 ### Added
 
 - Initialisation du projet depuis le template claude-Setup v1.5.0 (2026-09-26)
+- Page d'initiative du POC dans le [README](../../README.md) : objectif, pourquoi, vue d'ensemble, jalons, critères de réussite, périmètre, risques, décisions (2026-09-30)
+- Schéma d'ensemble fait avec diagram-design : source [vue-ensemble.html](conception/diagrams/vue-ensemble.html) et export [vue-ensemble.png](conception/diagrams/vue-ensemble.png) côte à côte, en PNG parce que GitHub ne charge pas les polices d'un SVG affiché en image (2026-09-30)
+- Suivi dans Jira, [projet NEO](https://frjulienleroy.atlassian.net/jira/software/projects/NEO/boards/40) (Kanban géré par l'équipe) : un epic par jalon (NEO-1 à NEO-4) ; pour le jalon 1, un ticket par phase de la spec 001, plus NEO-6 « Créer l'instance AuraDB Free » (NEO-5 à NEO-12) ; une story seulement quand il y a un résultat à montrer ; le dépôt fait foi (2026-09-30)
+- [Dépôt GitHub privé](https://github.com/kurt83340/node4jPOC) `kurt83340/node4jPOC` relié à NEO par l'application GitHub for Atlassian : une clé de ticket dans un message de commit ou un titre de PR fait remonter le travail dans le ticket (2026-09-30)
 
 ### Changed
 
 - Pivot 2026-09-28 : environnement cible Google Cloud, découpage en 6 jalons ([CR](cadrage/reunions/2026-09-28-pivot.md))
+- [Règles git](../rules/git-workflow.md) : clé du ticket Jira à la fin du sujet des commits, clé de l'epic du jalon à la fin du titre des PR, aucune clé dans le nom des branches, commits et PR au seul nom de Julien (2026-09-30)
 
 ### Decided
 
