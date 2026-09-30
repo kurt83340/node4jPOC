@@ -14,6 +14,9 @@ Input stdin :
     "tool_input": {"file_path": "...", "content"/"new_string"/"edits": ...},
     "cwd": "/path/to/project"
   }
+
+Racine du projet : $CLAUDE_PROJECT_DIR (fixe pour la session), sinon "cwd". Le "cwd" suit les
+`cd` des commandes : s'y fier créait un .claude/ parasite dans le sous-dossier courant.
 """
 
 import json
@@ -68,21 +71,24 @@ def main():
             or file_path.endswith(".growth-suggestions.md"):
         sys.exit(0)
 
-    cwd = data.get("cwd", os.getcwd())
-    suggestions_path = Path(cwd) / ".claude" / ".growth-suggestions.md"
-    suggestions_path.parent.mkdir(exist_ok=True, parents=True)
+    # Racine = CLAUDE_PROJECT_DIR, pas le cwd de l'outil (vécu 2026-09-30 : une session restée
+    # dans .claude/docs créait un .claude/docs/.claude/ vide à chaque Edit).
+    root = Path(os.environ.get("CLAUDE_PROJECT_DIR") or data.get("cwd") or os.getcwd()).resolve()
+    suggestions_path = root / ".claude" / ".growth-suggestions.md"
 
-    # Chemin RELATIF au projet (sinon on logge des chemins absolus hors-projet, non actionnables)
+    # Hors du projet (scratchpad, /tmp, ~/.claude/…) : pas du code projet → rien à signaler.
+    # (Vécu 2026-09-30 : un fichier de test d'une skill, loggé sous son seul nom, réclamait un
+    # ACCESS.md au projet.)
     try:
-        rel_source = str(Path(file_path).resolve().relative_to(Path(cwd).resolve()))
-    except Exception:
-        rel_source = os.path.basename(file_path)
+        rel_source = str(Path(file_path).resolve().relative_to(root))
+    except ValueError:
+        sys.exit(0)
 
     detected = []
     for pattern, (target_file, message) in GROWTH_TRIGGERS:
         if pattern.search(content):
             # Check si target_file existe et n'est pas vide
-            target = Path(cwd) / ".claude" / "docs" / target_file
+            target = root / ".claude" / "docs" / target_file
             if not target.exists() or target.stat().st_size < 500:
                 detected.append((target_file, message, rel_source))
 
@@ -118,6 +124,7 @@ def main():
 
 """
         try:
+            suggestions_path.parent.mkdir(exist_ok=True, parents=True)
             suggestions_path.write_text(existing + header + "".join(new_entries), encoding="utf-8")
         except Exception:
             pass
