@@ -8,7 +8,7 @@
 > il « perd le fil » (échecs ×4 constatés en télémétrie, Morph 2026) → découper la phase.
 
 **Date :** 2026-09-28 (revue adverse intégrée)
-**Status :** [~] 12/16 tasks → MAJ au fil de l'eau
+**Status :** [~] 13/16 tasks → MAJ au fil de l'eau
 
 ## Phase 1 — Préparer (sans instance)
 
@@ -48,7 +48,7 @@
 
 - [x] **T5.1** : `cypher/05-attaques.cypher` (919 attaques, type, puissance, catégorie ; `APPREND` agrégé par lots). Vert le 2026-10-01 en 22 s (43 s en relance, empreintes inchangées) ; repli « train » lu dans `pokemon_move_methods` ; journal de `charger.sh --tout` dans `logs/` (heure, durée, statistiques par requête) ; vérification complète : 4 écarts sur 33, tous dus aux descriptions (T5.2)
   - DoD : `command_passes: scripts/verifier.sh --section attaques`
-- [ ] **T5.2** : `cypher/06-descriptions.cypher` (5 233 descriptions normalisées, liste des jeux)
+- [x] **T5.2** : `cypher/06-descriptions.cypher` (5 233 descriptions normalisées, liste des jeux). Séquence `\u202F` écrite par Python (piège du code-map) ; filtre de langue avant les lots de 1 000. Vert le 2026-10-01 en 3,5 s ; relance sans rien créer ; textes sans U+202F, saut de ligne ni espace en bord ; 16 Pokémon citent « volcan ». Graphe complet : 33 contrôles sur 33, 8 859 nœuds et 113 700 relations (4,4 % et 28,4 % de la limite)
   - DoD : `command_passes: scripts/verifier.sh --section descriptions`
 
 ## Phase 6 — Idempotence

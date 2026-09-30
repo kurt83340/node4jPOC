@@ -1,6 +1,6 @@
 ---
 status: in-progress # draft | validated | in-progress | done | parked
-progress: 12/16 # X/Y tasks (compté depuis tasks.md) — MAJ par /feature-done ou à la main
+progress: 13/16 # X/Y tasks (compté depuis tasks.md) — MAJ par /feature-done ou à la main
 ---
 
 # Spec — Socle de données
