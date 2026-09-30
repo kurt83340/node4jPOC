@@ -69,7 +69,7 @@ Ici, les options ne s'excluent pas : le POC les compare toutes sur les mêmes qu
 ### Questions ouvertes initiales
 
 - Espèces ou formes (Méga, Alola…) ? Commencer par les formes par défaut ? → jalon 1 (options de modèle)
-- Vraie limite d'AuraDB Free ? → à la création de l'instance
+- Vraie limite d'AuraDB Free ? → 200 000 nœuds et 400 000 relations, lue le 2026-09-30 ([ACCESS](../ACCESS.md))
 - Descriptions répétées : dédoublonner avant la recherche vectorielle ? → jalon 1 (modèle), jalon 3 (recherche)
 - Quel embedder multilingue ? → jalon 3
 - Les 7 autres questions de référence ? → réglé le 2026-09-29 : 30 questions en 6 catégories ([questions/README.md](../../../questions/README.md))

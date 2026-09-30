@@ -19,7 +19,7 @@ Le POC devient transposable à une entreprise full Google Cloud ; dbt reste hors
 - [x] Faits et sources consignés dans [conception/research.md](conception/research.md) (2026-09-28)
 - [x] [ADR-0001](adr/0001-mvp-jeu-de-donnees-pokeapi.md) — choix du jeu de données : Pokémon, CSV PokéAPI (2026-09-28)
 - [x] Pivot : environnement cible Google Cloud, [ADR-0002](adr/0002-cadrage-environnement-cible-google-cloud.md) (2026-09-28)
-- [ ] Instance AuraDB Free créée, vraie limite notée, identifiants dans `.env`
+- [x] Instance AuraDB Free créée (GCP europe-west1), vraie limite notée, identifiants dans Secret Manager (2026-09-30) → [ACCESS](ACCESS.md)
 - [x] Projet Google Cloud avec compte de facturation : `jleroy-labo`, facturation active (constaté le 2026-09-30)
 
 ## 📋 Jalon 1 — Socle de données (technique 1 : Cypher à la main)
@@ -54,7 +54,7 @@ Instance créée ; données chargées en Cypher pur (`LOAD CSV`) par un script r
 
 ### Risques courants
 
-- Limite réelle d'AuraDB Free inconnue (50 000 nœuds / 175 000 relations, ou 200 000 / 400 000) : à noter à la création
+- Limite d'AuraDB Free : 200 000 nœuds et 400 000 relations (lue le 2026-09-30) ; le graphe prévu en occupe ~5 % et ~28 %
 - Instance Free en pause après 72 h sans activité, supprimée après 30 jours de pause : garder le script de chargement réexécutable
 - Coûts qui tournent en tâche de fond : éteindre Aura Agent exposé, l'agent Agent Runtime (`min_instances=0`) et toute instance Business Critical après chaque session de mesure
 
