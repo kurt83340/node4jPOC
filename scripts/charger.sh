@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Charge le graphe Pokémon dans AuraDB Free (spec 001) : --tout exécute les fichiers de cypher/ dans
-# l'ordre (depuis T4.1). Autour : --ping (T2.1), --go-no-go (T2.2) et --purge (T3.1).
+# l'ordre (depuis T4.1), --idempotence prouve que le chargement est rejouable (T6.1). Autour : --ping
+# (T2.1), --go-no-go (T2.2) et --purge (T3.1).
 #
 # Identifiants, garde-fou de sortie et codes retour communs (0 = succès · 1 = écart constaté ·
 # 2 = erreur technique) : voir commun.sh (ADR-0007).
@@ -21,18 +22,25 @@ readonly DOSSIER_CYPHER
 DOSSIER_JOURNAUX="$(dirname "${BASH_SOURCE[0]}")/../logs"
 readonly DOSSIER_JOURNAUX
 JOURNAL=""
+# Statistiques d'écriture du dernier --tout, une ligne par requête (voir idempotence).
+STATISTIQUES=""
+# Vérification en lecture seule, appelée par --idempotence pour prendre l'empreinte du graphe.
+VERIFIER="$(dirname "${BASH_SOURCE[0]}")/verifier.sh"
+readonly VERIFIER
 ECARTS=0
 NOMS=()
 
 usage() {
   cat <<'EOF'
-Usage : scripts/charger.sh --tout | --ping | --go-no-go | --purge
+Usage : scripts/charger.sh --tout | --idempotence | --ping | --go-no-go | --purge
 
-  --tout       exécute dans l'ordre les fichiers de chargement de cypher/ (00 à 89) ; une relance ne crée rien ;
-               journal dans logs/, à suivre avec tail -f quand le chargement tourne en arrière-plan
-  --ping       vérifie qu'Aura répond, avec les identifiants lus dans Secret Manager
-  --go-no-go   contrôles en lecture seule avant tout chargement (T2.2)
-  --purge      efface tout le graphe, ses contraintes et ses index, pour repartir d'une base vide
+  --tout         exécute dans l'ordre les fichiers de chargement de cypher/ (00 à 89) ; une relance ne crée
+                 rien ; journal dans logs/, à suivre avec tail -f quand le chargement tourne en arrière-plan
+  --idempotence  prouve le chargement rejouable (T6.1) : purge, chargement, vérification, second chargement
+                 qui ne doit rien créer, même vérification ; efface et recharge toute la base
+  --ping         vérifie qu'Aura répond, avec les identifiants lus dans Secret Manager
+  --go-no-go     contrôles en lecture seule avant tout chargement (T2.2)
+  --purge        efface tout le graphe, ses contraintes et ses index, pour repartir d'une base vide
 
 Variables : NEO4J_SECRET (défaut neo4j-aura-poc), GCP_PROJET (défaut jleroy-labo),
 POKEAPI_BASE (défaut : CSV PokéAPI au commit 168b1e8).
@@ -181,6 +189,7 @@ charger() {
   mkdir -p "$DOSSIER_JOURNAUX"
   JOURNAL="$DOSSIER_JOURNAUX/chargement-$(date +%Y%m%d-%H%M%S).log"
   printf 'Journal : logs/%s\n' "${JOURNAL##*/}"
+  STATISTIQUES=""
   for fichier in "${fichiers[@]}"; do
     journal "$(date +%T) ▶ ${fichier##*/}"
     debut="$(centiemes)"
@@ -192,8 +201,64 @@ charger() {
     dixiemes=$((($(centiemes) - debut) / 10))
     journal "$(date +%T) ✓ ${fichier##*/} ($((dixiemes / 10)),$((dixiemes % 10)) s)"
     stats="$(printf '%s\n' "$SORTIE" | sed -nE 's/^(Added|Created|Set|Deleted|Removed) .*/    &/p')"
-    [[ -z "$stats" ]] || journal "$stats"
+    if [[ -n "$stats" ]]; then
+      journal "$stats"
+      STATISTIQUES+="$stats"$'\n'
+    fi
   done
+}
+
+# Empreinte du graphe : la sortie de verifier.sh (les valeurs obtenues de chaque contrôle), sans les durées.
+# verifier.sh ne fait que lire ; son code retour dit si la base est conforme.
+empreinte() {
+  local sortie code=0
+  sortie="$("$VERIFIER" 2>&1)" || code=$?
+  printf '%s\n' "$sortie" | sed -E 's/ \([0-9]+,[0-9] s\)//'
+  return "$code"
+}
+
+# Preuve d'idempotence (T6.1, plan § Tests) : purge, chargement, empreinte, second chargement, même empreinte.
+# Efface et réécrit toute la base : seul charger.sh le peut (code-map) ; verifier.sh, appelé deux fois, ne
+# fait que lire. Idempotent si le second chargement ne crée ni ne supprime rien (ses statistiques n'ont que
+# des SET) et si les deux empreintes sont conformes et identiques.
+idempotence() {
+  local avant apres code_avant=0 code_apres=0 ecarts=0
+  purger
+  charger
+  avant="$(empreinte)" || code_avant=$?
+  printf 'Vérification après le premier chargement : %s\n' "${avant##*$'\n'}"
+  charger
+  apres="$(empreinte)" || code_apres=$?
+  printf 'Vérification après le second chargement : %s\n' "${apres##*$'\n'}"
+  if ((code_avant == 2 || code_apres == 2)); then
+    erreur "vérification impossible"
+    exit 2
+  fi
+  printf '── idempotence\n'
+  if grep -qiE '(created|added|deleted|removed) ' <<<"$STATISTIQUES"; then
+    printf '✗ le second chargement a créé ou supprimé des éléments :\n%s' "$STATISTIQUES"
+    ecarts=$((ecarts + 1))
+  else
+    printf '✓ second chargement : rien de créé ni de supprimé, seulement des SET\n'
+  fi
+  if ((code_avant == 0 && code_apres == 0)); then
+    printf '✓ base conforme après chacun des deux chargements\n'
+  else
+    printf '✗ base non conforme après un chargement (codes %d et %d)\n' "$code_avant" "$code_apres"
+    ecarts=$((ecarts + 1))
+  fi
+  if [[ "$avant" == "$apres" ]]; then
+    printf '✓ empreintes identiques\n'
+  else
+    printf '✗ empreintes différentes :\n'
+    diff <(printf '%s\n' "$avant") <(printf '%s\n' "$apres") || true
+    ecarts=$((ecarts + 1))
+  fi
+  if ((ecarts > 0)); then
+    printf 'NON IDEMPOTENT : %d écart(s).\n' "$ecarts"
+    exit 1
+  fi
+  printf 'IDEMPOTENT : 3 contrôles.\n'
 }
 
 main() {
@@ -203,6 +268,12 @@ main() {
       lire_identifiants
       ping_aura
       charger
+      ;;
+    --idempotence)
+      trouver_outils
+      lire_identifiants
+      ping_aura
+      idempotence
       ;;
     --ping)
       trouver_outils
