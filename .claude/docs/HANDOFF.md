@@ -1,23 +1,23 @@
-# HANDOFF — 2026-09-30 13h41
+# HANDOFF — 2026-09-30 16h29
 
 > Court, narratif, versionné. Patterns techniques → auto-memory. Reprise précise → /resume.
 
-**Branche** : `feature/001-socle-donnees`
-**Spec en cours** : [001-socle-donnees](specs/001-socle-donnees/spec.md) (5/16 tasks, phase 2 terminée)
-**Goal session** : débloquer NEO-6 (instance Aura), puis NEO-7 (ADR-0007, T2.1, T2.2)
+**Branche** : `feature/001-socle-donnees` (poussée, à jour avec GitHub)
+**Spec en cours** : [001-socle-donnees](specs/001-socle-donnees/spec.md) (6/16 tasks, phase 3 terminée)
+**Goal session** : NEO-13 (job de réveil d'Aura), puis NEO-8 (T3.1, vérification d'abord)
 
 ## Status
 
-- ✅ NEO-6 : instance AuraDB Free (GCP europe-west1, 200 000 nœuds et 400 000 relations au plus), identifiants dans le secret `neo4j-aura-poc` ([ACCESS](ACCESS.md))
-- ✅ NEO-7 : ADR-0007 (Secret Manager, plus de `.env` ni de repli Docker) ; `charger.sh --go-no-go` GO (6 contrôles en lecture seule, `shellcheck` propre, aucune fuite même sous `bash -x`)
-- ⏳ Base vide. Sans activité, l'instance se met en pause vers le samedi 3 octobre à 13 h : NEO-13 l'évitera ; sinon `charger.sh --ping` renvoie 2, la relancer depuis la console
+- ✅ NEO-13 : job `reveil-aura` déployé (Cloud Run et Scheduler, `europe-west9`, chaque jour à 9 h) ; exécution manuelle, lancement par Scheduler et e-mail sur échec provoqué vérifiés ([RUNBOOK](RUNBOOK.md)). Reste « En cours » jusqu'à une période creuse de 72 h
+- ✅ NEO-8 (Terminé) : `scripts/verifier.sh` rend 1 sur base vide (31 écarts sur 33) ; `charger.sh --purge` essayée ; fonctions partagées dans `scripts/commun.sh`
+- ✅ `infra/reveil-aura` : 19 tests, ruff, mypy strict ; `shellcheck` propre sur `scripts/`
+- ⏳ Base toujours vide. `Bash(rm:*)` passe de `deny` à `ask` ; PR du template claude-Setup en cours (hors projet)
 
 ## Échecs tentés (à ne pas refaire)
 
-- Normaliser les descriptions avec `\n` seul → 5 240 textes au lieu de 5 233 : remplacer aussi U+202F
-- Préfixer les requêtes par `CYPHER 25` → inutile : la base est déjà en Cypher 25 par défaut (D7)
 - Re-proposer le chargement Python ou le nommage v1 → non : ADR-0003 et ADR-0005
-- Mesurer une durée avec `EPOCHREALTIME` → négative sous WSL2 (recul d'horloge) : lire `/proc/uptime`
+- Normaliser les descriptions avec `\n` seul → 5 240 textes au lieu de 5 233 : remplacer aussi U+202F
+- `RETURN` qui mêle constantes et agrégat → aucune ligne sur base vide : agréger dans un `WITH` sans clé
 
 ## Blocked on
 
@@ -25,16 +25,16 @@
 
 ## Next (par ordre)
 
-1. **NEO-13** (avant samedi 3 octobre, 13 h) : job `reveil-aura` sur Google Cloud (Cloud Scheduler, Cloud Run, alerte par e-mail) ; plan dans le ticket
-2. **NEO-8 puis NEO-9** : T3.1 (`scripts/verifier.sh`, rouge sur base vide ; `charger.sh --purge`), puis la phase 4, validée par `verifier.sh --section`
-3. Idée à mûrir : mises à jour automatiques des données PokéAPI, avec alerting ([idée](idees/2026-09-30-mises-a-jour-des-donnees.md))
+1. **NEO-9, phase 4** : T4.1 `cypher/00-contraintes.cypher`, puis types, Pokémon, formes et talents, chacun validé par `verifier.sh --section` ; trancher en T4.5 et T5.1 les noms en double (18 attaques Z, « Osmose Équine »), que `verifier.sh` attend pour l'instant
+2. NEO-13 : « Terminé » après une période creuse de 72 h, si l'instance est « Running » ; corriger alors le commentaire Jira qui dit « samedi »
+3. Relire et fusionner la PR du template (`rm` en `ask`)
 
 ## Continuation State (machine-readable — grammaire fixe `Clé: valeur`, 1 ligne chacune)
 
 Spec: 001-socle-donnees
-Task: NEO-13 (hors spec), puis T3.1
+Task: T4.1 (NEO-9)
 Fichiers en cours: aucun
 Bloqué sur: rien
-Commande de reprise: scripts/charger.sh --ping, puis NEO-13 (infra/reveil-aura/), puis T3.1 (NEO-8)
+Commande de reprise: scripts/charger.sh --ping, puis scripts/verifier.sh --section contraintes (rouge), puis écrire cypher/00-contraintes.cypher
 
 → **Journal des sessions** (append-only) : [HANDOFF-journal.md](HANDOFF-journal.md) — non auto-chargé.
