@@ -1,0 +1,30 @@
+# Outillage du job reveil-aura (NEO-13). Le script n'a aucune dépendance : l'image Docker ne copie
+# que reveil.py. Tests et contrôles : uv run --directory infra/reveil-aura pytest (puis ruff, mypy).
+[project]
+name = "reveil-aura"
+version = "1.0.0"
+description = "Job Cloud Run qui garde l'instance AuraDB Free éveillée"
+requires-python = ">=3.14"
+dependencies = []
+
+[dependency-groups]
+dev = ["mypy==2.3.1", "pytest==9.1.1", "pytest-cov==7.1.0", "ruff==0.16.9"]
+
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py314"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM", "RUF", "PL", "PTH", "C4", "PIE", "RET", "PERF", "FURB", "ERA"]
+# Nombres magiques des tests, caractères ambigus (texte français)
+ignore = ["PLR2004", "RUF001", "RUF002", "RUF003"]
+
+[tool.mypy]
+strict = true

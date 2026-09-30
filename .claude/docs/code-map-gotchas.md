@@ -30,3 +30,17 @@
 - ⚠️ `scripts/charger.sh` — `dbms.components()` annonce Neo4j « 5.27-aura » quand la console affiche
   2026.09 : ce n'est pas le signe d'un vieux Neo4j. Cypher 25 est disponible et déjà la langue par
   défaut de la base (`SHOW DATABASES`).
+- ⚠️ `infra/reveil-aura/reveil.py` — la Query API d'Aura répond 202 même quand la requête échoue ; seul un
+  refus d'authentification donne 401. Lire `errors` dans le corps, jamais le seul code HTTP
+  ([doc Query API](https://neo4j.com/docs/query-api/current/query/), lue le 2026-09-30).
+- ⚠️ `infra/reveil-aura/reveil.py` — le code vise Python 3.14 : `ruff format` y écrit `except A, B:` sans
+  parenthèses (PEP 758), invalide avant 3.14. L'image et `requires-python` restent en 3.14 ou plus.
+- ⚠️ `infra/reveil-aura/deploy.sh` — gcloud n'a pas de commande GA pour les canaux de notification (composant
+  `beta`) ; `monitoring policies update` attend `--set-notification-channels`, pas `--notification-channels`.
+  Un job Cloud Run n'a ni `--no-build` ni choix du compte de build : le compte Compute par défaut construit, avec
+  `roles/run.builder`, qui met quelques minutes à se propager (premier build refusé le 2026-09-30).
+- ⚠️ `infra/reveil-aura/alerte.json` — un job en échec écrit « Container called exit(N). » en WARNING seulement ;
+  l'échec de l'exécution est l'entrée d'audit `system_event` en ERROR (« Execution … has failed to complete ») :
+  filtrer sur `severity>=ERROR`, pas sur un texte (observé le 2026-09-30). Un extracteur `labelExtractors` sur
+  `jsonPayload.message` a donné « (null) » dans l'e-mail : l'incident peut naître de l'entrée d'audit, qui n'a
+  pas ce champ ; l'e-mail renvoie donc aux journaux.

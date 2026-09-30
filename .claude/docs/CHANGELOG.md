@@ -11,6 +11,7 @@ Format : [Keep a Changelog](https://keepachangelog.com/). Versionning : `vYYYY.M
 - Schéma d'ensemble fait avec diagram-design : source [vue-ensemble.html](conception/diagrams/vue-ensemble.html) et export [vue-ensemble.png](conception/diagrams/vue-ensemble.png) côte à côte, en PNG parce que GitHub ne charge pas les polices d'un SVG affiché en image (2026-09-30)
 - Suivi dans Jira, [projet NEO](https://frjulienleroy.atlassian.net/jira/software/projects/NEO/boards/40) (Kanban géré par l'équipe) : un epic par jalon (NEO-1 à NEO-4) ; pour le jalon 1, un ticket par phase de la spec 001, plus NEO-6 « Créer l'instance AuraDB Free » (NEO-5 à NEO-12) ; une story seulement quand il y a un résultat à montrer ; le dépôt fait foi (2026-09-30)
 - [Dépôt GitHub privé](https://github.com/kurt83340/node4jPOC) `kurt83340/node4jPOC` relié à NEO par l'application GitHub for Atlassian : une clé de ticket dans un message de commit ou un titre de PR fait remonter le travail dans le ticket (2026-09-30)
+- Job `reveil-aura` sur Google Cloud ([`infra/reveil-aura/`](../../infra/reveil-aura/), NEO-13) : Cloud Scheduler lance chaque jour à 9 h un job Cloud Run qui envoie `RETURN 1` à Aura, pour que l'instance Free ne se mette pas en pause ; toute erreur envoie un e-mail (alerte Cloud Monitoring sur journaux). Exploitation : [RUNBOOK](RUNBOOK.md) (2026-09-30)
 
 ### Changed
 

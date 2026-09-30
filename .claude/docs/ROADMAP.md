@@ -27,7 +27,7 @@ Le POC devient transposable à une entreprise full Google Cloud ; dbt reste hors
 Instance créée ; données chargées en Cypher pur (`LOAD CSV`) par un script réexécutable sans doublons ; modèle espèce + formes documenté ; 30 questions de référence ([questions/README.md](../../questions/README.md)) avec leurs réponses attendues, calculées en Cypher. Ces requêtes servent de vérité de référence aux jalons suivants.
 
 - [~] [001-socle-donnees](specs/001-socle-donnees/spec.md) — **EN COURS** 5/16 tasks (démarrée le 2026-09-29)
-- [ ] Garder l'instance Aura éveillée : job planifié `reveil-aura` et alerte par e-mail sur Google Cloud (NEO-13)
+- [~] Garder l'instance Aura éveillée : job planifié `reveil-aura` et alerte par e-mail sur Google Cloud (NEO-13) — **EN COURS** : déployé et testé le 2026-09-30 ; à passer terminé le 2026-10-03 si l'instance est toujours « Running » (72 h)
 
 ## 📋 Jalon 2 — Agent text-to-Cypher via MCP
 
@@ -56,7 +56,7 @@ Instance créée ; données chargées en Cypher pur (`LOAD CSV`) par un script r
 ### Risques courants
 
 - Limite d'AuraDB Free : 200 000 nœuds et 400 000 relations (lue le 2026-09-30) ; le graphe prévu en occupe ~5 % et ~28 %
-- Instance Free en pause après 72 h sans activité, supprimée après 30 jours de pause : garder le script de chargement réexécutable ; un job de réveil quotidien est prévu (NEO-13)
+- Instance Free en pause après 72 h sans activité, supprimée après 30 jours de pause : garder le script de chargement réexécutable ; le job de réveil quotidien `reveil-aura` l'évite (NEO-13)
 - Coûts qui tournent en tâche de fond : éteindre Aura Agent exposé, l'agent Agent Runtime (`min_instances=0`) et toute instance Business Critical après chaque session de mesure
 
 ## 🚫 Hors POC

@@ -8,13 +8,13 @@
 
 ## Checklist
 
-| Accès                       | État              | 🔒 Où le trouver                                                         |
-| --------------------------- | ----------------- | ------------------------------------------------------------------------ |
-| Projet Google Cloud du POC  | ✅                | `jleroy-labo`, facturation active                                        |
-| Console Aura                | ✅ 2026-09-30     | https://console.neo4j.io, connexion Google avec fr.julienleroy@gmail.com |
-| Instance AuraDB Free        | ✅ 2026-09-30     | console Aura → Instances → « Free instance »                             |
-| Identifiants de l'instance  | ✅ 2026-09-30     | secret `neo4j-aura-poc` du projet `jleroy-labo`                          |
-| Job de réveil `reveil-aura` | ⏳ prévu (NEO-13) | projet `jleroy-labo`, compte de service qui ne lit que `neo4j-aura-poc`  |
+| Accès                       | État          | 🔒 Où le trouver                                                                             |
+| --------------------------- | ------------- | -------------------------------------------------------------------------------------------- |
+| Projet Google Cloud du POC  | ✅            | `jleroy-labo`, facturation active                                                            |
+| Console Aura                | ✅ 2026-09-30 | https://console.neo4j.io, connexion Google avec fr.julienleroy@gmail.com                     |
+| Instance AuraDB Free        | ✅ 2026-09-30 | console Aura → Instances → « Free instance »                                                 |
+| Identifiants de l'instance  | ✅ 2026-09-30 | secret `neo4j-aura-poc` du projet `jleroy-labo`                                              |
+| Job de réveil `reveil-aura` | ✅ 2026-09-30 | projet `jleroy-labo` (`europe-west9`), compte `reveil-aura`, qui ne lit que `neo4j-aura-poc` |
 
 ## Instance AuraDB Free (NEO-6)
 
@@ -36,8 +36,8 @@
 - L'utilisateur **et** la base portent l'identifiant de l'instance, pas `neo4j` : lire `NEO4J_USERNAME` et
   `NEO4J_DATABASE`, ne jamais coder `neo4j` en dur.
 - Pause automatique après 72 h sans activité, suppression après 30 jours de pause : la relancer depuis
-  le menu de l'instance, sinon la recréer (ci-dessous) et tout recharger. Le job `reveil-aura` (NEO-13)
-  doit l'éviter.
+  le menu de l'instance, sinon la recréer (ci-dessous) et tout recharger. Le job `reveil-aura` l'évite
+  (ci-dessous).
 - Mot de passe perdu : menu de l'instance → « Recover Database Credentials », avant de penser à recréer.
 
 ## Secret `neo4j-aura-poc`
@@ -51,6 +51,32 @@
   script qui s'en sert, sans afficher la sortie.
 - Dépôt du 2026-09-30 : version 1, depuis le fichier téléchargé par le Chrome piloté, jamais ouvert, puis
   supprimé.
+
+## Job `reveil-aura` (NEO-13)
+
+Déployé le 2026-09-30 par [`infra/reveil-aura/deploy.sh`](../../infra/reveil-aura/deploy.sh), réexécutable ;
+exploitation : [RUNBOOK](RUNBOOK.md).
+
+- **Compte de service** `reveil-aura@jleroy-labo.iam.gserviceaccount.com` : `roles/secretmanager.secretAccessor`
+  sur le seul secret `neo4j-aura-poc`, et `roles/run.invoker` sur le seul job, pour que Cloud Scheduler le lance.
+- **Job Cloud Run** `reveil-aura`, région `europe-west9` : le secret y est monté en fichier
+  (`/secrets/neo4j-aura-poc`, version `latest`, relue à chaque exécution) ; le script n'en journalise rien.
+- **Cloud Scheduler** `reveil-aura`, même région : chaque jour à 9 h (`Europe/Paris`), avec un jeton OAuth du
+  compte ci-dessus ; 2 reprises si l'appel à Cloud Run échoue.
+- **Alerte** « reveil-aura : réveil d'Aura en échec » (Cloud Monitoring, condition sur journaux) et canal e-mail
+  vers fr.julienleroy@gmail.com, actif sans vérification ; expéditeur `alerting-noreply@google.com`.
+- **Construction de l'image** : Cloud Build, sous le compte Compute Engine par défaut
+  `848118418359-compute@developer.gserviceaccount.com`, créé à l'activation de Cloud Run. Il a `roles/editor`,
+  posé par Google (projet sans organisation), et `roles/run.builder`, posé par `deploy.sh`. Image dans le dépôt
+  Artifact Registry `cloud-run-source-deploy` (les 2 dernières versions sont gardées), sources dans le bucket
+  `run-sources-jleroy-labo-europe-west9`.
+- **Poste local** : composant `beta` de gcloud, installé le 2026-09-30 ; seul `beta` sait créer un canal e-mail.
+
+⚠️ **Pièges**
+
+- Premier déploiement : le build a échoué, le rôle `run.builder` posé une minute plus tôt n'étant pas encore
+  propagé. Relancer `deploy.sh` a suffi.
+- Un compte de service tout juste créé met quelques secondes à être visible de l'IAM : `deploy.sh` réessaie.
 
 ## Recréer l'instance
 

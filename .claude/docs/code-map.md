@@ -18,14 +18,15 @@
 ## Vue d'ensemble (macro — sous-systèmes, pas fichiers)
 
 ```
-Secret Manager ─► scripts/ ─► cypher-shell ─► AuraDB Free ◄─ LOAD CSV ─ CSV PokéAPI (commit figé)
-                     │
-                     ├─ cypher/     00 → 06 : chargement · 90 : vérification
-                     └─ questions/  banc d'essai : requêtes et réponses de référence (jalons 1 à 4)
+Secret Manager ─┬─► scripts/ ─► cypher-shell ─► AuraDB Free ◄─ LOAD CSV ─ CSV PokéAPI (commit figé)
+                │      ├─ cypher/     00 → 06 : chargement · 90 : vérification
+                │      └─ questions/  banc d'essai : requêtes et réponses de référence (jalons 1 à 4)
+                └─► infra/reveil-aura/ ─► Query API ─► AuraDB Free (RETURN 1 quotidien, alerte e-mail)
 ```
 
 → Orientation rapide : chargement → `cypher/NN-*.cypher` (ordre fixe : [ARCHITECTURE § 3](conception/ARCHITECTURE.md)) ;
-identifiants, purge, codes retour → `scripts/` ; banc d'essai → `questions/`. `cypher/` et `questions/qNN.cypher` : à venir (T3.1 à T7.1).
+identifiants, purge, codes retour → `scripts/` ; banc d'essai → `questions/` ; réveil quotidien d'Aura et
+son alerte → `infra/reveil-aura/` (job Cloud Run, [RUNBOOK](RUNBOOK.md)). `cypher/` et `questions/qNN.cypher` : à venir (T3.1 à T7.1).
 Le détail fichier-par-fichier se découvre à la demande (`grep`, lecture) — pas ici.
 
 ## Règles de couplage (⭐ le cœur — non déductible du code)
@@ -37,11 +38,14 @@ Le détail fichier-par-fichier se découvre à la demande (`grep`, lecture) — 
   `$base` (`cypher-shell -P`, plan 001 D1) ; utilisateur et base valent l'identifiant de l'instance, lus dans le secret.
 - ❌ Aucun chargement hors Cypher pur : ni Python, ni driver, ni CSV pré-traité hors Neo4j
   ([ADR-0003](adr/0003-mvp-chargement-cypher-pur.md)) ; tout écart passe par Julien (circuit breaker du plan 001).
-- ✅ Seul `scripts/` lit les identifiants : secret lu au lancement, les 4 `NEO4J_*` passés par l'environnement
-  (`scripts/charger.sh:65`), jamais en argument ni sur le disque ; toute sortie de `cypher-shell` passe par
-  `filtrer` (`scripts/charger.sh:82`, [ADR-0007](adr/0007-infra-secrets-et-services-geres.md)).
+- ✅ Seuls `scripts/` (poste local) et `infra/reveil-aura/` (Cloud Run) lisent les identifiants
+  ([ADR-0007](adr/0007-infra-secrets-et-services-geres.md)). `scripts/` : secret lu au lancement, les 4 `NEO4J_*`
+  passés par l'environnement (`scripts/charger.sh:65`), jamais en argument ni sur le disque ; toute sortie de
+  `cypher-shell` passe par `filtrer` (`scripts/charger.sh:82`). Le job : secret monté en fichier par Cloud Run,
+  sous un compte qui ne lit que lui ; tout message passe par `masquer` (`infra/reveil-aura/reveil.py:161`).
 - ✅ Seul le chargement (purge comprise) écrit dans la base : go/no-go, vérification et techniques du banc
-  d'essai lisent (`--access-mode read`, `scripts/charger.sh:129`) ; exception prévue : la mémoire d'agent (jalon 5).
+  d'essai lisent (`--access-mode read`, `scripts/charger.sh:129`), le réveil quotidien aussi (`accessMode: Read`,
+  `infra/reveil-aura/reveil.py:119`) ; exception prévue : la mémoire d'agent (jalon 5).
 
 ## Intention & décisions locales
 
