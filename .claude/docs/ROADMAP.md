@@ -49,7 +49,7 @@ Instance créée ; données chargées en Cypher pur (`LOAD CSV`) par un script r
 ## 💡 Jalon 6 (option) — Briques data Google Cloud
 
 - [ ] Aura Graph Analytics avec BigQuery (gratuit sur Free)
-- [ ] CDC → Pub/Sub (en local d'abord ; Business Critical à l'heure si besoin)
+- [ ] CDC → Pub/Sub, sur une instance Business Critical louée à l'heure (plus de local : [ADR-0007](adr/0007-infra-secrets-et-services-geres.md))
 - [ ] Virtual Graph, si le prix horaire affiché par la console se confirme
 
 ### Risques courants

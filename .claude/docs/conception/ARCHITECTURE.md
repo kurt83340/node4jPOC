@@ -16,7 +16,7 @@
 │ CSV PokéAPI (GitHub)     │ ─────────────────► │ AuraDB Free (Google      │
 │ commit figé 168b1e8      │   côté serveur     │ Cloud), Cypher 25        │
 └──────────────────────────┘                    └────────────▲─────────────┘
-┌──────────────────────────┐  cypher-shell (.env)           │
+┌──────────────────────────┐  cypher-shell (Secret Manager) │
 │ scripts/charger.sh       │ ───────────────────────────────┤
 │ scripts/verifier.sh      │                                │ interrogé par
 └──────────────────────────┘                                │
@@ -124,7 +124,7 @@ Total attendu : **8 859 nœuds et 113 700 relations**.
 
 ## 6. Sécurité
 
-- Identifiants Aura dans `.env` (gitignoré, illisible par Claude) ; `charger.sh` n'en lit que 4 variables, jamais affichées. Le fichier `Neo4j-*.txt` téléchargé depuis Aura est ignoré par git et interdit en lecture.
+- Identifiants Aura dans Secret Manager (secret `neo4j-aura-poc`, [ADR-0007](../adr/0007-infra-secrets-et-services-geres.md)) : `charger.sh` les lit au lancement et n'en passe que 4 variables à `cypher-shell`, jamais affichées ni écrites sur le disque. Le fichier `Neo4j-*.txt` téléchargé depuis Aura ne fait que transiter : ignoré par git, interdit en lecture, supprimé après le dépôt.
 - Les CSV ne sont ni copiés dans le dépôt ni republiés (univers Pokémon © Nintendo, [ADR-0001](../adr/0001-mvp-jeu-de-donnees-pokeapi.md)).
 - Les techniques du banc d'essai lisent la base en lecture seule quand l'outil le permet (mode lecture seule de `neo4j/mcp`, par exemple).
 

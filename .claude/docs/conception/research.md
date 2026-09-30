@@ -78,7 +78,7 @@ Ici, les options ne s'excluent pas : le POC les compare toutes sur les mêmes qu
 
 - Textes en français uniquement (`language_id = 5`).
 - Les 18 types classiques.
-- AuraDB Free d'abord (Aura Agent en a besoin), Docker local en repli.
+- AuraDB Free d'abord (Aura Agent en a besoin), Docker local en repli. → Plus de repli local depuis l'[ADR-0007](../adr/0007-infra-secrets-et-services-geres.md) (2026-09-30).
 - Chargement idempotent : relancer le script ne crée pas de doublons.
 
 ### Décisions issues du brainstorm

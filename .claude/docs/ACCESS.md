@@ -1,7 +1,8 @@
 # Accès — node4jPOC
 
 > Checklist des accès du POC : ✅ obtenu · ⏳ en attente · 🔒 où le trouver. **Jamais une valeur ici** :
-> les secrets vivent dans GCP Secret Manager, lus au moment de servir, jamais affichés ni écrits sur le disque.
+> les secrets vivent dans GCP Secret Manager, lus au moment de servir, jamais affichés ni écrits sur le disque
+> ([ADR-0007](adr/0007-infra-secrets-et-services-geres.md)).
 
 **Dernière MAJ :** 2026-09-30
 
@@ -53,5 +54,6 @@
 
 1. Console Aura → « Create instance » → AuraDB Free ; télécharger le fichier d'identifiants hors du dépôt.
 2. `gcloud secrets versions add neo4j-aura-poc --project=jleroy-labo --data-file=<fichier>`, puis
-   `gcloud secrets versions disable <ancienne version> --secret=neo4j-aura-poc --project=jleroy-labo`.
+   `gcloud secrets versions destroy <ancienne version> --secret=neo4j-aura-poc --project=jleroy-labo` une fois la
+   nouvelle vérifiée : une version seulement désactivée reste facturée comme active.
 3. Supprimer le fichier, relancer le chargement complet, puis noter ici la date et la limite lue.

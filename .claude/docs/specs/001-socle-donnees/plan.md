@@ -17,7 +17,7 @@ GitHub : CSV PokéAPI au commit 168b1e8  (URL de base = paramètre $base)
         ▼
 scripts/charger.sh ──► cypher-shell ──► AuraDB Free (Cypher 25 par défaut)
   --ping · --go-no-go · --purge          exécute cypher/00 → 06 dans l'ordre,
-  (4 variables lues dans .env)           en arrière-plan, journal par fichier
+  (4 variables lues dans Secret Manager) en arrière-plan, journal par fichier
 scripts/verifier.sh ──► cypher/90-verification.cypher
   codes retour : 0 = conforme · 1 = écart · 2 = erreur technique
 scripts/questions.sh ──► questions/qNN.cypher ──► questions/attendu/qNN.txt
@@ -53,9 +53,9 @@ Modèle v2 (notation Cypher ; validé le 2026-09-29, détail dans [ARCHITECTURE 
 | `scripts/verifier.sh`                                                            | nouveau | comptes, empreintes, limite de l'instance ; codes retour 0 / 1 / 2 ; option `--idempotence`                                       |
 | `scripts/questions.sh`                                                           | nouveau | rejoue les 27 requêtes et compare aux réponses enregistrées                                                                       |
 | `questions/README.md`, `questions/qNN.cypher`, `questions/attendu/qNN.txt`       | nouveau | le banc d'essai : question, technique visée, requête, réponse attendue                                                            |
-| `.env.example`, `.gitignore`                                                     | modif   | 4 variables `NEO4J_*` sans valeur ; `Neo4j-*.txt` ignoré                                                                          |
+| `.gitignore`                                                                     | modif   | `Neo4j-*.txt` ignoré ; plus de `.env.example` ([ADR-0007](../../adr/0007-infra-secrets-et-services-geres.md))                     |
 | `.claude/settings.json`                                                          | modif   | lecture de `Neo4j-*.txt` interdite (via `/update-config`)                                                                         |
-| `.claude/docs/ACCESS.md`                                                         | nouveau | où récupérer les identifiants Aura (jamais leur valeur)                                                                           |
+| `.claude/docs/ACCESS.md`                                                         | nouveau | fait au NEO-6 : où sont les identifiants Aura (jamais leur valeur)                                                                |
 | `.claude/docs/conception/ARCHITECTURE.md`                                        | modif   | § 1 schéma du modèle, § 5 correspondance CSV → graphe (dès T1.2)                                                                  |
 | `.claude/docs/code-map.md`, `.claude/docs/stack.md`, `README.md` (section Stack) | modif   | vue macro et règles de couplage ; Neo4j, Cypher 25, cypher-shell, commit PokéAPI                                                  |
 
@@ -164,9 +164,9 @@ CSV lus (commit figé) : `languages`, `types`, `type_names`, `type_efficacy`, `p
 
 ## Sécurité
 
-- `charger.sh` n'exécute pas `.env` : il en extrait seulement `NEO4J_URI`, `NEO4J_USERNAME`, `NEO4J_PASSWORD` et `NEO4J_DATABASE`, que `cypher-shell` lit tout seul dans l'environnement. Jamais en argument de commande, `set +x`, jamais `--debug`, et le script vérifie que le mot de passe n'apparaît pas dans sa propre sortie.
+- `charger.sh` lit le secret `neo4j-aura-poc` au lancement (`gcloud secrets versions access`, [ADR-0007](../../adr/0007-infra-secrets-et-services-geres.md)) sans l'écrire sur le disque, et n'exporte que `NEO4J_URI`, `NEO4J_USERNAME`, `NEO4J_PASSWORD` et `NEO4J_DATABASE`, que `cypher-shell` lit tout seul dans l'environnement. Jamais en argument de commande, `set +x`, jamais `--debug`, et le script vérifie que le mot de passe n'apparaît pas dans sa propre sortie.
 - Le fichier d'identifiants téléchargé depuis Aura (`Neo4j-*.txt`) est ignoré par git et sa lecture est interdite à Claude.
-- `.env.example` ne contient que les noms des variables ; `ACCESS.md` dit où récupérer le fichier d'identifiants.
+- Plus de `.env` ni de `.env.example` : `ACCESS.md` dit où sont les identifiants et comment recréer le secret.
 - Les CSV ne sont pas copiés dans le dépôt, ni republiés (univers Pokémon © Nintendo, ADR-0001).
 - gitleaks en pre-commit.
 

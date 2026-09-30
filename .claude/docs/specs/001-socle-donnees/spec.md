@@ -28,7 +28,7 @@ Un graphe Pokémon fiable dans AuraDB, chargé par un script réexécutable, et 
 
 - [ ] Le script charge les nœuds et relations du modèle retenu, depuis un commit PokéAPI figé ([ADR-0001](../../adr/0001-mvp-jeu-de-donnees-pokeapi.md)).
 - [ ] Une 2e exécution ne crée aucun doublon : mêmes nombres de nœuds et de relations.
-- [ ] Les identifiants sont lus dans `.env`, jamais affichés ni committés.
+- [ ] Les identifiants sont lus dans Secret Manager au lancement, jamais affichés, écrits sur le disque ni committés ([ADR-0007](../../adr/0007-infra-secrets-et-services-geres.md)).
 
 ### US2 — Documenter le modèle
 
@@ -75,7 +75,7 @@ Un graphe Pokémon fiable dans AuraDB, chargé par un script réexécutable, et 
 
 ## Dépendances
 
-- Instance AuraDB Free créée et identifiants dans `.env` (action de Julien).
+- Instance AuraDB Free créée et identifiants dans Secret Manager : fait le 2026-09-30 (NEO-6).
 - [ADR-0001](../../adr/0001-mvp-jeu-de-donnees-pokeapi.md) : jeu de données PokéAPI.
 
 ## Liens
