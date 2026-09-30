@@ -17,6 +17,10 @@ readonly BASE="${POKEAPI_BASE:-https://raw.githubusercontent.com/PokeAPI/pokeapi
 # Fichiers de chargement : cypher/00 à 89, exécutés dans l'ordre de leur numéro ; 90 et au-delà vérifient.
 DOSSIER_CYPHER="$(dirname "${BASH_SOURCE[0]}")/../cypher"
 readonly DOSSIER_CYPHER
+# Journaux de chargement : logs/ (ignoré par git), un fichier par lancement de --tout.
+DOSSIER_JOURNAUX="$(dirname "${BASH_SOURCE[0]}")/../logs"
+readonly DOSSIER_JOURNAUX
+JOURNAL=""
 ECARTS=0
 NOMS=()
 
@@ -24,7 +28,8 @@ usage() {
   cat <<'EOF'
 Usage : scripts/charger.sh --tout | --ping | --go-no-go | --purge
 
-  --tout       exécute dans l'ordre les fichiers de chargement de cypher/ (00 à 89) ; une relance ne crée rien
+  --tout       exécute dans l'ordre les fichiers de chargement de cypher/ (00 à 89) ; une relance ne crée rien ;
+               journal dans logs/, à suivre avec tail -f quand le chargement tourne en arrière-plan
   --ping       vérifie qu'Aura répond, avec les identifiants lus dans Secret Manager
   --go-no-go   contrôles en lecture seule avant tout chargement (T2.2)
   --purge      efface tout le graphe, ses contraintes et ses index, pour repartir d'une base vide
@@ -156,25 +161,38 @@ purger() {
   printf '✓ Purge : %s supprimés, puis %d contrainte(s) et %d index.\n' "$avant" "$contraintes" "$index"
 }
 
+# Journal (plan, § Observabilité) : chaque ligne s'affiche et s'ajoute au fichier du lancement. L'heure murale
+# situe les lignes ; les durées viennent de centiemes, car l'horloge de WSL2 recule par à-coups.
+journal() {
+  printf '%s\n' "$@" | tee -a "$JOURNAL"
+}
+
 # Écrit : exécute dans l'ordre les fichiers de chargement, avec $base en paramètre. Chacun est idempotent
 # (MERGE sur une clé contrainte, IF NOT EXISTS) : une relance ne crée rien, et après une coupure on relance
-# tout. Au premier fichier en erreur, arrêt : les suivants dépendent de lui.
+# tout. Au premier fichier en erreur, arrêt : les suivants dépendent de lui. Par fichier, le journal garde
+# l'heure de début, la durée et les statistiques d'écriture de cypher-shell (une ligne par requête).
 charger() {
-  local fichier debut dixiemes
+  local fichier debut dixiemes stats
   local fichiers=("$DOSSIER_CYPHER"/[0-8][0-9]-*.cypher)
   if [[ ! -f "${fichiers[0]}" ]]; then
     erreur "aucun fichier de chargement dans cypher/"
     exit 2
   fi
+  mkdir -p "$DOSSIER_JOURNAUX"
+  JOURNAL="$DOSSIER_JOURNAUX/chargement-$(date +%Y%m%d-%H%M%S).log"
+  printf 'Journal : logs/%s\n' "${JOURNAL##*/}"
   for fichier in "${fichiers[@]}"; do
+    journal "$(date +%T) ▶ ${fichier##*/}"
     debut="$(centiemes)"
-    if ! cypher_fichier "$fichier" -P "{base: '$BASE'}"; then
+    if ! cypher_fichier "$fichier" --format verbose -P "{base: '$BASE'}"; then
+      journal "$(date +%T) ✗ ${fichier##*/}" "$SORTIE" >&2
       erreur "chargement arrêté à ${fichier##*/}"
-      printf '%s\n' "$SORTIE" >&2
       exit 2
     fi
     dixiemes=$((($(centiemes) - debut) / 10))
-    printf '✓ %s (%d,%d s)\n' "${fichier##*/}" $((dixiemes / 10)) $((dixiemes % 10))
+    journal "$(date +%T) ✓ ${fichier##*/} ($((dixiemes / 10)),$((dixiemes % 10)) s)"
+    stats="$(printf '%s\n' "$SORTIE" | sed -nE 's/^(Added|Created|Set|Deleted|Removed) .*/    &/p')"
+    [[ -z "$stats" ]] || journal "$stats"
   done
 }
 
