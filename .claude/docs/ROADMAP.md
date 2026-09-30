@@ -4,7 +4,7 @@
 > **Plan détaillé** (phases, DoD) → le `tasks.md` de chaque spec ; pas de plan macro séparé ([conception/tasks.md](conception/tasks.md)).
 > MAJ à chaque session ou via `/feature-done`.
 
-**Dernière MAJ :** 2026-09-29
+**Dernière MAJ :** 2026-09-30
 
 ## 🔄 Pivot 2026-09-28 — Environnement cible Google Cloud
 
@@ -20,7 +20,7 @@ Le POC devient transposable à une entreprise full Google Cloud ; dbt reste hors
 - [x] [ADR-0001](adr/0001-mvp-jeu-de-donnees-pokeapi.md) — choix du jeu de données : Pokémon, CSV PokéAPI (2026-09-28)
 - [x] Pivot : environnement cible Google Cloud, [ADR-0002](adr/0002-cadrage-environnement-cible-google-cloud.md) (2026-09-28)
 - [ ] Instance AuraDB Free créée, vraie limite notée, identifiants dans `.env`
-- [ ] Projet Google Cloud avec compte de facturation (avant le jalon 2)
+- [x] Projet Google Cloud avec compte de facturation : `jleroy-labo`, facturation active (constaté le 2026-09-30)
 
 ## 📋 Jalon 1 — Socle de données (technique 1 : Cypher à la main)
 
