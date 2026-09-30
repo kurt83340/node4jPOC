@@ -8,7 +8,7 @@
 > il « perd le fil » (échecs ×4 constatés en télémétrie, Morph 2026) → découper la phase.
 
 **Date :** 2026-09-28 (revue adverse intégrée)
-**Status :** [~] 7/16 tasks → MAJ au fil de l'eau
+**Status :** [~] 8/16 tasks → MAJ au fil de l'eau
 
 ## Phase 1 — Préparer (sans instance)
 
@@ -35,7 +35,7 @@
 
 - [x] **T4.1** : `cypher/00-contraintes.cypher` (unicité de `id` pour 5 labels, chaque contrainte avec son index ; index RANGE sur `nom` ; `IF NOT EXISTS` et noms explicites) et `scripts/charger.sh --tout` (fichiers `cypher/00` à `89` dans l'ordre, arrêt à la première erreur). Vert le 2026-09-30 ; relance sans effet, cycle `--purge` puis `--tout` essayé ; vérification complète : 29 écarts sur 33
   - DoD : `command_passes: scripts/verifier.sh --section contraintes`
-- [ ] **T4.2** : `cypher/01-types.cypher` (18 types, 120 efficacités)
+- [x] **T4.2** : `cypher/01-types.cypher` (18 types, 120 efficacités ; noms FR ; type de relation dynamique `$(…)` calculé par un `CASE` sur le pourcentage, un pourcentage inattendu arrête le chargement). Vert le 2026-09-30 ; relance sans effet ; Roche seul à ×4 contre Feu + Vol (Q1) ; vérification complète : 23 écarts sur 33
   - DoD : `command_passes: scripts/verifier.sh --section types`
 - [ ] **T4.3** : `cypher/02-pokemon.cypher` (1 025 Pokémon, noms et catégories ; 484 `EVOLUE_EN` en seconde passe)
   - DoD : `command_passes: scripts/verifier.sh --section pokemon`
