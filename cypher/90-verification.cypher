@@ -4,7 +4,8 @@
 // Valeurs attendues calculées le 2026-09-30 depuis les CSV du commit PokéAPI 168b1e8, par LOAD CSV en
 // lecture seule, jamais depuis le graphe : un autre commit donne d'autres valeurs (ADR-0001).
 // Noms en double hérités des données : 18 attaques Z génériques (variantes physique et spéciale d'un
-// même nom) et un talent (« Osmose Équine », variantes Blizzeval et Spectreval).
+// même nom), un talent (« Osmose Équine », variantes Blizzeval et Spectreval) et deux noms de formes
+// (« Zygarde Forme 10 % », avec ou sans Rassemblement ; « Méga-Mistigrix », mâle et femelle).
 // Empreintes (sommes des rangs, des stats, des tailles de listes) : elles changent si une relance fait
 // grossir une liste sans changer les comptes.
 // Chaque contrôle agrège dans un WITH sans clé : une base vide donne une ligne à 0, pas une ligne absente.
@@ -108,7 +109,7 @@ CALL () {
   UNION ALL
   MATCH (n:Forme)
   WITH count(n.nom) AS c, count(DISTINCT n.nom) AS d
-  RETURN 'formes' AS section, 'noms (renseignés, en double)' AS controle, '1351, 0' AS attendu,
+  RETURN 'formes' AS section, 'noms (renseignés, en double)' AS controle, '1351, 2' AS attendu,
     toString(c) + ', ' + toString(c - d) AS obtenu
   UNION ALL
   MATCH (n:Talent)
