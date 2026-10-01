@@ -1,0 +1,7 @@
+// PokéAPI 168b1e89467054cda2e7df43ccebbb69b459497a · q20.cypher
+pokemon, attaquesRoche
+"Tarinor", 15
+"Tarinorme", 15
+"Gigansel", 14
+"Onix", 14
+"Steelix", 14

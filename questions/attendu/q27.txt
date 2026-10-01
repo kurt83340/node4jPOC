@@ -1,0 +1,7 @@
+// PokéAPI 168b1e89467054cda2e7df43ccebbb69b459497a · q27.cypher
+attaque, type, puissance, precision, multiplicateur, puissanceEffective
+"Élecanon", "Électrik", 120, 50, 2.0, 240.0
+"Électacle", "Électrik", 120, 100, 2.0, 240.0
+"Fatal-Foudre", "Électrik", 110, 70, 2.0, 220.0
+"Tonnerre", "Électrik", 90, 100, 2.0, 180.0
+"Éclair Fou", "Électrik", 90, 100, 2.0, 180.0

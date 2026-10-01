@@ -14,7 +14,7 @@ set +x
 source "$(dirname "${BASH_SOURCE[0]}")/commun.sh"
 
 # CSV PokéAPI au commit figé (ADR-0001). POKEAPI_BASE sert au repli prévu par le plan (URL signée Cloud Storage).
-readonly BASE="${POKEAPI_BASE:-https://raw.githubusercontent.com/PokeAPI/pokeapi/168b1e89467054cda2e7df43ccebbb69b459497a/data/v2/csv}"
+readonly BASE="${POKEAPI_BASE:-https://raw.githubusercontent.com/PokeAPI/pokeapi/$COMMIT_POKEAPI/data/v2/csv}"
 # Fichiers de chargement : cypher/00 à 89, exécutés dans l'ordre de leur numéro ; 90 et au-delà vérifient.
 DOSSIER_CYPHER="$(dirname "${BASH_SOURCE[0]}")/../cypher"
 readonly DOSSIER_CYPHER

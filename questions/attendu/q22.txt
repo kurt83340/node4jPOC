@@ -1,0 +1,3 @@
+// PokéAPI 168b1e89467054cda2e7df43ccebbb69b459497a · q22.cypher
+type
+"Spectre"

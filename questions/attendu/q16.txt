@@ -1,0 +1,13 @@
+// PokéAPI 168b1e89467054cda2e7df43ccebbb69b459497a · q16.cypher
+pokemon, ensemble, raison
+"Dracolosse", "obligatoire", "fait le tour de la planète en seize heures"
+"Arcanin", "écarté", "10 000 km en 24 heures : un quart du tour de la Terre"
+"Cotovol", "écarté", "fait le tour du globe au gré des vents, sans durée"
+"Entei", "écarté", "parcourt le monde, sans en faire le tour"
+"Hoothoot", "écarté", "sent la rotation de la planète"
+"Keldeo", "écarté", "parcourt le monde, sans en faire le tour"
+"Nirondelle", "écarté", "300 km par jour : bien loin du tour de la Terre"
+"Registeel", "écarté", "viendrait d’une autre planète"
+"Scorvol", "écarté", "peut faire le tour du monde en planant, sans durée"
+"Steelix", "écarté", "creuse vers le centre de la planète"
+"Togetic", "écarté", "parcourt le monde, sans en faire le tour"

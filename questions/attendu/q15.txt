@@ -1,0 +1,5 @@
+// PokéAPI 168b1e89467054cda2e7df43ccebbb69b459497a · q15.cypher
+pokemon, stade, formes
+"Pichu", 1, ["Pichu"]
+"Pikachu", 2, ["Pikachu", "Pikachu Casquette Monde", "Pikachu Casquette Originale", "Pikachu Casquette Partenaire", "Pikachu Casquette de Hoenn", "Pikachu Casquette de Kalos", "Pikachu Casquette de Sinnoh", "Pikachu Casquette d’Alola", "Pikachu Casquette d’Unys", "Pikachu Catcheur", "Pikachu Cosplayeur", "Pikachu Docteur", "Pikachu Gigamax", "Pikachu Lady", "Pikachu Partenaire", "Pikachu Rockeur", "Pikachu Star"]
+"Raichu", 3, ["Raichu", "Méga-Raichu X", "Méga-Raichu Y", "Raichu d’Alola"]

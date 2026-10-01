@@ -1,0 +1,10 @@
+// PokéAPI 168b1e89467054cda2e7df43ccebbb69b459497a · q05.cypher
+evolution
+"Aquali"
+"Givrali"
+"Mentali"
+"Noctali"
+"Nymphali"
+"Phyllali"
+"Pyroli"
+"Voltali"

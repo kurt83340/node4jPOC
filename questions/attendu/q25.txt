@@ -1,0 +1,5 @@
+// PokéAPI 168b1e89467054cda2e7df43ccebbb69b459497a · q25.cypher
+type, pokemon
+"Eau", 154
+"Normal", 131
+"Plante", 127

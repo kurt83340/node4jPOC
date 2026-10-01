@@ -1,0 +1,7 @@
+// PokéAPI 168b1e89467054cda2e7df43ccebbb69b459497a · q01.cypher
+attaque, type, puissance, precision, multiplicateur, puissanceEffective
+"Fracass’Tête", "Roche", 150, 80, 4.0, 600.0
+"Roc-Boulet", "Roche", 150, 90, 4.0, 600.0
+"Laser Météore", "Roche", 120, 90, 4.0, 480.0
+"Lame de Roc", "Roche", 100, 80, 4.0, 400.0
+"Orage Adamantin", "Roche", 100, 95, 4.0, 400.0

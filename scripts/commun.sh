@@ -15,6 +15,11 @@ fi
 
 readonly SECRET="${NEO4J_SECRET:-neo4j-aura-poc}"
 readonly PROJET="${GCP_PROJET:-jleroy-labo}"
+# Commit PokéAPI figé (ADR-0001) : les CSV chargés et les réponses de référence en viennent. En changer
+# change les réponses de questions/attendu/.
+# gitleaks y voit une clé d'API (« API » dans le nom, valeur hexadécimale) : c'est un SHA de commit public.
+# shellcheck disable=SC2034 # lu par charger.sh (URL des CSV) et questions.sh (en-tête des réponses)
+readonly COMMIT_POKEAPI="168b1e89467054cda2e7df43ccebbb69b459497a" # gitleaks:allow
 # Texte filtré de la dernière commande cypher-shell (voir filtrer).
 SORTIE=""
 

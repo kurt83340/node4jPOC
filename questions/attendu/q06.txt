@@ -1,0 +1,3 @@
+// PokéAPI 168b1e89467054cda2e7df43ccebbb69b459497a · q06.cypher
+typesMegaX, typesDracaufeu, gagnes, perdus
+["Feu", "Dragon"], ["Feu", "Vol"], ["Dragon"], ["Vol"]
