@@ -50,21 +50,22 @@ Un jalon, c'est un epic Jira et une technique mesurée.
 
 ## ⚠️ Risques
 
-- **La limite réelle d'AuraDB Free est inconnue** : 50 000 nœuds et 175 000 relations, ou 200 000 et 400 000 selon la source. À noter à la création de l'instance.
-- **Une instance Free se met en pause** après 72 h sans activité, et disparaît après 30 jours de pause. Le chargement rejouable sert de filet.
+- **La limite d'AuraDB Free** : 200 000 nœuds et 400 000 relations (lue à la création de l'instance, le 2026-09-30). Le graphe chargé en occupe 4,4 % et 28,4 %.
+- **Une instance Free se met en pause** après 72 h sans activité, et disparaît après 30 jours de pause. Le job quotidien `reveil-aura` l'évite ; le chargement rejouable sert de filet.
 - **Des coûts peuvent tourner en tâche de fond** : Aura Agent exposé, agent sur Agent Runtime, instance Business Critical. Tout éteindre après chaque session de mesure.
 - **Plusieurs briques sont récentes ou en preview**, et leur doc est en retard : se fier aux notes de version.
 
 ## 🧱 Décisions
 
-| ADR                                                                       | Décision                                          |
-| ------------------------------------------------------------------------- | ------------------------------------------------- |
-| [0001](.claude/docs/adr/0001-mvp-jeu-de-donnees-pokeapi.md)               | Jeu de données : Pokémon, CSV PokéAPI en français |
-| [0002](.claude/docs/adr/0002-cadrage-environnement-cible-google-cloud.md) | Environnement cible Google Cloud, dbt hors POC    |
-| [0003](.claude/docs/adr/0003-mvp-chargement-cypher-pur.md)                | Chargement en Cypher pur (`LOAD CSV`)             |
-| [0004](.claude/docs/adr/0004-mvp-modele-espece-formes.md)                 | Modèle du graphe : l'espèce et toutes ses formes  |
-| [0005](.claude/docs/adr/0005-mvp-conventions-nommage-schema.md)           | Conventions de nommage du schéma                  |
-| [0006](.claude/docs/adr/0006-mvp-banc-essai-30-questions.md)              | Banc d'essai : 30 questions en 6 catégories       |
+| ADR                                                                       | Décision                                              |
+| ------------------------------------------------------------------------- | ----------------------------------------------------- |
+| [0001](.claude/docs/adr/0001-mvp-jeu-de-donnees-pokeapi.md)               | Jeu de données : Pokémon, CSV PokéAPI en français     |
+| [0002](.claude/docs/adr/0002-cadrage-environnement-cible-google-cloud.md) | Environnement cible Google Cloud, dbt hors POC        |
+| [0003](.claude/docs/adr/0003-mvp-chargement-cypher-pur.md)                | Chargement en Cypher pur (`LOAD CSV`)                 |
+| [0004](.claude/docs/adr/0004-mvp-modele-espece-formes.md)                 | Modèle du graphe : l'espèce et toutes ses formes      |
+| [0005](.claude/docs/adr/0005-mvp-conventions-nommage-schema.md)           | Conventions de nommage du schéma                      |
+| [0006](.claude/docs/adr/0006-mvp-banc-essai-30-questions.md)              | Banc d'essai : 30 questions en 6 catégories           |
+| [0007](.claude/docs/adr/0007-infra-secrets-et-services-geres.md)          | Secrets dans Secret Manager, services gérés seulement |
 
 ## 🔗 Suivi et documentation
 

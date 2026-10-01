@@ -11,7 +11,7 @@
 ## Globaux (injectés pour TOUTE édition de code — max 5 lignes)
 
 - ⚠️ Mesurer une durée (journal de chargement, temps de réponse du banc d'essai) : horloge monotone,
-  `read -r t _ </proc/uptime` en bash (`scripts/commun.sh:115`), `time.monotonic()` en Python. Sous
+  `read -r t _ </proc/uptime` en bash (`scripts/commun.sh:120`), `time.monotonic()` en Python. Sous
   WSL2, l'horloge murale recule par à-coups : `EPOCHREALTIME`, `SECONDS` et `date +%s` donnent des
   durées fausses, voire négatives (« 0,-1 s » au go/no-go du 2026-09-30).
 
@@ -37,6 +37,14 @@
   `NODE_PROPERTY_UNIQUENESS` (`UNIQUENESS` en Cypher 5) ; les index sur `nom` sont de type `RANGE`.
 - ⚠️ `scripts/charger.sh` — un `exit` dans une boucle alimentée par `< <(fonction)` ne sort que du
   sous-shell de la fonction : lire d'abord dans un tableau (`lire_noms`), puis boucler dans le shell principal.
+- ⚠️ `scripts/charger.sh` — journal et `--idempotence` lisent les statistiques de `--format verbose`, passé après
+  le `--format plain` de `cypher_fichier` : le dernier l'emporte (cypher-shell 2026.09.0, vérifié le 2026-10-01).
+  Sans statistiques, `--idempotence` s'arrête en erreur technique au lieu de conclure à vide.
+- ⚠️ `scripts/commun.sh` — gitleaks (règle `generic-api-key`) prend `COMMIT_POKEAPI` pour une clé : « API » dans
+  le nom, valeur hexadécimale. Faux positif marqué `# gitleaks:allow` sur sa seule ligne ; jamais `--no-verify`.
+- ⚠️ `questions/` — les filets des questions sémantiques s'écrivent `(?iU)` puis `\\b` : sans `U`, le `\b` de
+  Java ne connaît pas les lettres accentuées (« lavé » passerait pour « lave »). Après écriture, vérifier qu'aucun
+  outil n'a changé les barres obliques (aucun caractère de contrôle). Rien de recopié des descriptions (ADR-0001).
 - ⚠️ `infra/reveil-aura/reveil.py` — la Query API d'Aura répond 202 même quand la requête échoue ; seul un
   refus d'authentification donne 401. Lire `errors` dans le corps, jamais le seul code HTTP
   ([doc Query API](https://neo4j.com/docs/query-api/current/query/), lue le 2026-09-30).

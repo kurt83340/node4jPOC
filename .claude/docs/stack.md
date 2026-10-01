@@ -6,7 +6,7 @@
 > Le **POURQUOI** des choix vit dans [adr/](adr/). L'**ARCHI** globale (dont **sécurité** & **observabilité**) dans [conception/ARCHITECTURE.md](conception/ARCHITECTURE.md) ; les **conventions de test** dans [../rules/testing.md](../rules/testing.md).
 > Ce fichier = **vue catalogue rapide** ("quelles techs on utilise et pour quoi ?") — **pas** de narratif archi/sécurité/tests ici (sinon drift avec ARCHITECTURE).
 
-**Dernière MAJ :** 2026-09-30
+**Dernière MAJ :** 2026-10-01
 
 ## Langage(s) & runtime
 
@@ -19,10 +19,10 @@
 
 ## Orchestration
 
-| Composant                  | Choix                                                                                                               | Voir                                              |
-| -------------------------- | ------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------- |
-| Chargement et vérification | **scripts bash** `scripts/charger.sh` et `scripts/verifier.sh`, qui passent les fichiers `cypher/` à `cypher-shell` | [ADR-0003](adr/0003-mvp-chargement-cypher-pur.md) |
-| Agents (jalons 2 à 4)      | à choisir au démarrage du jalon 2                                                                                   | [ROADMAP](ROADMAP.md)                             |
+| Composant                                | Choix                                                                                                                                                       | Voir                                              |
+| ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------- |
+| Chargement, vérification et banc d'essai | **scripts bash** `scripts/charger.sh`, `scripts/verifier.sh` et `scripts/questions.sh`, qui passent les fichiers `cypher/` et `questions/` à `cypher-shell` | [ADR-0003](adr/0003-mvp-chargement-cypher-pur.md) |
+| Agents (jalons 2 à 4)                    | à choisir au démarrage du jalon 2                                                                                                                           | [ROADMAP](ROADMAP.md)                             |
 
 ## Stockage & data
 
@@ -33,12 +33,12 @@
 
 ## Librairies (rôles)
 
-| Lib                            | Version                     | Pour quoi                                                                                                                                                                                          | Module qui l'utilise                                |
-| ------------------------------ | --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------- |
-| `cypher-shell`                 | 2026.09.0                   | client Neo4j en ligne de commande (`.deb` officiel de dist.neo4j.org)                                                                                                                              | `scripts/charger.sh`, `scripts/verifier.sh`         |
-| `gcloud` (Google Cloud SDK)    | 587.0.0                     | lecture du secret `neo4j-aura-poc` dans Secret Manager ([ADR-0007](adr/0007-infra-secrets-et-services-geres.md)) ; déploiement du job `reveil-aura`, avec le composant `beta` pour le canal e-mail | `scripts/charger.sh`, `infra/reveil-aura/deploy.sh` |
-| pytest, pytest-cov, ruff, mypy | 9.1.1, 7.1.0, 0.16.9, 2.3.1 | tests et contrôles du job `reveil-aura` (groupe `dev`, figé par `uv.lock`)                                                                                                                         | `infra/reveil-aura/`                                |
-| _(aucune autre)_               | —                           | bibliothèques des jalons 2 à 4 : à choisir au démarrage de chaque jalon                                                                                                                            | —                                                   |
+| Lib                            | Version                     | Pour quoi                                                                                                                                                                                          | Module qui l'utilise                                                        |
+| ------------------------------ | --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| `cypher-shell`                 | 2026.09.0                   | client Neo4j en ligne de commande (`.deb` officiel de dist.neo4j.org)                                                                                                                              | `scripts/charger.sh`, `scripts/verifier.sh`, `scripts/questions.sh`         |
+| `gcloud` (Google Cloud SDK)    | 587.0.0                     | lecture du secret `neo4j-aura-poc` dans Secret Manager ([ADR-0007](adr/0007-infra-secrets-et-services-geres.md)) ; déploiement du job `reveil-aura`, avec le composant `beta` pour le canal e-mail | `scripts/commun.sh` (pour les trois scripts), `infra/reveil-aura/deploy.sh` |
+| pytest, pytest-cov, ruff, mypy | 9.1.1, 7.1.0, 0.16.9, 2.3.1 | tests et contrôles du job `reveil-aura` (groupe `dev`, figé par `uv.lock`)                                                                                                                         | `infra/reveil-aura/`                                                        |
+| _(aucune autre)_               | —                           | bibliothèques des jalons 2 à 4 : à choisir au démarrage de chaque jalon                                                                                                                            | —                                                                           |
 
 ## LLM providers (par feature)
 

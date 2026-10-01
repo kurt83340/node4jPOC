@@ -40,8 +40,8 @@ Le détail fichier-par-fichier se découvre à la demande (`grep`, lecture) — 
   ([ADR-0003](adr/0003-mvp-chargement-cypher-pur.md)) ; tout écart passe par Julien (circuit breaker du plan 001).
 - ✅ Seuls `scripts/` (poste local) et `infra/reveil-aura/` (Cloud Run) lisent les identifiants
   ([ADR-0007](adr/0007-infra-secrets-et-services-geres.md)). `scripts/` : secret lu au lancement, les 4 `NEO4J_*`
-  passés par l'environnement (`scripts/commun.sh:53`), jamais en argument ni sur le disque ; toute sortie de
-  `cypher-shell` passe par `filtrer` (`scripts/commun.sh:68`). Le job : secret monté en fichier par Cloud Run,
+  passés par l'environnement (`scripts/commun.sh:58`), jamais en argument ni sur le disque ; toute sortie de
+  `cypher-shell` passe par `filtrer` (`scripts/commun.sh:73`). Le job : secret monté en fichier par Cloud Run,
   sous un compte qui ne lit que lui ; tout message passe par `masquer` (`infra/reveil-aura/reveil.py:161`).
 - ✅ Seul le chargement (purge et preuve d'idempotence comprises) écrit dans la base : go/no-go, vérification et techniques du banc
   d'essai lisent (`--access-mode read`, `scripts/verifier.sh:45`), le réveil quotidien aussi (`accessMode: Read`,
