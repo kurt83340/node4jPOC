@@ -1,0 +1,7 @@
+// PokéAPI 168b1e89467054cda2e7df43ccebbb69b459497a · q08.cypher
+pokemon, communes, reunion, jaccard
+"Drattak", 79, 146, 0.541
+"Dracolosse", 92, 178, 0.517
+"Reshiram", 73, 149, 0.49
+"Libégon", 80, 165, 0.485
+"Groudon", 78, 161, 0.484

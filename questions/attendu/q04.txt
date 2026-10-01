@@ -1,0 +1,3 @@
+// PokéAPI 168b1e89467054cda2e7df43ccebbb69b459497a · q04.cypher
+pokemon, types, talents, talentCache
+"Lucario", ["Combat", "Acier"], ["Attention", "Impassible"], ["Cœur Noble"]

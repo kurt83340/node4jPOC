@@ -4,7 +4,7 @@
 > **Plan détaillé** (phases, DoD) → le `tasks.md` de chaque spec ; pas de plan macro séparé ([conception/tasks.md](conception/tasks.md)).
 > MAJ à chaque session ou via `/feature-done`.
 
-**Dernière MAJ :** 2026-09-30
+**Dernière MAJ :** 2026-10-01
 
 ## 🔄 Pivot 2026-09-28 — Environnement cible Google Cloud
 
@@ -12,21 +12,22 @@
 
 Le POC devient transposable à une entreprise full Google Cloud ; dbt reste hors POC. Aucune spec abandonnée : la spec 001 reste valable.
 
-## 🚧 Phase 0 — Setup (en cours)
+## ✅ Phase 0 — Setup (terminée le 2026-09-30)
 
 - [x] Template claude-Setup v1.5.0 installé (2026-09-26)
 - [x] Cadrage : brief archivé, synthèse dans [cadrage/README.md](cadrage/README.md) (2026-09-28)
 - [x] Faits et sources consignés dans [conception/research.md](conception/research.md) (2026-09-28)
 - [x] [ADR-0001](adr/0001-mvp-jeu-de-donnees-pokeapi.md) — choix du jeu de données : Pokémon, CSV PokéAPI (2026-09-28)
 - [x] Pivot : environnement cible Google Cloud, [ADR-0002](adr/0002-cadrage-environnement-cible-google-cloud.md) (2026-09-28)
-- [ ] Instance AuraDB Free créée, vraie limite notée, identifiants dans `.env`
+- [x] Instance AuraDB Free créée (GCP europe-west1), vraie limite notée, identifiants dans Secret Manager (2026-09-30) → [ACCESS](ACCESS.md)
 - [x] Projet Google Cloud avec compte de facturation : `jleroy-labo`, facturation active (constaté le 2026-09-30)
 
 ## 📋 Jalon 1 — Socle de données (technique 1 : Cypher à la main)
 
 Instance créée ; données chargées en Cypher pur (`LOAD CSV`) par un script réexécutable sans doublons ; modèle espèce + formes documenté ; 30 questions de référence ([questions/README.md](../../questions/README.md)) avec leurs réponses attendues, calculées en Cypher. Ces requêtes servent de vérité de référence aux jalons suivants.
 
-- [~] [001-socle-donnees](specs/001-socle-donnees/spec.md) — **EN COURS** 3/16 tasks (démarrée le 2026-09-29)
+- [x] [001-socle-donnees](specs/001-socle-donnees/spec.md) — livré 2026-10-01 (démarrée le 2026-09-29) : 8 859 nœuds et 113 700 relations, idempotence prouvée, 27 réponses de référence rejouables
+- [~] Garder l'instance Aura éveillée : job planifié `reveil-aura` et alerte par e-mail sur Google Cloud (NEO-13) — **EN COURS** : déployé et testé le 2026-09-30 ; à passer terminé après la première période creuse de 72 h sans requête humaine, si l'instance est toujours « Running »
 
 ## 📋 Jalon 2 — Agent text-to-Cypher via MCP
 
@@ -49,13 +50,13 @@ Instance créée ; données chargées en Cypher pur (`LOAD CSV`) par un script r
 ## 💡 Jalon 6 (option) — Briques data Google Cloud
 
 - [ ] Aura Graph Analytics avec BigQuery (gratuit sur Free)
-- [ ] CDC → Pub/Sub (en local d'abord ; Business Critical à l'heure si besoin)
+- [ ] CDC → Pub/Sub, sur une instance Business Critical louée à l'heure (plus de local : [ADR-0007](adr/0007-infra-secrets-et-services-geres.md))
 - [ ] Virtual Graph, si le prix horaire affiché par la console se confirme
 
 ### Risques courants
 
-- Limite réelle d'AuraDB Free inconnue (50 000 nœuds / 175 000 relations, ou 200 000 / 400 000) : à noter à la création
-- Instance Free en pause après 72 h sans activité, supprimée après 30 jours de pause : garder le script de chargement réexécutable
+- Limite d'AuraDB Free : 200 000 nœuds et 400 000 relations (lue le 2026-09-30) ; le graphe chargé en occupe 4,4 % et 28,4 %
+- Instance Free en pause après 72 h sans activité, supprimée après 30 jours de pause : garder le script de chargement réexécutable ; le job de réveil quotidien `reveil-aura` l'évite (NEO-13)
 - Coûts qui tournent en tâche de fond : éteindre Aura Agent exposé, l'agent Agent Runtime (`min_instances=0`) et toute instance Business Critical après chaque session de mesure
 
 ## 🚫 Hors POC

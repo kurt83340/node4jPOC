@@ -23,14 +23,14 @@ Le graphe est chargé une seule fois, en Cypher pur, par un script rejouable. Le
 
 Un jalon, c'est un epic Jira et une technique mesurée.
 
-| Jalon | Résultat visé                                                  | Technique                         | Spec                                                              | Jira         | État      |
-| ----- | -------------------------------------------------------------- | --------------------------------- | ----------------------------------------------------------------- | ------------ | --------- |
+| Jalon | Résultat visé                                                  | Technique                         | Spec                                                              | Jira                                                      | État      |
+| ----- | -------------------------------------------------------------- | --------------------------------- | ----------------------------------------------------------------- | --------------------------------------------------------- | --------- |
 | 1     | Le graphe chargé et vérifié, avec les 30 réponses de référence | Cypher à la main                  | [001-socle-donnees](.claude/docs/specs/001-socle-donnees/spec.md) | [NEO-1](https://frjulienleroy.atlassian.net/browse/NEO-1) | en cours  |
 | 2     | Un agent text-to-Cypher mesuré sur les 30 questions            | `neo4j/mcp`, agent ADK            | à écrire                                                          | [NEO-2](https://frjulienleroy.atlassian.net/browse/NEO-2) | à venir   |
 | 3     | GraphRAG sur les descriptions, mesuré sur les 30 questions     | vecteurs Gemini et graphe         | à écrire                                                          | [NEO-3](https://frjulienleroy.atlassian.net/browse/NEO-3) | à venir   |
 | 4     | Les agents gérés mesurés, le tableau comparatif livré          | Aura Agent, Agent Runtime         | à écrire                                                          | [NEO-4](https://frjulienleroy.atlassian.net/browse/NEO-4) | à venir   |
-| 5     | La mémoire d'agent                                             | `neo4j-agent-memory`, Memory Bank | —                                                                 | —            | en option |
-| 6     | Les briques data Google Cloud                                  | Graph Analytics, CDC → Pub/Sub    | —                                                                 | —            | en option |
+| 5     | La mémoire d'agent                                             | `neo4j-agent-memory`, Memory Bank | —                                                                 | —                                                         | en option |
+| 6     | Les briques data Google Cloud                                  | Graph Analytics, CDC → Pub/Sub    | —                                                                 | —                                                         | en option |
 
 ## ✅ Critères de réussite
 
@@ -50,21 +50,23 @@ Un jalon, c'est un epic Jira et une technique mesurée.
 
 ## ⚠️ Risques
 
-- **La limite réelle d'AuraDB Free est inconnue** : 50 000 nœuds et 175 000 relations, ou 200 000 et 400 000 selon la source. À noter à la création de l'instance.
-- **Une instance Free se met en pause** après 72 h sans activité, et disparaît après 30 jours de pause. Le chargement rejouable sert de filet.
+- **La limite d'AuraDB Free** : 200 000 nœuds et 400 000 relations (lue à la création de l'instance, le 2026-09-30). Le graphe chargé en occupe 4,4 % et 28,4 %.
+- **Une instance Free se met en pause** après 72 h sans activité, et disparaît après 30 jours de pause. Le job quotidien `reveil-aura` l'évite ; le chargement rejouable sert de filet.
 - **Des coûts peuvent tourner en tâche de fond** : Aura Agent exposé, agent sur Agent Runtime, instance Business Critical. Tout éteindre après chaque session de mesure.
 - **Plusieurs briques sont récentes ou en preview**, et leur doc est en retard : se fier aux notes de version.
 
 ## 🧱 Décisions
 
-| ADR                                                                       | Décision                                          |
-| ------------------------------------------------------------------------- | ------------------------------------------------- |
-| [0001](.claude/docs/adr/0001-mvp-jeu-de-donnees-pokeapi.md)               | Jeu de données : Pokémon, CSV PokéAPI en français |
-| [0002](.claude/docs/adr/0002-cadrage-environnement-cible-google-cloud.md) | Environnement cible Google Cloud, dbt hors POC    |
-| [0003](.claude/docs/adr/0003-mvp-chargement-cypher-pur.md)                | Chargement en Cypher pur (`LOAD CSV`)             |
-| [0004](.claude/docs/adr/0004-mvp-modele-espece-formes.md)                 | Modèle du graphe : l'espèce et toutes ses formes  |
-| [0005](.claude/docs/adr/0005-mvp-conventions-nommage-schema.md)           | Conventions de nommage du schéma                  |
-| [0006](.claude/docs/adr/0006-mvp-banc-essai-30-questions.md)              | Banc d'essai : 30 questions en 6 catégories       |
+| ADR                                                                       | Décision                                                     |
+| ------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| [0001](.claude/docs/adr/0001-mvp-jeu-de-donnees-pokeapi.md)               | Jeu de données : Pokémon, CSV PokéAPI en français            |
+| [0002](.claude/docs/adr/0002-cadrage-environnement-cible-google-cloud.md) | Environnement cible Google Cloud, dbt hors POC               |
+| [0003](.claude/docs/adr/0003-mvp-chargement-cypher-pur.md)                | Chargement en Cypher pur (`LOAD CSV`)                        |
+| [0004](.claude/docs/adr/0004-mvp-modele-espece-formes.md)                 | Modèle du graphe : l'espèce et toutes ses formes             |
+| [0005](.claude/docs/adr/0005-mvp-conventions-nommage-schema.md)           | Conventions de nommage du schéma                             |
+| [0006](.claude/docs/adr/0006-mvp-banc-essai-30-questions.md)              | Banc d'essai : 30 questions en 6 catégories                  |
+| [0007](.claude/docs/adr/0007-infra-secrets-et-services-geres.md)          | Secrets dans Secret Manager, services gérés seulement        |
+| [0008](.claude/docs/adr/0008-mvp-notation-questions-semantiques.md)       | Notation des questions sémantiques : grille, trois ensembles |
 
 ## 🔗 Suivi et documentation
 
@@ -73,16 +75,22 @@ Un jalon, c'est un epic Jira et une technique mesurée.
 
 ## 🛠️ Démarrer
 
-Prérequis : Java 21, `cypher-shell` 2026.09.0 et une instance AuraDB Free.
+Prérequis : Java 21, `cypher-shell` 2026.09.0, une instance AuraDB Free et `gcloud` connecté au compte qui lit les secrets du projet `jleroy-labo` ([ACCESS](.claude/docs/ACCESS.md)).
 
 ```bash
 git clone https://github.com/kurt83340/node4jPOC.git
 cd node4jPOC
-cp .env.example .env   # identifiants Aura, à remplir : jamais commités
-pre-commit install     # garde-fou secrets : gitleaks avant chaque commit
+gcloud auth login             # identifiants lus dans Secret Manager : aucun fichier de secrets
+pre-commit install            # garde-fou secrets : gitleaks avant chaque commit
+scripts/charger.sh --ping     # Aura répond ? 0 oui, 2 erreur technique
+scripts/charger.sh --go-no-go # contrôles en lecture seule avant chargement : 0 go, 1 no-go, 2 erreur technique
+scripts/charger.sh --tout     # charge les fichiers cypher/ dans l'ordre ; une relance ne crée rien ; journal dans logs/
+scripts/verifier.sh           # compare la base aux valeurs attendues : 0 conforme, 1 écart, 2 erreur technique
+scripts/charger.sh --idempotence # efface, charge deux fois et compare : 0 idempotent, 1 écart, 2 erreur technique
+scripts/questions.sh --verifier  # rejoue les 27 questions de référence : 0 conforme, 1 écart, 2 erreur technique
 ```
 
-Les scripts de chargement et de vérification (`scripts/charger.sh`, `scripts/verifier.sh`) arrivent avec la spec 001.
+Le chargement se complète au fil de la spec 001, un fichier `cypher/` par groupe de données : `scripts/verifier.sh --section <nom>` contrôle chaque étape.
 
 ## Contact
 

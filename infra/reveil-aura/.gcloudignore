@@ -1,0 +1,4 @@
+# Envoyé à Cloud Build par deploy.sh : le Dockerfile et le script, rien d'autre (ni tests, ni .venv).
+*
+!Dockerfile
+!reveil.py

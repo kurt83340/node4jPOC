@@ -14,8 +14,8 @@ SessionStart hook — flux selon la source :
    (unlink) pour ne jamais réinjecter un filet périmé.
 
 3. source="startup" | "resume" | "clear" | "fork" — marqueur de début de session (horodatage +
-   empreinte git) relu par sessionend-snapshot.py ; au startup, purge du cache par-session
-   de plus de 7 jours.
+   empreinte git + signature de HANDOFF.md) relu par sessionend-snapshot.py ; au startup, purge
+   du cache par-session de plus de 7 jours.
 
 Payload sans champ "source" (schéma historique) → flux marker (1).
 Stdout = injecté automatiquement dans le contexte par Claude Code (documenté).

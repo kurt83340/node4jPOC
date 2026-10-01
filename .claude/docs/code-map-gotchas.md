@@ -10,9 +10,52 @@
 
 ## Globaux (injectés pour TOUTE édition de code — max 5 lignes)
 
-- ⚠️ {{Piège transversal : ex. les montants sont en centimes int partout — jamais float}}
+- ⚠️ Mesurer une durée (journal de chargement, temps de réponse du banc d'essai) : horloge monotone,
+  `read -r t _ </proc/uptime` en bash (`scripts/commun.sh:120`), `time.monotonic()` en Python. Sous
+  WSL2, l'horloge murale recule par à-coups : `EPOCHREALTIME`, `SECONDS` et `date +%s` donnent des
+  durées fausses, voire négatives (« 0,-1 s » au go/no-go du 2026-09-30).
 
 ## Par zone
 
-- ⚠️ `{{src/module/fichier.py}}` — {{comportement contre-intuitif : ex. l'API renvoie 200 même en erreur, vérifier le body}}
-- ⚠️ `{{src/autre/}}` — {{effet de bord : ex. modifier un fichier de ce dossier invalide le cache de X}}
+- ⚠️ `cypher/06-descriptions.cypher` — les outils d'écriture Write et Edit décodent la séquence
+  d'échappement de l'espace fine insécable U+202F en vrai caractère, invisible : la formule de
+  normalisation semble alors remplacer une espace par une espace. Écrire la séquence littérale via
+  Python (`chr(92) + "u202F"`), puis vérifier que le fichier ne contient aucun `chr(0x202F)`. La
+  formule doit remplacer `\n` ET U+202F ([plan 001, D4](specs/001-socle-donnees/plan.md)) : avec
+  `\n` seul, 5 240 descriptions au lieu de 5 233.
+- ⚠️ `scripts/commun.sh` — sur Aura, l'utilisateur et la base portent l'identifiant de l'instance,
+  pas `neo4j` : les lire dans le secret (`NEO4J_USERNAME`, `NEO4J_DATABASE`), rien en dur. Toute sortie
+  de `cypher-shell` passe par `filtrer` (mot de passe → arrêt, identifiant → ‹instance›) ; jamais de
+  `set -x`, de `--debug`, ni de mot de passe en argument ([ADR-0007](adr/0007-infra-secrets-et-services-geres.md)).
+- ⚠️ `scripts/charger.sh` — `dbms.components()` annonce Neo4j « 5.27-aura » quand la console affiche
+  2026.09 : ce n'est pas le signe d'un vieux Neo4j. Cypher 25 est disponible et déjà la langue par
+  défaut de la base (`SHOW DATABASES`).
+- ⚠️ `cypher/90-verification.cypher` — un `RETURN` qui mêle des constantes et un agrégat groupe par ces
+  constantes : sur une base vide, aucune ligne au lieu d'une ligne à 0. Agréger d'abord dans un `WITH` sans
+  clé. Pas d'échappement `''` en Cypher : un texte avec apostrophe s'écrit entre guillemets doubles.
+- ⚠️ `cypher/90-verification.cypher` — Cypher 25 : `SHOW CONSTRAINTS` renvoie le type
+  `NODE_PROPERTY_UNIQUENESS` (`UNIQUENESS` en Cypher 5) ; les index sur `nom` sont de type `RANGE`.
+- ⚠️ `scripts/charger.sh` — un `exit` dans une boucle alimentée par `< <(fonction)` ne sort que du
+  sous-shell de la fonction : lire d'abord dans un tableau (`lire_noms`), puis boucler dans le shell principal.
+- ⚠️ `scripts/charger.sh` — journal et `--idempotence` lisent les statistiques de `--format verbose`, passé après
+  le `--format plain` de `cypher_fichier` : le dernier l'emporte (cypher-shell 2026.09.0, vérifié le 2026-10-01).
+  Sans statistiques, `--idempotence` s'arrête en erreur technique au lieu de conclure à vide.
+- ⚠️ `scripts/commun.sh` — gitleaks (règle `generic-api-key`) prend `COMMIT_POKEAPI` pour une clé : « API » dans
+  le nom, valeur hexadécimale. Faux positif marqué `# gitleaks:allow` sur sa seule ligne ; jamais `--no-verify`.
+- ⚠️ `questions/` — les filets des questions sémantiques s'écrivent `(?iU)` puis `\\b` : sans `U`, le `\b` de
+  Java ne connaît pas les lettres accentuées (« lavé » passerait pour « lave »). Après écriture, vérifier qu'aucun
+  outil n'a changé les barres obliques (aucun caractère de contrôle). Rien de recopié des descriptions (ADR-0001).
+- ⚠️ `infra/reveil-aura/reveil.py` — la Query API d'Aura répond 202 même quand la requête échoue ; seul un
+  refus d'authentification donne 401. Lire `errors` dans le corps, jamais le seul code HTTP
+  ([doc Query API](https://neo4j.com/docs/query-api/current/query/), lue le 2026-09-30).
+- ⚠️ `infra/reveil-aura/reveil.py` — le code vise Python 3.14 : `ruff format` y écrit `except A, B:` sans
+  parenthèses (PEP 758), invalide avant 3.14. L'image et `requires-python` restent en 3.14 ou plus.
+- ⚠️ `infra/reveil-aura/deploy.sh` — gcloud n'a pas de commande GA pour les canaux de notification (composant
+  `beta`) ; `monitoring policies update` attend `--set-notification-channels`, pas `--notification-channels`.
+  Un job Cloud Run n'a ni `--no-build` ni choix du compte de build : le compte Compute par défaut construit, avec
+  `roles/run.builder`, qui met quelques minutes à se propager (premier build refusé le 2026-09-30).
+- ⚠️ `infra/reveil-aura/alerte.json` — un job en échec écrit « Container called exit(N). » en WARNING seulement ;
+  l'échec de l'exécution est l'entrée d'audit `system_event` en ERROR (« Execution … has failed to complete ») :
+  filtrer sur `severity>=ERROR`, pas sur un texte (observé le 2026-09-30). Un extracteur `labelExtractors` sur
+  `jsonPayload.message` a donné « (null) » dans l'e-mail : l'incident peut naître de l'entrée d'audit, qui n'a
+  pas ce champ ; l'e-mail renvoie donc aux journaux.

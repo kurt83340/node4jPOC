@@ -1,0 +1,4 @@
+// PokéAPI 168b1e89467054cda2e7df43ccebbb69b459497a · q11.cypher
+pokemon, types, multiplicateurFeu
+"Bulbizarre", [{type: "Plante", facteurFeu: 2.0}, {type: "Poison", facteurFeu: 1.0}], 2.0
+"Carapuce", [{type: "Eau", facteurFeu: 0.5}], 0.5

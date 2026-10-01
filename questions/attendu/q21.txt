@@ -1,0 +1,4 @@
+// PokéAPI 168b1e89467054cda2e7df43ccebbb69b459497a · q21.cypher
+pokemon, vitesse
+"Dracaufeu", 100
+"Tortank", 78

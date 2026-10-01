@@ -24,10 +24,10 @@
       "Bash(git merge:*)",
       "Bash(git worktree remove:*)",
       "Bash(alembic downgrade:*)",
-      "Bash(./scripts/deploy:*)"
+      "Bash(./scripts/deploy:*)",
+      "Bash(rm:*)"
     ],
     "deny": [
-      "Bash(rm -rf:*)",
       "Read(.env)",
       "Read(.env.*)",
       "Read(!.env.example)",
@@ -42,7 +42,8 @@
       "Read(secrets.toml)",
       "Read(secrets.env)",
       "Read(*.pem)",
-      "Read(*.key)"
+      "Read(*.key)",
+      "Read(//**/Neo4j-*.txt)"
     ]
   },
   "hooks": {

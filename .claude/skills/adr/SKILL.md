@@ -63,7 +63,7 @@ Numéro suivant = max(existant) + 1, formaté sur 4 chiffres (`0001`, `0002`, ..
 for f in .claude/docs/adr/[0-9]*.md; do
   [ -f "$f" ] || continue
   NUM=$(basename "$f" | cut -d'-' -f1)
-  STATUS=$(grep "^status:" "$f" | head -1 | awk '{print $2}')
+  STATUS=$(sed -n 's/^status: *\([^ #]*\).*/\1/p' "$f" | head -1)
   TITLE=$(grep "^# " "$f" | head -1 | sed 's/^# //')
   echo "  $NUM | $STATUS | $TITLE"
 done
@@ -218,8 +218,8 @@ Quand un ADR est encore valide MAIS on veut signaler "ne plus s'appuyer dessus".
 for f in .claude/docs/adr/[0-9]*.md; do
   [ -f "$f" ] || continue
   NUM=$(basename "$f" | cut -d'-' -f1)
-  SCOPE=$(grep "^scope:" "$f" | awk '{print $2}')
-  STATUS=$(grep "^status:" "$f" | awk '{print $2}')
+  SCOPE=$(sed -n 's/^scope: *\([^ #]*\).*/\1/p' "$f" | head -1)
+  STATUS=$(sed -n 's/^status: *\([^ #]*\).*/\1/p' "$f" | head -1)
   TITLE=$(grep "^# " "$f" | head -1 | sed "s/^# ${NUM} — //")
   echo "$NUM | $SCOPE | $STATUS | $TITLE"
 done | sort

@@ -1,0 +1,18 @@
+// PokéAPI 168b1e89467054cda2e7df43ccebbb69b459497a · q17.cypher
+pokemon, ensemble, raison
+"Carvanha", "obligatoire", "coule des navires ; les marins fuient ses eaux"
+"Hypocéan", "obligatoire", "pique les pêcheurs de coraux"
+"Kaiminus", "obligatoire", "sa morsure peut gravement blesser quelqu’un"
+"Léviator", "obligatoire", "brutal et dangereux, il rase des villes"
+"Moyade", "obligatoire", "aspire l’énergie vitale des marins"
+"Tentacool", "obligatoire", "arrose d’acide les pêcheurs"
+"Gamblast", "acceptable", "peut couler un navire-citerne"
+"Sharpedo", "acceptable", "attaque tous les navires sur son territoire"
+"Amphinobi", "écarté", "shuriken redoutables contre ses adversaires"
+"Crustabri", "écarté", "dards redoutables contre ses adversaires"
+"Mustéflott", "écarté", "sauve les gens qui se noient"
+"Poissirène", "écarté", "coups de corne redoutables contre ses adversaires"
+"Qwilfish", "écarté", "aucun danger pour les humains dit"
+"Sovkipou", "écarté", "aucun danger pour les humains dit"
+"Tentacruel", "écarté", "filet venimeux redoutable contre ses adversaires"
+"Wailmer", "écarté", "effraie les gens pour jouer"

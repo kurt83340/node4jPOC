@@ -1,6 +1,6 @@
 ---
-status: in-progress # draft | validated | in-progress | done | parked
-progress: 3/16 # X/Y tasks (compté depuis tasks.md) — MAJ par /feature-done ou à la main
+status: done # draft | validated | in-progress | done | parked
+progress: 16/16 # X/Y tasks (compté depuis tasks.md) — MAJ par /feature-done ou à la main
 ---
 
 # Spec — Socle de données
@@ -26,9 +26,9 @@ Un graphe Pokémon fiable dans AuraDB, chargé par un script réexécutable, et 
 
 **Critères d'acceptation :**
 
-- [ ] Le script charge les nœuds et relations du modèle retenu, depuis un commit PokéAPI figé ([ADR-0001](../../adr/0001-mvp-jeu-de-donnees-pokeapi.md)).
-- [ ] Une 2e exécution ne crée aucun doublon : mêmes nombres de nœuds et de relations.
-- [ ] Les identifiants sont lus dans `.env`, jamais affichés ni committés.
+- [x] Le script charge les nœuds et relations du modèle retenu, depuis un commit PokéAPI figé ([ADR-0001](../../adr/0001-mvp-jeu-de-donnees-pokeapi.md)).
+- [x] Une 2e exécution ne crée aucun doublon : mêmes nombres de nœuds et de relations.
+- [x] Les identifiants sont lus dans Secret Manager au lancement, jamais affichés, écrits sur le disque ni committés ([ADR-0007](../../adr/0007-infra-secrets-et-services-geres.md)).
 
 ### US2 — Documenter le modèle
 
@@ -39,7 +39,7 @@ Un graphe Pokémon fiable dans AuraDB, chargé par un script réexécutable, et 
 **Critères d'acceptation :**
 
 - [x] Schéma du modèle et justification de chaque choix (espèces ou formes, descriptions, attaques…) documentés.
-- [ ] Une contrainte d'unicité par type de nœud, sauf `Description` (sans clé : couple (Pokémon, texte) unique par `MERGE`, contrôlé par `verifier.sh`, plan D2).
+- [x] Une contrainte d'unicité par type de nœud, sauf `Description` (sans clé : couple (Pokémon, texte) unique par `MERGE`, contrôlé par `verifier.sh`, plan D2).
 
 ### US3 — Questions de référence
 
@@ -50,8 +50,8 @@ Un graphe Pokémon fiable dans AuraDB, chargé par un script réexécutable, et 
 **Critères d'acceptation :**
 
 - [x] 30 questions en 6 catégories, chacune avec sa technique visée ([questions/README.md](../../../../questions/README.md)).
-- [ ] Chaque question a sa requête Cypher (ou, pour Q10, Q29 et Q30, sa règle de notation) et sa réponse attendue, rejouables.
-- [ ] Q1 (« Quelles attaques font le plus mal à Dracaufeu ? ») donne bien Roche ×4.
+- [x] Chaque question a sa requête Cypher (ou, pour Q10, Q29 et Q30, sa règle de notation) et sa réponse attendue, rejouables.
+- [x] Q1 (« Quelles attaques font le plus mal à Dracaufeu ? ») donne bien Roche ×4.
 
 ## Scope IN
 
@@ -75,7 +75,7 @@ Un graphe Pokémon fiable dans AuraDB, chargé par un script réexécutable, et 
 
 ## Dépendances
 
-- Instance AuraDB Free créée et identifiants dans `.env` (action de Julien).
+- Instance AuraDB Free créée et identifiants dans Secret Manager : fait le 2026-09-30 (NEO-6).
 - [ADR-0001](../../adr/0001-mvp-jeu-de-donnees-pokeapi.md) : jeu de données PokéAPI.
 
 ## Liens

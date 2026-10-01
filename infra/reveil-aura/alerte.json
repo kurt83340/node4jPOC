@@ -1,0 +1,24 @@
+{
+  "displayName": "reveil-aura : réveil d'Aura en échec",
+  "documentation": {
+    "subject": "reveil-aura : le réveil quotidien d'Aura a échoué",
+    "content": "Le job Cloud Run `reveil-aura` n'a pas pu interroger l'instance AuraDB Free du POC node4jPOC. Sans requête pendant 72 h, Aura met l'instance en pause, puis la supprime après 30 jours de pause.\n\n1. Lire l'erreur : bouton VIEW INCIDENT, puis les journaux du job ; ou la commande `gcloud logging read` du RUNBOOK.\n2. « Aura injoignable » : l'instance est sans doute en pause. Console Aura (https://console.neo4j.io) → menu de l'instance → Resume.\n3. Relancer le job à la main et vérifier qu'il réussit.\n\nProcédure complète : RUNBOOK.md du dépôt, section « Job reveil-aura ».",
+    "mimeType": "text/markdown"
+  },
+  "conditions": [
+    {
+      "displayName": "Erreur dans les journaux du job reveil-aura ou de son déclencheur",
+      "conditionMatchedLog": {
+        "filter": "severity>=ERROR AND ((resource.type=\"cloud_run_job\" AND resource.labels.job_name=\"reveil-aura\") OR (resource.type=\"cloud_scheduler_job\" AND resource.labels.job_id=\"reveil-aura\"))"
+      }
+    }
+  ],
+  "combiner": "OR",
+  "alertStrategy": {
+    "notificationRateLimit": {
+      "period": "3600s"
+    },
+    "autoClose": "86400s"
+  },
+  "severity": "ERROR"
+}

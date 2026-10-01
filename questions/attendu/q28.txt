@@ -1,0 +1,9 @@
+// PokéAPI 168b1e89467054cda2e7df43ccebbb69b459497a · q28.cypher
+typeAttaque, typesOnix, multiplicateur
+"Électrik", ["Sol", "Roche"], 0.0
+attaque, type, puissance, precision, multiplicateur, puissanceEffective
+"Surf", "Eau", 90, 100, 4.0, 360.0
+"Mitra-Poing", "Combat", 150, 100, 2.0, 300.0
+"Dynamo-Poing", "Combat", 100, 50, 2.0, 200.0
+"Désherbaffe", "Plante", 50, 100, 4.0, 200.0
+"Queue de Fer", "Acier", 100, 75, 2.0, 200.0

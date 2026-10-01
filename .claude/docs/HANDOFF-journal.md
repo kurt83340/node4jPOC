@@ -6,3 +6,7 @@
 
 - 2026-09-28 — Cadrage du POC (brief archivé, pivot « environnement cible Google Cloud », ADR-0001 à 0004) et plan du jalon 1 validé après revue adverse ; aucun code.
 - 2026-09-29 — Audit doc-health traité ; spec 001 phase 1 terminée : 30 questions de référence, modèle v2 après recherche de modélisation (ADR-0005), Java 21 et cypher-shell installés ; en attente de l'instance Aura.
+- 2026-09-30 — Outillage Jira et GitHub : skill Jira maison, projet NEO rempli (epics NEO-1 à 4, tickets du jalon 1), dépôt privé relié à Jira, README « initiative » sur main (PR n°1), historique sans attribution à Claude ; aucun code.
+- 2026-09-30 — NEO-6 et NEO-7 : instance AuraDB Free créée en pilotant la console (limite 200 000 / 400 000), identifiants dans Secret Manager, ADR-0007 (plus de `.env` ni de repli Docker), `charger.sh --ping` et `--go-no-go` (GO) ; idée capturée : mises à jour automatiques des données avec alerting ; aucun chargement.
+- 2026-09-30 — NEO-13 : job `reveil-aura` déployé sur Google Cloud (Cloud Run, Scheduler, alerte e-mail testée), RUNBOOK créé ; NEO-8 : `verifier.sh` (33 contrôles, rouge sur base vide) et `charger.sh --purge` ; `rm` passe en `ask` ; commits poussés.
+- 2026-10-01 — NEO-9 à NEO-12 : graphe complet chargé et vérifié (33/33), idempotence prouvée, journal de chargement, 27 réponses de référence et méthode sémantique (ADR-0008) ; spec 001 livrée, PR n°2 ; page privée de visualisation du graphe.

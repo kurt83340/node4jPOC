@@ -1,0 +1,12 @@
+[
+  {
+    "name": "garder-les-2-dernieres",
+    "action": { "type": "Keep" },
+    "mostRecentVersions": { "keepCount": 2 }
+  },
+  {
+    "name": "supprimer-apres-7-jours",
+    "action": { "type": "Delete" },
+    "condition": { "tagState": "any", "olderThan": "7d" }
+  }
+]

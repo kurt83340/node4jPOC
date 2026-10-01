@@ -8,7 +8,7 @@
 > il « perd le fil » (échecs ×4 constatés en télémétrie, Morph 2026) → découper la phase.
 
 **Date :** 2026-09-28 (revue adverse intégrée)
-**Status :** [~] 3/16 tasks → MAJ au fil de l'eau
+**Status :** [x] 16/16 tasks — livrée le 2026-10-01
 
 ## Phase 1 — Préparer (sans instance)
 
@@ -21,59 +21,59 @@
 
 ## Phase 2 — Accès et go/no-go (nécessite l'instance de Julien)
 
-- [ ] **T2.1** : `.env.example` (4 variables), `.claude/docs/ACCESS.md`, `Neo4j-*.txt` ignoré par git et interdit en lecture (`/update-config`), `scripts/charger.sh` (lecture des 4 variables, `set +x`, contrôle de sa propre sortie) ; vraie limite de l'instance notée
+- [x] **T2.1** : `Neo4j-*.txt` ignoré par git et interdit en lecture (`/update-config`), `scripts/charger.sh` (lit le secret `neo4j-aura-poc` au lancement et n'en passe que les 4 variables `NEO4J_*` à `cypher-shell`, `set +x`, contrôle de sa propre sortie) ([ADR-0007](../../adr/0007-infra-secrets-et-services-geres.md)) ; `.claude/docs/ACCESS.md` et vraie limite (200 000 nœuds, 400 000 relations) faits le 2026-09-30 (NEO-6)
   - DoD : `command_passes: scripts/charger.sh --ping`
-- [ ] **T2.2** : go/no-go étendu, en lecture seule : `languages.csv` (14 lignes), descriptions FR (7 116 lignes, dont 7 115 multilignes), `pokemon_moves.csv` (638 321 lignes), `count(toInteger(trim(row.slot)))` = 2 943 sur `pokemon_abilities.csv` ; `MATCH (t:Type)` accepté sans backticks (`TYPE` est un mot-clé) ; `ALTER DATABASE … SET DEFAULT LANGUAGE CYPHER 25`, contrôlé par `SHOW DATABASES`
+- [x] **T2.2** : go/no-go étendu, en lecture seule : `languages.csv` (14 lignes), descriptions FR (7 116 lignes, dont 7 115 multilignes), `pokemon_moves.csv` (638 321 lignes), `count(toInteger(trim(row.slot)))` = 2 943 sur `pokemon_abilities.csv` ; `MATCH (t:Type)` accepté sans backticks (`TYPE` est un mot-clé) ; Cypher 25 par défaut, contrôlé par `SHOW DATABASES` (déjà le cas : pas d'`ALTER`, voir D7). GO le 2026-09-30 ; `trim` inutile pour `LOAD CSV`, qui gère les fins de ligne Windows, mais gardé par prudence
   - DoD : `command_passes: scripts/charger.sh --go-no-go`
 
 ## Phase 3 — Vérification d'abord
 
-- [ ] **T3.1** : `cypher/90-verification.cypher` et `scripts/verifier.sh` (comptes par motif, empreintes, noms en double, limite ; codes retour 0 / 1 / 2) ; option `charger.sh --purge`
+- [x] **T3.1** : `cypher/90-verification.cypher` (33 contrôles en 8 sections : comptes par motif, empreintes, noms en double, volume sous la limite ; valeurs attendues calculées depuis les CSV par `LOAD CSV` en lecture seule) et `scripts/verifier.sh` (codes retour 0 / 1 / 2, `--section`) ; option `charger.sh --purge`, essayée sur un jeu jetable ; fonctions partagées dans `scripts/commun.sh`. Code 1 sur la base vide le 2026-09-30 (31 écarts sur 33)
   - DoD : `command_passes: scripts/verifier.sh; test $? -eq 1` (écart constaté sur base vide, pas une erreur technique)
 
 ## Phase 4 — Nœuds de référence
 
-- [ ] **T4.1** : `cypher/00-contraintes.cypher`
+- [x] **T4.1** : `cypher/00-contraintes.cypher` (unicité de `id` pour 5 labels, chaque contrainte avec son index ; index RANGE sur `nom` ; `IF NOT EXISTS` et noms explicites) et `scripts/charger.sh --tout` (fichiers `cypher/00` à `89` dans l'ordre, arrêt à la première erreur). Vert le 2026-09-30 ; relance sans effet, cycle `--purge` puis `--tout` essayé ; vérification complète : 29 écarts sur 33
   - DoD : `command_passes: scripts/verifier.sh --section contraintes`
-- [ ] **T4.2** : `cypher/01-types.cypher` (18 types, 120 efficacités)
+- [x] **T4.2** : `cypher/01-types.cypher` (18 types, 120 efficacités ; noms FR ; type de relation dynamique `$(…)` calculé par un `CASE` sur le pourcentage, un pourcentage inattendu arrête le chargement). Vert le 2026-09-30 ; relance sans effet ; Roche seul à ×4 contre Feu + Vol (Q1) ; vérification complète : 23 écarts sur 33
   - DoD : `command_passes: scripts/verifier.sh --section types`
-- [ ] **T4.3** : `cypher/02-pokemon.cypher` (1 025 Pokémon, noms et catégories ; 484 `EVOLUE_EN` en seconde passe)
+- [x] **T4.3** : `cypher/02-pokemon.cypher` (1 025 Pokémon, noms et catégories ; 484 `EVOLUE_EN` en seconde passe, pour les 17 bébés placés après leur évolution dans le CSV). Vert le 2026-09-30 ; relance sans effet ; Évoli à 8 évolutions, Pichu → Pikachu → Raichu, Dracaufeu « Pokémon Flamme » (Q23) ; vérification complète : 19 écarts sur 33
   - DoD : `command_passes: scripts/verifier.sh --section pokemon`
-- [ ] **T4.4** : `cypher/03-formes.cypher` (1 351 formes, `FORME_DE`, `A_POUR_FORME_PAR_DEFAUT`, stats, `A_LE_TYPE`, règle des noms)
+- [x] **T4.4** : `cypher/03-formes.cypher` (1 351 formes, `FORME_DE`, `A_POUR_FORME_PAR_DEFAUT`, stats, `A_LE_TYPE`, règle des noms). Règle de Julien du 2026-10-01 : forme par défaut = nom du Pokémon, forme alternative = nom de sa `pokemon_form` ; les 2 doublons hérités des données sont gardés (attendu « 1351, 2 »). Forme par défaut déduite du graphe ; stats pivotées par une clé dynamique `f[cle]`. Vert le 2026-10-01 ; relance sans effet ; vérification complète : 12 écarts sur 33
   - DoD : `command_passes: scripts/verifier.sh --section formes`
-- [ ] **T4.5** : `cypher/04-talents.cypher` (313 talents utilisés, `A_LE_TALENT`)
+- [x] **T4.5** : `cypher/04-talents.cypher` (313 talents utilisés, `A_LE_TALENT`). Talents créés depuis leurs relations, donc seulement les utilisés ; 3 talents récents nommés par leur identifiant ; « Osmose Équine » gardé en double (décision de Julien le 2026-10-01). Vert le 2026-10-01 ; relance sans effet ; phase 4 finie : 9 écarts sur 33 (attaques, descriptions, totaux)
   - DoD : `command_passes: scripts/verifier.sh --section talents`
 
 ## Phase 5 — Gros volumes (en arrière-plan, journal horodaté)
 
-- [ ] **T5.1** : `cypher/05-attaques.cypher` (919 attaques, type, puissance, catégorie ; `APPREND` agrégé par lots)
+- [x] **T5.1** : `cypher/05-attaques.cypher` (919 attaques, type, puissance, catégorie ; `APPREND` agrégé par lots). Vert le 2026-10-01 en 22 s (43 s en relance, empreintes inchangées) ; repli « train » lu dans `pokemon_move_methods` ; journal de `charger.sh --tout` dans `logs/` (heure, durée, statistiques par requête) ; vérification complète : 4 écarts sur 33, tous dus aux descriptions (T5.2)
   - DoD : `command_passes: scripts/verifier.sh --section attaques`
-- [ ] **T5.2** : `cypher/06-descriptions.cypher` (5 233 descriptions normalisées, liste des jeux)
+- [x] **T5.2** : `cypher/06-descriptions.cypher` (5 233 descriptions normalisées, liste des jeux). Séquence `\u202F` écrite par Python (piège du code-map) ; filtre de langue avant les lots de 1 000. Vert le 2026-10-01 en 3,5 s ; relance sans rien créer ; textes sans U+202F, saut de ligne ni espace en bord ; 16 Pokémon citent « volcan ». Graphe complet : 33 contrôles sur 33, 8 859 nœuds et 113 700 relations (4,4 % et 28,4 % de la limite)
   - DoD : `command_passes: scripts/verifier.sh --section descriptions`
 
 ## Phase 6 — Idempotence
 
-- [ ] **T6.1** : purge, chargement complet, empreinte, second chargement, même empreinte
-  - DoD : `command_passes: scripts/verifier.sh --idempotence`
+- [x] **T6.1** : purge, chargement complet, empreinte, second chargement, même empreinte. Une commande, `scripts/charger.sh --idempotence` (décision de Julien le 2026-10-01 : `verifier.sh` reste en lecture seule). IDEMPOTENT le 2026-10-01 : chargement complet sur base vide en 37 s, second chargement en 58 s sans aucune création ni suppression, 33 contrôles sur 33 et empreintes identiques
+  - DoD : `command_passes: scripts/charger.sh --idempotence`
 
 ## Phase 7 — Questions de référence et clôture
 
-- [ ] **T7.1** : `questions/qNN.cypher` × 27 (Q10, Q29 et Q30 se notent par une règle, sans requête) et `scripts/questions.sh` (format déterministe, SHA du commit en en-tête) ; Q1 = Roche ×4 contre Dracaufeu
+- [x] **T7.1** : `questions/qNN.cypher` × 27 (Q10, Q29 et Q30 se notent par une règle, sans requête) et `scripts/questions.sh` (format déterministe, SHA du commit en en-tête) ; Q1 = Roche ×4 contre Dracaufeu. Fait le 2026-10-01 : `questions.sh --enregistrer` et `--verifier`, en lecture seule ; 27 réponses dans `questions/attendu/`, SHA lu dans `scripts/commun.sh` ; 22 questions exactes relues avec Julien (précision affichée en Q1, Q27 et Q28, Gigansel en Q20) ; 5 sémantiques par grille, filet de mots-clés et table de classement (méthode et notation dans `questions/README.md`). CONFORME : 27 questions
   - DoD : `command_passes: scripts/questions.sh --verifier`
-- [ ] **T7.2** : `code-map.md`, `stack.md` et la section Stack du `README.md` à jour, ADR-0003 à ADR-0005 vérifiés, puis `/feature-done 001-socle-donnees`
+- [x] **T7.2** : `code-map.md`, `stack.md` et la section Stack du `README.md` à jour, ADR-0003 à ADR-0005 vérifiés, puis `/feature-done 001-socle-donnees`. Fait le 2026-10-01 : renvois du code-map recalés, trois pièges ajoutés, `stack.md` à jour ; le README n'a pas de section Stack, ses sections « Démarrer », « Décisions » et « Risques » sont à jour ; ADR-0003 à ADR-0005 vérifiés sur le schéma réel de la base ; ADR-0008 (notation des questions sémantiques) ; livraison validée par Julien
   - DoD : `manual: Julien valide la livraison`
 
 ## Definition of Done (global)
 
 La feature est livrée quand :
 
-- [ ] Tous les critères d'acceptation de [spec.md](spec.md) cochés
-- [ ] `verifier.sh` conforme, idempotence prouvée (T6.1), questions rejouables (T7.1)
-- [ ] Pas de TODO ni de `// FIXME` dans les scripts
-- [ ] Aucun identifiant dans le dépôt ni dans une sortie de commande
-- [ ] Documentation à jour (modèle, code-map, stack, décisions du plan)
-- [ ] Commit sur la branche `feature/001-socle-donnees`
+- [x] Tous les critères d'acceptation de [spec.md](spec.md) cochés
+- [x] `verifier.sh` conforme, idempotence prouvée (T6.1), questions rejouables (T7.1)
+- [x] Pas de TODO ni de `// FIXME` dans les scripts
+- [x] Aucun identifiant dans le dépôt ni dans une sortie de commande
+- [x] Documentation à jour (modèle, code-map, stack, décisions du plan)
+- [x] Commit sur la branche `feature/001-socle-donnees`
 
 ## Blockers / questions
 
-- Instance AuraDB Free et `.env` : action de Julien, bloque la phase 2 et la suite (la phase 1 peut commencer sans).
+- Aucun : instance AuraDB Free créée et identifiants dans Secret Manager le 2026-09-30 (NEO-6).

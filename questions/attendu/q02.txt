@@ -1,0 +1,14 @@
+// PokéAPI 168b1e89467054cda2e7df43ccebbb69b459497a · q02.cypher
+menace, membresMenaces
+"Combat", ["Lokhlass ×2.0", "Ronflex ×2.0"]
+"Eau", ["Dracaufeu ×2.0"]
+"Feu", ["Florizarre ×2.0"]
+"Glace", ["Florizarre ×2.0"]
+"Plante", ["Lokhlass ×2.0", "Tortank ×2.0"]
+"Psy", ["Florizarre ×2.0"]
+"Roche", ["Dracaufeu ×4.0", "Lokhlass ×2.0"]
+"Sol", ["Pikachu ×2.0"]
+"Vol", ["Florizarre ×2.0"]
+"Électrik", ["Dracaufeu ×2.0", "Lokhlass ×2.0", "Tortank ×2.0"]
+especesReconnues, typesNonCouverts, equipeValide
+6, [], TRUE

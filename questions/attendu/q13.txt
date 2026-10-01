@@ -1,0 +1,8 @@
+// PokéAPI 168b1e89467054cda2e7df43ccebbb69b459497a · q13.cypher
+attaque, categorie, pokemon
+"Zénith", "statut", 677
+"Lance-Flammes", "spéciale", 203
+attaqueOffensive, categorie, pokemon
+"Lance-Flammes", "spéciale", 203
+"Calcination", "spéciale", 183
+"Déflagration", "spéciale", 183

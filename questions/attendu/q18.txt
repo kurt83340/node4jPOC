@@ -1,0 +1,8 @@
+// PokéAPI 168b1e89467054cda2e7df43ccebbb69b459497a · q18.cypher
+pokemon, multiplicateur
+"Dracaufeu", 4.0
+"Lokhlass", 2.0
+"Florizarre", 1.0
+"Pikachu", 1.0
+"Ronflex", 1.0
+"Tortank", 1.0

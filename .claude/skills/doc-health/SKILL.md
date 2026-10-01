@@ -170,7 +170,7 @@ de chaque `spec.md` est la source machine-readable ; s'ils divergent, l'un des d
 ```bash
 for f in .claude/docs/specs/[0-9]*/spec.md; do
   [ -f "$f" ] || continue
-  st=$(grep -m1 "^status:" "$f" | awk '{print $2}')
+  st=$(sed -n 's/^status: *\([^ #]*\).*/\1/p' "$f" | head -1)
   id=$(basename "$(dirname "$f")")
   case "$st" in
     in-progress) grep -qE "\[~\].*$id" .claude/docs/ROADMAP.md || echo "🟠 $id : status: in-progress mais ROADMAP ≠ [~]" ;;

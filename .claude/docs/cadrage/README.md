@@ -56,7 +56,7 @@
 ## Contexte
 
 - **Données** : PokéAPI, fichiers CSV publics ([data/v2/csv](https://github.com/PokeAPI/pokeapi/tree/master/data/v2/csv)), textes en français (`language_id = 5`). Faits chiffrés et sources : [conception/research.md](../conception/research.md).
-- **Base** : AuraDB Free (Aura Agent en a besoin) ; repli sur Neo4j en local avec Docker.
+- **Base** : AuraDB Free (Aura Agent en a besoin) ; plus de repli local avec Docker depuis l'[ADR-0007](../adr/0007-infra-secrets-et-services-geres.md).
 - **Volume** : environ 10 000 nœuds et 113 000 relations (estimation).
 - **Fréquence** : chargement ponctuel, par un script **réexécutable sans créer de doublons**.
 - **Existant** : aucun, projet vierge (template claude-Setup v1.5.0).
@@ -64,7 +64,7 @@
 ## Contraintes
 
 - **Budget** : projet perso, offres gratuites d'abord (AuraDB Free ; MCP for Aura est inclus dans l'offre Free). Le coût est aussi un critère mesuré du comparatif.
-- **Sécurité** : identifiants Aura dans `.env` (gitignoré, lecture interdite à Claude par `settings.json`). Le mot de passe n'est jamais affiché ni committé.
+- **Sécurité** : identifiants dans GCP Secret Manager, lus au moment de servir ; plus de `.env` depuis l'[ADR-0007](../adr/0007-infra-secrets-et-services-geres.md). Le mot de passe n'est jamais affiché, écrit sur le disque ni committé.
 - **Délai** : aucun fixé.
 - **Hébergement** : AuraDB Free, qui se met en pause après 72 h sans activité puis est supprimée après 30 jours de pause.
 - **Techniques** : aucune stack imposée, c'est le POC qui dira lesquelles valent le coup. Doc à jour vérifiée avant chaque bibliothèque (les versions du brief datent du 2026-09-26).
@@ -90,7 +90,7 @@
 
 - [x] Brief rédigé et archivé (2026-09-28)
 - [x] Pivot : environnement cible Google Cloud (2026-09-28)
-- [ ] Instance AuraDB Free créée, vraie limite notée, identifiants dans `.env`
+- [x] Instance AuraDB Free créée, vraie limite notée, identifiants dans Secret Manager (2026-09-30)
 - [x] Projet Google Cloud avec compte de facturation : `jleroy-labo`, facturation active (constaté le 2026-09-30)
 - [x] Jalon 1 : chargement en Cypher pur ([ADR-0003](../adr/0003-mvp-chargement-cypher-pur.md)) et modèle espèce + formes ([ADR-0004](../adr/0004-mvp-modele-espece-formes.md)) décidés, plan validé (2026-09-28)
 
