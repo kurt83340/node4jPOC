@@ -24,10 +24,10 @@
 ## Next (par ordre)
 
 1. Appliquer les propositions de doc-health (piège U+202F en global, section Query dans ACCESS.md, entrées du jalon 2), puis commit et PR de la branche
-2. Angle mort « technique 1 » : chronométrer chaque question dans `questions.sh` (horloge monotone), estimer l'effort de mise en place, écrire sa fiche pour le tableau comparatif
+2. Angle mort « technique 1 » : chronométrer chaque question dans `questions.sh` (horloge monotone), estimer l'effort de mise en place, écrire sa fiche pour le tableau comparatif (coût quasi nul : Aura Free)
 3. Julien : relire à tête reposée les 5 tables sémantiques (Q3, Q9, Q16, Q17, Q26) avant le jalon 3
 4. Jalon 2 (NEO-2) : `/spec` de l'agent text-to-Cypher ; la fiche de schéma reprend « apprendre » tous jeux confondus, les noms en double, les catégories de la 9e génération, la méthode « train » et les apostrophes ; index plein texte (Q19) ; noms acceptés par le contrôle de Q2
-5. NEO-13 : « Terminé » après 72 h sans session sur la base ; mineur : shellcheck, Prettier et pytest au pre-commit
+5. NEO-13 : « Terminé » après 72 h sans session sur la base ; mineurs : shellcheck, Prettier et pytest au pre-commit, repli « URL signée Cloud Storage » jamais installé (plan 001)
 
 ## Continuation State (machine-readable — grammaire fixe `Clé: valeur`, 1 ligne chacune)
 
