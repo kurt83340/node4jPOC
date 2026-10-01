@@ -235,6 +235,11 @@ idempotence() {
     exit 2
   fi
   printf '── idempotence\n'
+  # Un second chargement écrit toujours des SET : sans statistiques, le contrôle passerait à vide.
+  if [[ -z "$STATISTIQUES" ]]; then
+    erreur "statistiques d'écriture absentes : cypher-shell a-t-il ignoré --format verbose ?"
+    exit 2
+  fi
   if grep -qiE '(created|added|deleted|removed) ' <<<"$STATISTIQUES"; then
     printf '✗ le second chargement a créé ou supprimé des éléments :\n%s' "$STATISTIQUES"
     ecarts=$((ecarts + 1))
