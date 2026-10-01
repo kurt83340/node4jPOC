@@ -24,12 +24,14 @@ Le POC devient transposable à une entreprise full Google Cloud ; dbt reste hors
 
 ## 📋 Jalon 1 — Socle de données (technique 1 : Cypher à la main)
 
-Instance créée ; données chargées en Cypher pur (`LOAD CSV`) par un script réexécutable sans doublons ; modèle espèce + formes documenté ; 30 questions de référence ([questions/README.md](../../questions/README.md)) avec leurs réponses attendues, calculées en Cypher. Ces requêtes servent de vérité de référence aux jalons suivants.
+Instance créée ; données chargées en Cypher pur (`LOAD CSV`) par un script réexécutable sans doublons ; modèle espèce + formes documenté ; 30 questions de référence ([questions/README.md](../../questions/README.md)) avec leurs réponses attendues, calculées en Cypher pour 27 d'entre elles (Q10, Q29 et Q30, comportementales, se notent par une règle). Ces requêtes servent de vérité de référence aux jalons suivants.
 
 - [x] [001-socle-donnees](specs/001-socle-donnees/spec.md) — livré 2026-10-01 (démarrée le 2026-09-29) : 8 859 nœuds et 113 700 relations, idempotence prouvée, 27 réponses de référence rejouables
 - [~] Garder l'instance Aura éveillée : job planifié `reveil-aura` et alerte par e-mail sur Google Cloud (NEO-13) — **EN COURS** : déployé et testé le 2026-09-30 ; à passer terminé après la première période creuse de 72 h sans requête humaine, si l'instance est toujours « Running »
 
 ## 📋 Jalon 2 — Agent text-to-Cypher via MCP
+
+La fiche de schéma reprend les règles de réponse du banc d'essai ([questions/README.md](../../questions/README.md) : « Pokémon » = espèce, sens de « apprendre ») et les cas limites gardés tels quels du [plan 001](specs/001-socle-donnees/plan.md) : noms en double (18 attaques Z, « Osmose Équine », 2 formes), `categorie` sans « Pokémon » pour la 9e génération, apostrophe typographique dans 62 noms. La propriété `categorie` a deux sens : « Pokémon Flamme » sur un Pokémon ; « physique », « spéciale » ou « statut » sur une attaque. Index plein texte sur les noms prévu ([ARCHITECTURE § 8](conception/ARCHITECTURE.md)).
 
 - [ ] `neo4j/mcp` branché sur Claude Code et sur un agent ADK (LLM à choisir : Gemini ou Claude via Vertex), mesuré sur les 30 questions
 - [ ] Fiche de schéma commune à toutes les techniques (règles, valeurs, exemples) et mesure « schéma français contre anglais » ([ADR-0005](adr/0005-mvp-conventions-nommage-schema.md))

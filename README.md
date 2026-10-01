@@ -1,6 +1,6 @@
 # node4jPOC · Banc d'essai agentique Neo4j
 
-> **Initiative** · porteur : Julien Leroy · lancée le 2026-09-28 · **jalon 1 en cours**
+> **Initiative** · porteur : Julien Leroy · lancée le 2026-09-28 · **jalon 1 livré le 2026-10-01, jalon 2 à démarrer**
 >
 > Suivi : [tableau Jira NEO](https://frjulienleroy.atlassian.net/jira/software/projects/NEO/boards/40) · [chronologie](https://frjulienleroy.atlassian.net/jira/software/projects/NEO/boards/40/timeline) · [ROADMAP](.claude/docs/ROADMAP.md)
 
@@ -25,7 +25,7 @@ Un jalon, c'est un epic Jira et une technique mesurée.
 
 | Jalon | Résultat visé                                                  | Technique                         | Spec                                                              | Jira                                                      | État      |
 | ----- | -------------------------------------------------------------- | --------------------------------- | ----------------------------------------------------------------- | --------------------------------------------------------- | --------- |
-| 1     | Le graphe chargé et vérifié, avec les 30 réponses de référence | Cypher à la main                  | [001-socle-donnees](.claude/docs/specs/001-socle-donnees/spec.md) | [NEO-1](https://frjulienleroy.atlassian.net/browse/NEO-1) | en cours  |
+| 1     | Le graphe chargé et vérifié, avec les 30 réponses de référence | Cypher à la main                  | [001-socle-donnees](.claude/docs/specs/001-socle-donnees/spec.md) | [NEO-1](https://frjulienleroy.atlassian.net/browse/NEO-1) | livré     |
 | 2     | Un agent text-to-Cypher mesuré sur les 30 questions            | `neo4j/mcp`, agent ADK            | à écrire                                                          | [NEO-2](https://frjulienleroy.atlassian.net/browse/NEO-2) | à venir   |
 | 3     | GraphRAG sur les descriptions, mesuré sur les 30 questions     | vecteurs Gemini et graphe         | à écrire                                                          | [NEO-3](https://frjulienleroy.atlassian.net/browse/NEO-3) | à venir   |
 | 4     | Les agents gérés mesurés, le tableau comparatif livré          | Aura Agent, Agent Runtime         | à écrire                                                          | [NEO-4](https://frjulienleroy.atlassian.net/browse/NEO-4) | à venir   |
@@ -34,7 +34,7 @@ Un jalon, c'est un epic Jira et une technique mesurée.
 
 ## ✅ Critères de réussite
 
-1. **Une vérité de référence** : les 30 questions ont leur réponse attendue, calculée en Cypher (jalon 1).
+1. **Une vérité de référence** : les 30 questions ont leur réponse attendue, calculée en Cypher pour 27 d'entre elles ; Q10, Q29 et Q30, comportementales, se notent par une règle (jalon 1).
 2. **Une mesure par technique** : chacune passe les 30 questions, notées sur les cinq critères, avec un score par catégorie ([ADR-0006](.claude/docs/adr/0006-mvp-banc-essai-30-questions.md)).
 3. **Un tableau comparatif** qui croise technique et question, livré au jalon 4.
 4. **Tout se rejoue** : le chargement ne crée aucun doublon, et les questions se relancent par script.
@@ -90,7 +90,7 @@ scripts/charger.sh --idempotence # efface, charge deux fois et compare : 0 idemp
 scripts/questions.sh --verifier  # rejoue les 27 questions de référence : 0 conforme, 1 écart, 2 erreur technique
 ```
 
-Le chargement se complète au fil de la spec 001, un fichier `cypher/` par groupe de données : `scripts/verifier.sh --section <nom>` contrôle chaque étape.
+Un fichier `cypher/` par groupe de données : `scripts/verifier.sh --section <nom>` n'en contrôle qu'un (`types`, `pokemon`, `attaques`…).
 
 ## Contact
 
