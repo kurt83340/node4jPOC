@@ -33,8 +33,9 @@ Instance créée ; données chargées en Cypher pur (`LOAD CSV`) par un script r
 
 La fiche de schéma reprend les règles de réponse du banc d'essai ([questions/README.md](../../questions/README.md) : « Pokémon » = espèce, sens de « apprendre ») et les cas limites gardés tels quels du [plan 001](specs/001-socle-donnees/plan.md) : noms en double (18 attaques Z, « Osmose Équine », 2 formes), `categorie` sans « Pokémon » pour la 9e génération, apostrophe typographique dans 62 noms. La propriété `categorie` a deux sens : « Pokémon Flamme » sur un Pokémon ; « physique », « spéciale » ou « statut » sur une attaque. Index plein texte sur les noms prévu ([ARCHITECTURE § 8](conception/ARCHITECTURE.md)).
 
-- [ ] `neo4j/mcp` branché sur Claude Code et sur un agent ADK (LLM à choisir : Gemini ou Claude via Vertex), mesuré sur les 30 questions
-- [ ] Fiche de schéma commune à toutes les techniques (règles, valeurs, exemples) et mesure « schéma français contre anglais » ([ADR-0005](adr/0005-mvp-conventions-nommage-schema.md))
+- [ ] [002-agent-text-to-cypher](specs/002-agent-text-to-cypher/spec.md) — conception validée le 2026-10-01 (33 tâches, [ADR-0009](adr/0009-mvp-protocole-mesure-techniques.md)) ; exécution à partir de T0.1, la base après le 2026-10-04. Elle couvre tout le jalon :
+  - `neo4j/mcp` branché sur Claude Code et sur un agent ADK (Claude Sonnet 5.5 et Gemini 3.8 Flash, via Vertex), mesuré sur les 30 questions
+  - Fiche de schéma commune à toutes les techniques (règles, valeurs, exemples) et mesure « schéma français contre anglais » ([ADR-0005](adr/0005-mvp-conventions-nommage-schema.md))
 
 ## 📋 Jalon 3 — GraphRAG sur les descriptions
 
