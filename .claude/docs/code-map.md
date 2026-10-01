@@ -55,7 +55,7 @@ Le détail fichier-par-fichier se découvre à la demande (`grep`, lecture) — 
 - Vérification d'abord (plan 001, D8) : `scripts/verifier.sh` s'écrit avant les chargements ; rouge sur base
   vide (code 1), chaque fichier `cypher/` le fait passer au vert section par section (`--section`).
 - Idempotence : `cypher/00-contraintes.cypher` passe avant tout `MERGE` ; chaque `MERGE` porte sur une clé
-  contrainte (identifiant PokéAPI, D2) ou sur un chemin (`Description`) ; une relance ne crée rien (T6.1).
+  contrainte (identifiant PokéAPI, plan 001, D2) ou sur un chemin (`Description`) ; une relance ne crée rien (T6.1).
 - Codes retour communs à tous les scripts : 0 succès · 1 écart constaté · 2 erreur technique (`scripts/commun.sh:8`).
 - Reproductibilité : tout part du commit PokéAPI figé (`scripts/commun.sh:22`, [ADR-0001](adr/0001-mvp-jeu-de-donnees-pokeapi.md)) ;
   changer de commit change les réponses de référence de `questions/`.

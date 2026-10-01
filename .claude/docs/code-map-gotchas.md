@@ -10,19 +10,17 @@
 
 ## Globaux (injectés pour TOUTE édition de code — max 5 lignes)
 
-- ⚠️ Mesurer une durée (journal de chargement, temps de réponse du banc d'essai) : horloge monotone,
-  `read -r t _ </proc/uptime` en bash (`scripts/commun.sh:120`), `time.monotonic()` en Python. Sous
-  WSL2, l'horloge murale recule par à-coups : `EPOCHREALTIME`, `SECONDS` et `date +%s` donnent des
-  durées fausses, voire négatives (« 0,-1 s » au go/no-go du 2026-09-30).
+- ⚠️ Mesurer une durée (journal, temps de réponse du banc d'essai) : horloge monotone, `/proc/uptime` en bash
+  (`scripts/commun.sh:120`), `time.monotonic()` en Python. Sous WSL2, `date +%s`, `SECONDS`, `EPOCHREALTIME` reculent.
+- ⚠️ Write, Edit et Bash (heredoc de commit compris) décodent la séquence d'échappement de l'espace fine insécable
+  U+202F en vrai caractère, invisible. Fichier : écrire un marqueur, le remplacer via Python par `chr(92) + "u202F"`,
+  vérifier qu'aucun `chr(0x202F)` ne reste. Commit, doc, chat : écrire « U+202F » (vu le 2026-09-29 et le 2026-10-01).
 
 ## Par zone
 
-- ⚠️ `cypher/06-descriptions.cypher` — les outils d'écriture Write et Edit décodent la séquence
-  d'échappement de l'espace fine insécable U+202F en vrai caractère, invisible : la formule de
-  normalisation semble alors remplacer une espace par une espace. Écrire la séquence littérale via
-  Python (`chr(92) + "u202F"`), puis vérifier que le fichier ne contient aucun `chr(0x202F)`. La
-  formule doit remplacer `\n` ET U+202F ([plan 001, D4](specs/001-socle-donnees/plan.md)) : avec
-  `\n` seul, 5 240 descriptions au lieu de 5 233.
+- ⚠️ `cypher/06-descriptions.cypher` — la normalisation remplace `\n` ET U+202F
+  ([plan 001, D4](specs/001-socle-donnees/plan.md)) : avec `\n` seul, 5 240 descriptions au lieu de 5 233. Une formule
+  qui semble remplacer une espace par une espace trahit une séquence d'échappement décodée (piège global ci-dessus).
 - ⚠️ `scripts/commun.sh` — sur Aura, l'utilisateur et la base portent l'identifiant de l'instance,
   pas `neo4j` : les lire dans le secret (`NEO4J_USERNAME`, `NEO4J_DATABASE`), rien en dur. Toute sortie
   de `cypher-shell` passe par `filtrer` (mot de passe → arrêt, identifiant → ‹instance›) ; jamais de

@@ -4,7 +4,7 @@
 > les secrets vivent dans GCP Secret Manager, lus au moment de servir, jamais affichés ni écrits sur le disque
 > ([ADR-0007](adr/0007-infra-secrets-et-services-geres.md)).
 
-**Dernière MAJ :** 2026-09-30
+**Dernière MAJ :** 2026-10-01
 
 ## Checklist
 
@@ -39,6 +39,18 @@
   le menu de l'instance, sinon la recréer (ci-dessous) et tout recharger. Le job `reveil-aura` l'évite
   (ci-dessous).
 - Mot de passe perdu : menu de l'instance → « Recover Database Credentials », avant de penser à recréer.
+
+## Explorer le graphe (console Aura, outil Query)
+
+Pour les jalons 2 à 4 (constaté le 2026-10-01).
+
+- **Connexion** : Query s'ouvre déconnecté (« No instance connected ») : « connect to instance », « Free instance »,
+  « Connect ». Le compte Aura suffit, sans mot de passe de base (par défaut pour une organisation créée après le
+  2025-05-29, [doc Aura](https://neo4j.com/docs/aura/security/tool-auth/)) ; il peut écrire : n'y lancer que des lectures.
+- **Visites guidées** par-dessus : « Try the new instance explorer » → Skip ; « Work in tabs » → Dismiss.
+- **Relations** : renvoyer des chemins (`MATCH chemin = (…)-[…]->(…) RETURN chemin`) ; des nœuds seuls n'en montrent aucune.
+- **Légende** : les bulles affichent `id` ; panneau « Results overview », pastille du label, « Caption », puis `nom`.
+- **Sans connexion** : [page de visualisation](https://claude.ai/artifact/PtTfvzP9uXHWQGF9j2rbeB) (artefact privé, 3 extraits).
 
 ## Secret `neo4j-aura-poc`
 

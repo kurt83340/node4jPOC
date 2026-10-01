@@ -1,40 +1,40 @@
-# HANDOFF — 2026-10-01 02h59
+# HANDOFF — 2026-10-01 03h30
 
 > Court, narratif, versionné. Patterns techniques → auto-memory. Reprise précise → /resume.
 
-**Branche** : `feature/001-socle-donnees` (poussée) ; [PR n°2](https://github.com/kurt83340/node4jPOC/pull/2) vers `main`, à fusionner en squash
-**Spec en cours** : aucune ; [001-socle-donnees](specs/001-socle-donnees/spec.md) livrée le 2026-10-01 (16/16, validée par Julien)
-**Goal session** : NEO-9 à NEO-12, du graphe vide au banc d'essai rejouable
+**Branche** : `fix/doc-health-2026-10-01` (depuis `main`, qui contient la spec 001 fusionnée : PR n°2, `712e733`)
+**Spec en cours** : aucune ; [001-socle-donnees](specs/001-socle-donnees/spec.md) livrée et fusionnée le 2026-10-01
+**Goal session** : (prochaine) finir la maintenance de la doc et l'angle mort « technique 1 », puis ouvrir le jalon 2 (NEO-2)
 
 ## Status
 
-- ✅ `verifier.sh` 33/33 (8 859 nœuds, 113 700 relations) · `charger.sh --idempotence` IDEMPOTENT · `questions.sh --verifier` 27/27
-- ✅ `shellcheck` propre ; `infra/reveil-aura` : 19 tests, ruff, mypy
-- ✅ Jira : NEO-9 à NEO-12 « Terminé » ; NEO-13 « En cours » (période creuse de 72 h)
-- ✅ Graphe visible sans connexion : [page privée](https://claude.ai/artifact/PtTfvzP9uXHWQGF9j2rbeB) ; base complète : console Aura, outil Query
+- ✅ `main` : spec 001 (graphe 33/33, idempotence, 27 réponses rejouables) ; Jira NEO-9 à NEO-12 « Terminé »
+- ✅ `/doc-health` du 2026-10-01 : tout vert (contexte 8,6k/25k) ; propositions de doc-maintainer dans `.claude/.cache/doc-health-2026-10-01.md` (local)
+- ⏳ NEO-13 : période creuse de 72 h à constater
 
 ## Échecs tentés (à ne pas refaire)
 
-- Taper la séquence d'échappement de U+202F avec Write, Edit ou Bash → vrai caractère invisible (jusque dans le message de `090b07d`) : marqueur remplacé par Python
-- Appliquer une grille sémantique qui rate le cœur de la question (« tour du monde » sans durée, « redoutable » sans humains) → règle commune de l'ADR-0008
-- Commit de `COMMIT_POKEAPI` en clair → gitleaks bloque (faux positif) : `# gitleaks:allow` sur la ligne, jamais `--no-verify`
+- Taper la séquence d'échappement de U+202F avec Write, Edit ou Bash → caractère invisible : marqueur remplacé par Python
+- Outil Query d'Aura : `RETURN` de nœuds seuls → aucune relation dessinée ; renvoyer des chemins (mémoire `aura-query-console`)
 
 ## Blocked on
 
-- Rien : la PR n°2 attend la relecture et la fusion de Julien
+- Rien
 
 ## Next (par ordre)
 
-1. Relire et fusionner la PR n°2 (squash), puis repartir de `main`
-2. NEO-13 : « Terminé » après 72 h sans session sur la base, si l'instance est « Running » ; corriger alors le commentaire Jira qui dit « samedi »
-3. Jalon 2 (NEO-2) : `/spec` de l'agent text-to-Cypher ; la fiche de schéma reprend les cas limites du plan 001
+1. Appliquer les propositions de doc-health (piège U+202F en global, section Query dans ACCESS.md, entrées du jalon 2), puis commit et PR de la branche
+2. Angle mort « technique 1 » : chronométrer chaque question dans `questions.sh` (horloge monotone), estimer l'effort de mise en place, écrire sa fiche pour le tableau comparatif (coût quasi nul : Aura Free)
+3. Julien : relire à tête reposée les 5 tables sémantiques (Q3, Q9, Q16, Q17, Q26) avant le jalon 3
+4. Jalon 2 (NEO-2) : `/spec` de l'agent text-to-Cypher ; la fiche de schéma reprend « apprendre » tous jeux confondus, les noms en double, les catégories de la 9e génération, la méthode « train » et les apostrophes ; index plein texte (Q19) ; noms acceptés par le contrôle de Q2
+5. NEO-13 : « Terminé » après 72 h sans session sur la base ; mineurs : shellcheck, Prettier et pytest au pre-commit, repli « URL signée Cloud Storage » jamais installé (plan 001)
 
 ## Continuation State (machine-readable — grammaire fixe `Clé: valeur`, 1 ligne chacune)
 
 Spec: aucune
-Task: aucune
+Task: maintenance doc-health, puis technique 1
 Fichiers en cours: aucun
-Bloqué sur: fusion de la PR n°2 par Julien
-Commande de reprise: git checkout main && git pull, puis /spec pour le jalon 2 (NEO-2)
+Bloqué sur: rien
+Commande de reprise: git status (branche fix/doc-health-2026-10-01), puis lire .claude/.cache/doc-health-2026-10-01.md
 
 → **Journal des sessions** (append-only) : [HANDOFF-journal.md](HANDOFF-journal.md) — non auto-chargé.
