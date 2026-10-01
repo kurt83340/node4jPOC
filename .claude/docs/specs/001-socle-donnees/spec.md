@@ -1,6 +1,6 @@
 ---
-status: in-progress # draft | validated | in-progress | done | parked
-progress: 15/16 # X/Y tasks (compté depuis tasks.md) — MAJ par /feature-done ou à la main
+status: done # draft | validated | in-progress | done | parked
+progress: 16/16 # X/Y tasks (compté depuis tasks.md) — MAJ par /feature-done ou à la main
 ---
 
 # Spec — Socle de données
@@ -26,9 +26,9 @@ Un graphe Pokémon fiable dans AuraDB, chargé par un script réexécutable, et 
 
 **Critères d'acceptation :**
 
-- [ ] Le script charge les nœuds et relations du modèle retenu, depuis un commit PokéAPI figé ([ADR-0001](../../adr/0001-mvp-jeu-de-donnees-pokeapi.md)).
+- [x] Le script charge les nœuds et relations du modèle retenu, depuis un commit PokéAPI figé ([ADR-0001](../../adr/0001-mvp-jeu-de-donnees-pokeapi.md)).
 - [x] Une 2e exécution ne crée aucun doublon : mêmes nombres de nœuds et de relations.
-- [ ] Les identifiants sont lus dans Secret Manager au lancement, jamais affichés, écrits sur le disque ni committés ([ADR-0007](../../adr/0007-infra-secrets-et-services-geres.md)).
+- [x] Les identifiants sont lus dans Secret Manager au lancement, jamais affichés, écrits sur le disque ni committés ([ADR-0007](../../adr/0007-infra-secrets-et-services-geres.md)).
 
 ### US2 — Documenter le modèle
 

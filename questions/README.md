@@ -73,7 +73,7 @@
 - **Conversations** : Q18 se pose dans la même conversation, juste après Q2 ; Q28 juste après Q27. Une technique sans mémoire de conversation échoue logiquement à Q18 et Q28 : c'est une mesure, pas un bug (Aura Agent sur Free ne garde pas l'historique).
 - **Q1** : le type Roche (×4), puis les attaques Roche les plus puissantes **qu'au moins un Pokémon peut apprendre** (les capacités Z, jamais apprises, sont exclues). Le classement suit puissance × multiplicateur ; la précision, affichée dans la réponse de référence, sert à juger l'explication.
 - **Q2** : pas de réponse figée, une **requête de contrôle**. Pour chaque type d'attaque super efficace (×2 ou plus) contre au moins un Pokémon de l'équipe de référence, l'équipe proposée doit compter au moins un membre qui y résiste (×0,5 ou moins, immunité comprise). La requête renvoie les types non couverts : liste vide = équipe valide. 6 espèces distinctes.
-- **Q3, Q9, Q16, Q17, Q26 (sémantiques)** : trois ensembles, fixés par une grille écrite avant le tri (décision de Julien le 2026-10-01) :
+- **Q3, Q9, Q16, Q17, Q26 (sémantiques)** : trois ensembles, fixés par une grille écrite avant le tri (décision de Julien le 2026-10-01, [ADR-0008](../.claude/docs/adr/0008-mvp-notation-questions-semantiques.md)) :
   - **obligatoire** : une description le dit explicitement, de l'espèce elle-même ;
   - **acceptable** : une notion voisine qu'un lecteur raisonnable accepterait ;
   - **écarté** : le mot y est, pas le sens (le verbe « laver » pour « lave », un trait du corps au lieu d'un habitat…).

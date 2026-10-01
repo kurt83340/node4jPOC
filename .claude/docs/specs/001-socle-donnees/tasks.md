@@ -8,7 +8,7 @@
 > il « perd le fil » (échecs ×4 constatés en télémétrie, Morph 2026) → découper la phase.
 
 **Date :** 2026-09-28 (revue adverse intégrée)
-**Status :** [~] 15/16 tasks → MAJ au fil de l'eau
+**Status :** [x] 16/16 tasks — livrée le 2026-10-01
 
 ## Phase 1 — Préparer (sans instance)
 
@@ -60,19 +60,19 @@
 
 - [x] **T7.1** : `questions/qNN.cypher` × 27 (Q10, Q29 et Q30 se notent par une règle, sans requête) et `scripts/questions.sh` (format déterministe, SHA du commit en en-tête) ; Q1 = Roche ×4 contre Dracaufeu. Fait le 2026-10-01 : `questions.sh --enregistrer` et `--verifier`, en lecture seule ; 27 réponses dans `questions/attendu/`, SHA lu dans `scripts/commun.sh` ; 22 questions exactes relues avec Julien (précision affichée en Q1, Q27 et Q28, Gigansel en Q20) ; 5 sémantiques par grille, filet de mots-clés et table de classement (méthode et notation dans `questions/README.md`). CONFORME : 27 questions
   - DoD : `command_passes: scripts/questions.sh --verifier`
-- [ ] **T7.2** : `code-map.md`, `stack.md` et la section Stack du `README.md` à jour, ADR-0003 à ADR-0005 vérifiés, puis `/feature-done 001-socle-donnees`
+- [x] **T7.2** : `code-map.md`, `stack.md` et la section Stack du `README.md` à jour, ADR-0003 à ADR-0005 vérifiés, puis `/feature-done 001-socle-donnees`. Fait le 2026-10-01 : renvois du code-map recalés, trois pièges ajoutés, `stack.md` à jour ; le README n'a pas de section Stack, ses sections « Démarrer », « Décisions » et « Risques » sont à jour ; ADR-0003 à ADR-0005 vérifiés sur le schéma réel de la base ; ADR-0008 (notation des questions sémantiques) ; livraison validée par Julien
   - DoD : `manual: Julien valide la livraison`
 
 ## Definition of Done (global)
 
 La feature est livrée quand :
 
-- [ ] Tous les critères d'acceptation de [spec.md](spec.md) cochés
-- [ ] `verifier.sh` conforme, idempotence prouvée (T6.1), questions rejouables (T7.1)
-- [ ] Pas de TODO ni de `// FIXME` dans les scripts
-- [ ] Aucun identifiant dans le dépôt ni dans une sortie de commande
-- [ ] Documentation à jour (modèle, code-map, stack, décisions du plan)
-- [ ] Commit sur la branche `feature/001-socle-donnees`
+- [x] Tous les critères d'acceptation de [spec.md](spec.md) cochés
+- [x] `verifier.sh` conforme, idempotence prouvée (T6.1), questions rejouables (T7.1)
+- [x] Pas de TODO ni de `// FIXME` dans les scripts
+- [x] Aucun identifiant dans le dépôt ni dans une sortie de commande
+- [x] Documentation à jour (modèle, code-map, stack, décisions du plan)
+- [x] Commit sur la branche `feature/001-socle-donnees`
 
 ## Blockers / questions
 

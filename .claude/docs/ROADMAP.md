@@ -4,7 +4,7 @@
 > **Plan détaillé** (phases, DoD) → le `tasks.md` de chaque spec ; pas de plan macro séparé ([conception/tasks.md](conception/tasks.md)).
 > MAJ à chaque session ou via `/feature-done`.
 
-**Dernière MAJ :** 2026-09-30
+**Dernière MAJ :** 2026-10-01
 
 ## 🔄 Pivot 2026-09-28 — Environnement cible Google Cloud
 
@@ -26,7 +26,7 @@ Le POC devient transposable à une entreprise full Google Cloud ; dbt reste hors
 
 Instance créée ; données chargées en Cypher pur (`LOAD CSV`) par un script réexécutable sans doublons ; modèle espèce + formes documenté ; 30 questions de référence ([questions/README.md](../../questions/README.md)) avec leurs réponses attendues, calculées en Cypher. Ces requêtes servent de vérité de référence aux jalons suivants.
 
-- [~] [001-socle-donnees](specs/001-socle-donnees/spec.md) — **EN COURS** 15/16 tasks (démarrée le 2026-09-29)
+- [x] [001-socle-donnees](specs/001-socle-donnees/spec.md) — livré 2026-10-01 (démarrée le 2026-09-29) : 8 859 nœuds et 113 700 relations, idempotence prouvée, 27 réponses de référence rejouables
 - [~] Garder l'instance Aura éveillée : job planifié `reveil-aura` et alerte par e-mail sur Google Cloud (NEO-13) — **EN COURS** : déployé et testé le 2026-09-30 ; à passer terminé après la première période creuse de 72 h sans requête humaine, si l'instance est toujours « Running »
 
 ## 📋 Jalon 2 — Agent text-to-Cypher via MCP
@@ -55,7 +55,7 @@ Instance créée ; données chargées en Cypher pur (`LOAD CSV`) par un script r
 
 ### Risques courants
 
-- Limite d'AuraDB Free : 200 000 nœuds et 400 000 relations (lue le 2026-09-30) ; le graphe prévu en occupe ~5 % et ~28 %
+- Limite d'AuraDB Free : 200 000 nœuds et 400 000 relations (lue le 2026-09-30) ; le graphe chargé en occupe 4,4 % et 28,4 %
 - Instance Free en pause après 72 h sans activité, supprimée après 30 jours de pause : garder le script de chargement réexécutable ; le job de réveil quotidien `reveil-aura` l'évite (NEO-13)
 - Coûts qui tournent en tâche de fond : éteindre Aura Agent exposé, l'agent Agent Runtime (`min_instances=0`) et toute instance Business Critical après chaque session de mesure
 
