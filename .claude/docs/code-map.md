@@ -7,7 +7,7 @@
 >
 > ⚠️ Avant d'éditer un fichier, vérifie les **règles de couplage** ci-dessous.
 
-**Dernière MAJ :** 2026-09-30
+**Dernière MAJ :** 2026-10-01
 
 > 🧭 **Principe (aligné [best-practices Anthropic](https://code.claude.com/docs/en/best-practices))** :
 > à EXCLURE d'ici → tout ce que Claude « peut trouver en lisant le code » : descriptions
@@ -26,7 +26,7 @@ Secret Manager ─┬─► scripts/ ─► cypher-shell ─► AuraDB Free ◄�
 
 → Orientation rapide : chargement → `cypher/NN-*.cypher` (ordre fixe : [ARCHITECTURE § 3](conception/ARCHITECTURE.md)) ;
 identifiants, purge, codes retour → `scripts/` (fonctions partagées : `scripts/commun.sh`) ; banc d'essai → `questions/` ; réveil quotidien d'Aura et
-son alerte → `infra/reveil-aura/` (job Cloud Run, [RUNBOOK](RUNBOOK.md)). `questions/qNN.cypher` : à venir (T7.1).
+son alerte → `infra/reveil-aura/` (job Cloud Run, [RUNBOOK](RUNBOOK.md)). Réponses de référence : `questions/attendu/`, rejouées par `scripts/questions.sh`.
 Le détail fichier-par-fichier se découvre à la demande (`grep`, lecture) — pas ici.
 
 ## Règles de couplage (⭐ le cœur — non déductible du code)
@@ -57,7 +57,7 @@ Le détail fichier-par-fichier se découvre à la demande (`grep`, lecture) — 
 - Idempotence : `cypher/00-contraintes.cypher` passe avant tout `MERGE` ; chaque `MERGE` porte sur une clé
   contrainte (identifiant PokéAPI, D2) ou sur un chemin (`Description`) ; une relance ne crée rien (T6.1).
 - Codes retour communs à tous les scripts : 0 succès · 1 écart constaté · 2 erreur technique (`scripts/commun.sh:8`).
-- Reproductibilité : tout part du commit PokéAPI figé (`scripts/charger.sh:16`, [ADR-0001](adr/0001-mvp-jeu-de-donnees-pokeapi.md)) ;
+- Reproductibilité : tout part du commit PokéAPI figé (`scripts/commun.sh:22`, [ADR-0001](adr/0001-mvp-jeu-de-donnees-pokeapi.md)) ;
   changer de commit change les réponses de référence de `questions/`.
 
 ## Gotchas → `code-map-gotchas.md`

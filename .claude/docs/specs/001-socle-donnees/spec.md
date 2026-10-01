@@ -1,6 +1,6 @@
 ---
 status: in-progress # draft | validated | in-progress | done | parked
-progress: 14/16 # X/Y tasks (compté depuis tasks.md) — MAJ par /feature-done ou à la main
+progress: 15/16 # X/Y tasks (compté depuis tasks.md) — MAJ par /feature-done ou à la main
 ---
 
 # Spec — Socle de données
@@ -50,8 +50,8 @@ Un graphe Pokémon fiable dans AuraDB, chargé par un script réexécutable, et 
 **Critères d'acceptation :**
 
 - [x] 30 questions en 6 catégories, chacune avec sa technique visée ([questions/README.md](../../../../questions/README.md)).
-- [ ] Chaque question a sa requête Cypher (ou, pour Q10, Q29 et Q30, sa règle de notation) et sa réponse attendue, rejouables.
-- [ ] Q1 (« Quelles attaques font le plus mal à Dracaufeu ? ») donne bien Roche ×4.
+- [x] Chaque question a sa requête Cypher (ou, pour Q10, Q29 et Q30, sa règle de notation) et sa réponse attendue, rejouables.
+- [x] Q1 (« Quelles attaques font le plus mal à Dracaufeu ? ») donne bien Roche ×4.
 
 ## Scope IN
 

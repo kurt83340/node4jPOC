@@ -8,7 +8,7 @@
 > il « perd le fil » (échecs ×4 constatés en télémétrie, Morph 2026) → découper la phase.
 
 **Date :** 2026-09-28 (revue adverse intégrée)
-**Status :** [~] 14/16 tasks → MAJ au fil de l'eau
+**Status :** [~] 15/16 tasks → MAJ au fil de l'eau
 
 ## Phase 1 — Préparer (sans instance)
 
@@ -58,7 +58,7 @@
 
 ## Phase 7 — Questions de référence et clôture
 
-- [ ] **T7.1** : `questions/qNN.cypher` × 27 (Q10, Q29 et Q30 se notent par une règle, sans requête) et `scripts/questions.sh` (format déterministe, SHA du commit en en-tête) ; Q1 = Roche ×4 contre Dracaufeu
+- [x] **T7.1** : `questions/qNN.cypher` × 27 (Q10, Q29 et Q30 se notent par une règle, sans requête) et `scripts/questions.sh` (format déterministe, SHA du commit en en-tête) ; Q1 = Roche ×4 contre Dracaufeu. Fait le 2026-10-01 : `questions.sh --enregistrer` et `--verifier`, en lecture seule ; 27 réponses dans `questions/attendu/`, SHA lu dans `scripts/commun.sh` ; 22 questions exactes relues avec Julien (précision affichée en Q1, Q27 et Q28, Gigansel en Q20) ; 5 sémantiques par grille, filet de mots-clés et table de classement (méthode et notation dans `questions/README.md`). CONFORME : 27 questions
   - DoD : `command_passes: scripts/questions.sh --verifier`
 - [ ] **T7.2** : `code-map.md`, `stack.md` et la section Stack du `README.md` à jour, ADR-0003 à ADR-0005 vérifiés, puis `/feature-done 001-socle-donnees`
   - DoD : `manual: Julien valide la livraison`

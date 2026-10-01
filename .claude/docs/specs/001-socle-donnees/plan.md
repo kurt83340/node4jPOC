@@ -154,6 +154,7 @@ CSV lus (commit figé) : `languages`, `types`, `type_names`, `type_efficacy`, `p
 
 **Choix :** `ORDER BY` total, listes triées (`COLLECT { … ORDER BY … }`), `--format plain`, SHA du commit PokéAPI en en-tête. Q2 (« équipe de 6 ») : une requête qui vérifie une équipe proposée, pas une réponse figée. Q3 (« volcans ») : un ensemble obligatoire (16 espèces citant « volcan ») et un ensemble acceptable (magma, cratère, lave…).
 **Pourquoi :** un diff texte n'est stable après rechargement qu'avec un ordre total ; certaines questions ont plusieurs bonnes réponses.
+**Fait le 2026-10-01 (T7.1) :** `scripts/questions.sh` (`--enregistrer`, `--verifier`, en lecture seule) et 27 réponses dans `questions/attendu/`, le SHA lu dans `scripts/commun.sh`. Questions sémantiques : grille écrite avant le tri, filet de mots-clés en mots entiers, table de classement explicite, règle commune « un acceptable touche le cœur de la question » (méthode et notation dans le [README des questions](../../../../questions/README.md), décisions de Julien). Q3 compte 11 obligatoires et non 16 : citer « volcan » ne suffit pas, il faut que l'espèce y vive.
 
 ### D12 — 30 questions en 6 catégories
 
