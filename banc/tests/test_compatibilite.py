@@ -12,13 +12,14 @@ import sys
 import pytest
 from claude_agent_sdk import ClaudeAgentOptions, ClaudeSDKClient
 
-# Points d'entrée des cellules (plan, D2 et D3), sous la forme (module, nom).
+# Points d'entrée des cellules (plan, D2 et D3 ; Claude par l'API depuis l'ADR-0011), sous la forme
+# (module, nom).
 POINTS_D_ENTREE = [
-    ("anthropic", "AsyncAnthropicVertex"),
+    ("anthropic", "AsyncAnthropic"),
     ("claude_agent_sdk", "ClaudeSDKClient"),
     ("google.adk.agents", "LlmAgent"),
     ("google.adk.models.anthropic_llm", "AnthropicGenerateContentConfig"),
-    ("google.adk.models.anthropic_llm", "Claude"),
+    ("google.adk.models.anthropic_llm", "AnthropicLlm"),
     ("google.adk.runners", "Runner"),
     ("google.adk.sessions", "InMemorySessionService"),
     # Extra « mcp » d'ADK : sans lui, ces deux noms manquent, et ADK ne le dit que dans son journal.

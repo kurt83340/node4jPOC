@@ -76,6 +76,7 @@ def acces_claude(nom: str) -> bool:
     """Vrai pour une variable qui donne accès à Claude, que le lanceur retire."""
     return nom.startswith("ANTHROPIC_") or nom == "CLAUDE_CODE_OAUTH_TOKEN"
 
+
 # Faux outils : rien que la bibliothèque standard, journal dans ../journal.
 FAUX_GCLOUD = """
 import json, sys
