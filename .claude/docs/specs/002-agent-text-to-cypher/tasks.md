@@ -8,7 +8,7 @@
 > il « perd le fil » (échecs ×4 constatés en télémétrie, Morph 2026) → découper la phase.
 
 **Date :** 2026-10-01
-**Status :** [~] 3/33 tasks → MAJ au fil de l'eau
+**Status :** [~] 4/33 tasks → MAJ au fil de l'eau
 
 > Phases 0 à 6 : sans la base (prévues pendant la période creuse de NEO-13, close le 2026-10-07). Phases 7 à 11 : sur la base.
 > Les tests n'appellent aucun outil réel : PATH réduit aux faux outils, HOME temporaire.
@@ -23,7 +23,7 @@
   - DoD : `manual: Julien accepte les conditions de Model Garden pour Sonnet 5.5, Sonnet 5 et Haiku 4.5`, puis `command_passes: uv run --directory banc python -m banc acces`
 - [x] **T0.3** : `neo4j-mcp` v1.6.0 installé depuis la release GitHub, sans le lancer (il interroge la base au démarrage) ; noms des variables, lecture seule et télémétrie lus dans le source du tag v1.6.0, et notés dans `plan.md` § D1 — fait le 2026-10-07 : somme vérifiée, binaire dans `~/.local/share/neo4j-mcp/v1.6.0/` ; lecture seule et télémétrie se règlent, circuit breaker non déclenché
   - DoD : `command_passes: sha256sum -c <fichier des sommes publié avec la release v1.6.0> --ignore-missing`
-- [ ] **T0.4** : `scripts/mcp-neo4j.sh` : chemin absolu, secret lu par `commun.sh` avec `gcloud` sans stdin, variables du tag, `READ_ONLY` et télémétrie coupée, anciens noms retirés, rien sur stdout, stderr filtré, puis `exec`
+- [x] **T0.4** : `scripts/mcp-neo4j.sh` : chemin absolu, secret lu par `commun.sh` avec `gcloud` sans stdin, variables du tag, `READ_ONLY` et télémétrie coupée, anciens noms retirés, rien sur stdout, stderr filtré, puis `exec` — fait le 2026-10-07 : 12 tests, PATH réduit à bash et aux deux faux outils ; aucun argument transmis (les options de `neo4j-mcp` passent avant l'environnement), tout `NEO4J_*` hérité retiré ; chaque propriété vérifiée par mutation (10 fautes injectées, 10 détectées) ; `trouver_outils` accepte une liste d'outils, `filtrer_flux` filtre un flux
   - DoD : `command_passes: uv run --directory banc pytest tests/test_lanceur.py -q` (sous la liste blanche de D3, faux `gcloud` et faux `neo4j-mcp` : variables présentes, aucune valeur sur stdout, mot de passe jamais en argument, stdin intact)
 
 ## Phase 1 — Banc lisible par le harnais (NEO-16)
