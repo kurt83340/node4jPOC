@@ -8,9 +8,9 @@
 > il « perd le fil » (échecs ×4 constatés en télémétrie, Morph 2026) → découper la phase.
 
 **Date :** 2026-10-01
-**Status :** [ ] 0/33 tasks → MAJ au fil de l'eau
+**Status :** [~] 1/33 tasks → MAJ au fil de l'eau
 
-> Phases 0 à 6 : sans la base, avant le 2026-10-04 (période creuse de NEO-13). Phases 7 à 11 : sur la base.
+> Phases 0 à 6 : sans la base (prévues pendant la période creuse de NEO-13, close le 2026-10-07). Phases 7 à 11 : sur la base.
 > Les tests n'appellent aucun outil réel : PATH réduit aux faux outils, HOME temporaire.
 > Une branche et une PR par phase ([rule git-workflow](../../../rules/git-workflow.md)) ; le titre de la PR finit par
 > la clé Jira indiquée dans le titre de la phase (epic [NEO-2](https://frjulienleroy.atlassian.net/browse/NEO-2)).
@@ -74,7 +74,7 @@
 
 ## Phase 7 — Retour sur la base, à partir du 2026-10-04 (NEO-20 ; T7.1 : NEO-13)
 
-- [ ] **T7.1** : NEO-13 : instance toujours « Running » après 72 h sans requête humaine
+- [x] **T7.1** : NEO-13 : instance toujours « Running » après 72 h sans requête humaine — fait le 2026-10-07 : aucune requête humaine depuis le 2026-10-01, `reveil-aura` réussi 7 fois sur 7, NEO-13 « Terminé »
   - DoD : `manual: console Aura « Running », NEO-13 passé à « Terminé »`
 - [ ] **T7.2** : index plein texte (analyseur vérifié d'abord par `listAvailableAnalyzers()`) dans `cypher/00-contraintes.cypher`, 34e contrôle (présence de l'index) dans `cypher/90-verification.cypher`, rechargement complet, `$proposee` par défaut
   - DoD : `command_passes: scripts/charger.sh --tout && scripts/verifier.sh && scripts/charger.sh --idempotence && scripts/questions.sh --verifier`
@@ -132,7 +132,7 @@ La feature est livrée quand :
 
 ## Blockers / questions
 
-- NEO-13 : aucune requête sur la base avant le 2026-10-04, pas même le démarrage de `neo4j-mcp`.
+- NEO-13 clos le 2026-10-07 : la base est de nouveau utilisable.
 - Prix de Sonnet 5.5 sur Vertex `eu`, quotas Claude et reprises internes des clients à relever (T0.2).
 - Compatibilité de Python 3.14 avec ADK et l'Agent SDK (T0.1).
 - `TERMINATE TRANSACTIONS` permis sur Aura Free ? (T7.4)

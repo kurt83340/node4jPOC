@@ -1,6 +1,6 @@
 ---
-status: validated # draft | validated | in-progress | done | parked
-progress: 0/33 # X/Y tasks (compté depuis tasks.md) — MAJ par /feature-done ou à la main
+status: in-progress # draft | validated | in-progress | done | parked
+progress: 1/33 # X/Y tasks (compté depuis tasks.md) — MAJ par /feature-done ou à la main
 ---
 
 # Spec — Agent text-to-Cypher
@@ -88,7 +88,7 @@ Mesurer la technique 2 du banc d'essai : un agent LLM qui écrit lui-même le Cy
 
 - MCP for Aura, Agent Runtime, Gemini Enterprise et Aura Agent (jalon 4) ; GraphRAG (jalon 3) ; mémoire d'agent (jalon 5)
 - d'autres modèles (Opus 5.5, Gemini 3.1 Pro), la variante « `get-schema` sans fiche », le client n8n
-- un juge LLM ; le chronométrage de la technique 1 (tâche à part, après le 2026-10-04)
+- un juge LLM ; le chronométrage de la technique 1 (tâche à part)
 
 ## Métriques de succès
 
@@ -99,7 +99,7 @@ Mesurer la technique 2 du banc d'essai : un agent LLM qui écrit lui-même le Cy
 
 ## Dépendances
 
-- NEO-13 clos (période creuse de 72 h, au plus tôt le 2026-10-04) avant toute requête sur la base
+- NEO-13 clos (période creuse de 72 h) avant toute requête sur la base : fait le 2026-10-07
 - accès aux modèles Claude sur Vertex (Model Garden) pour `jleroy-labo`
 - spec [001-socle-donnees](../001-socle-donnees/spec.md) livrée (graphe, `questions/attendu/`)
 
