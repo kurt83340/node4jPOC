@@ -13,12 +13,14 @@ Format : [Keep a Changelog](https://keepachangelog.com/). Versionning : `vYYYY.M
 - [Dépôt GitHub privé](https://github.com/kurt83340/node4jPOC) `kurt83340/node4jPOC` relié à NEO par l'application GitHub for Atlassian : une clé de ticket dans un message de commit ou un titre de PR fait remonter le travail dans le ticket (2026-09-30)
 - Job `reveil-aura` sur Google Cloud ([`infra/reveil-aura/`](../../infra/reveil-aura/), NEO-13) : Cloud Scheduler lance chaque jour à 9 h un job Cloud Run qui envoie `RETURN 1` à Aura, pour que l'instance Free ne se mette pas en pause ; toute erreur envoie un e-mail (alerte Cloud Monitoring sur journaux). Exploitation : [RUNBOOK](RUNBOOK.md) (2026-09-30)
 - Socle de données du jalon 1 ([spec 001](specs/001-socle-donnees/spec.md)) : graphe Pokémon chargé en Cypher pur depuis le commit PokéAPI figé, 8 859 nœuds et 113 700 relations (`scripts/charger.sh --tout`, journal dans `logs/`) ; vérification écrite d'abord (`scripts/verifier.sh`) ; preuve d'idempotence en une commande (`charger.sh --idempotence`) ; 27 requêtes de référence et leur rejeu (`scripts/questions.sh`) (2026-10-01)
+- Suivi Jira du jalon 2 sous l'epic [NEO-2](https://frjulienleroy.atlassian.net/browse/NEO-2) : NEO-14 à NEO-24, un ticket par phase de la [spec 002](specs/002-agent-text-to-cypher/tasks.md) (les plus petites regroupées), une story (NEO-21, la mesure) et deux actions de Julien (NEO-15, NEO-22) (2026-10-01)
 - Tests du socle : `verifier.sh` 33 contrôles conformes ; `charger.sh --idempotence` IDEMPOTENT (chargement sur base vide en 37 s, second chargement sans aucune création) ; `questions.sh --verifier` 27 questions conformes ; `shellcheck` propre sur `scripts/`
 
 ### Changed
 
 - Pivot 2026-09-28 : environnement cible Google Cloud, découpage en 6 jalons ([CR](cadrage/reunions/2026-09-28-pivot.md))
 - [Règles git](../rules/git-workflow.md) : clé du ticket Jira à la fin du sujet des commits, clé de l'epic du jalon à la fin du titre des PR, aucune clé dans le nom des branches, commits et PR au seul nom de Julien (2026-09-30)
+- [Règles git](../rules/git-workflow.md) : une branche et une PR par phase, fusion en merge commit (seul mode permis par le dépôt, branche supprimée à la fusion), tag `jalon-N` à la livraison d'un jalon ; le titre d'une PR finit par la clé du ticket de sa phase (2026-10-01)
 
 ### Decided
 
@@ -30,6 +32,7 @@ Format : [Keep a Changelog](https://keepachangelog.com/). Versionning : `vYYYY.M
 - Banc d'essai : 30 questions de référence en 6 catégories ([ADR-0006](adr/0006-mvp-banc-essai-30-questions.md))
 - Secrets dans Secret Manager, plus de `.env` ; services gérés, le poste local n'est qu'un client, plus de repli Docker ([ADR-0007](adr/0007-infra-secrets-et-services-geres.md))
 - Notation des questions sémantiques : grille écrite avant le tri, trois ensembles (obligatoire, acceptable, écarté), table de classement rejouable, règle du cœur de la question ([ADR-0008](adr/0008-mvp-notation-questions-semantiques.md))
+- Protocole de mesure des techniques : plan croisé client × modèle, consigne et fiche communes, un seul chemin vers la base en lecture seule, notation mixte sans juge LLM, source citée vérifiée sur la trace, échec de l'agent compté faux, pilote puis 3 passes ([ADR-0009](adr/0009-mvp-protocole-mesure-techniques.md))
 
 ---
 

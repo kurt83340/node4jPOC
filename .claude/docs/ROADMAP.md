@@ -4,7 +4,7 @@
 > **Plan détaillé** (phases, DoD) → le `tasks.md` de chaque spec ; pas de plan macro séparé ([conception/tasks.md](conception/tasks.md)).
 > MAJ à chaque session ou via `/feature-done`.
 
-**Dernière MAJ :** 2026-10-01
+**Dernière MAJ :** 2026-10-07
 
 ## 🔄 Pivot 2026-09-28 — Environnement cible Google Cloud
 
@@ -22,19 +22,20 @@ Le POC devient transposable à une entreprise full Google Cloud ; dbt reste hors
 - [x] Instance AuraDB Free créée (GCP europe-west1), vraie limite notée, identifiants dans Secret Manager (2026-09-30) → [ACCESS](ACCESS.md)
 - [x] Projet Google Cloud avec compte de facturation : `jleroy-labo`, facturation active (constaté le 2026-09-30)
 
-## 📋 Jalon 1 — Socle de données (technique 1 : Cypher à la main)
+## ✅ Jalon 1 — Socle de données (technique 1 : Cypher à la main), terminé le 2026-10-07
 
 Instance créée ; données chargées en Cypher pur (`LOAD CSV`) par un script réexécutable sans doublons ; modèle espèce + formes documenté ; 30 questions de référence ([questions/README.md](../../questions/README.md)) avec leurs réponses attendues, calculées en Cypher pour 27 d'entre elles (Q10, Q29 et Q30, comportementales, se notent par une règle). Ces requêtes servent de vérité de référence aux jalons suivants.
 
 - [x] [001-socle-donnees](specs/001-socle-donnees/spec.md) — livré 2026-10-01 (démarrée le 2026-09-29) : 8 859 nœuds et 113 700 relations, idempotence prouvée, 27 réponses de référence rejouables
-- [~] Garder l'instance Aura éveillée : job planifié `reveil-aura` et alerte par e-mail sur Google Cloud (NEO-13) — **EN COURS** : déployé et testé le 2026-09-30 ; à passer terminé après la première période creuse de 72 h sans requête humaine, si l'instance est toujours « Running »
+- [x] Garder l'instance Aura éveillée : job planifié `reveil-aura` et alerte par e-mail sur Google Cloud (NEO-13) — livré 2026-10-07 : déployé et testé le 2026-09-30 ; du 2026-10-01 au 2026-10-07, aucune requête humaine, 7 exécutions réussies sur 7, l'instance n'est jamais passée en pause
 
 ## 📋 Jalon 2 — Agent text-to-Cypher via MCP
 
 La fiche de schéma reprend les règles de réponse du banc d'essai ([questions/README.md](../../questions/README.md) : « Pokémon » = espèce, sens de « apprendre ») et les cas limites gardés tels quels du [plan 001](specs/001-socle-donnees/plan.md) : noms en double (18 attaques Z, « Osmose Équine », 2 formes), `categorie` sans « Pokémon » pour la 9e génération, apostrophe typographique dans 62 noms. La propriété `categorie` a deux sens : « Pokémon Flamme » sur un Pokémon ; « physique », « spéciale » ou « statut » sur une attaque. Index plein texte sur les noms prévu ([ARCHITECTURE § 8](conception/ARCHITECTURE.md)).
 
-- [ ] `neo4j/mcp` branché sur Claude Code et sur un agent ADK (LLM à choisir : Gemini ou Claude via Vertex), mesuré sur les 30 questions
-- [ ] Fiche de schéma commune à toutes les techniques (règles, valeurs, exemples) et mesure « schéma français contre anglais » ([ADR-0005](adr/0005-mvp-conventions-nommage-schema.md))
+- [~] [002-agent-text-to-cypher](specs/002-agent-text-to-cypher/spec.md) — **EN COURS** 1/33 tasks : conception validée le 2026-10-01 ([ADR-0009](adr/0009-mvp-protocole-mesure-techniques.md)), T7.1 faite avec la clôture de NEO-13 ; reprise à T0.1. Elle couvre tout le jalon :
+  - `neo4j/mcp` branché sur Claude Code et sur un agent ADK (Claude Sonnet 5.5 et Gemini 3.8 Flash, via Vertex), mesuré sur les 30 questions
+  - Fiche de schéma commune à toutes les techniques (règles, valeurs, exemples) et mesure « schéma français contre anglais » ([ADR-0005](adr/0005-mvp-conventions-nommage-schema.md))
 
 ## 📋 Jalon 3 — GraphRAG sur les descriptions
 
@@ -58,7 +59,7 @@ La fiche de schéma reprend les règles de réponse du banc d'essai ([questions/
 ### Risques courants
 
 - Limite d'AuraDB Free : 200 000 nœuds et 400 000 relations (lue le 2026-09-30) ; le graphe chargé en occupe 4,4 % et 28,4 %
-- Instance Free en pause après 72 h sans activité, supprimée après 30 jours de pause : garder le script de chargement réexécutable ; le job de réveil quotidien `reveil-aura` l'évite (NEO-13)
+- Instance Free en pause après 72 h sans activité, supprimée après 30 jours de pause : garder le script de chargement réexécutable ; le job de réveil quotidien `reveil-aura` l'évite (NEO-13, vérifié du 2026-10-01 au 2026-10-07)
 - Coûts qui tournent en tâche de fond : éteindre Aura Agent exposé, l'agent Agent Runtime (`min_instances=0`) et toute instance Business Critical après chaque session de mesure
 
 ## 🚫 Hors POC

@@ -19,10 +19,10 @@
 
 ## Orchestration
 
-| Composant                                | Choix                                                                                                                                                       | Voir                                              |
-| ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------- |
-| Chargement, vérification et banc d'essai | **scripts bash** `scripts/charger.sh`, `scripts/verifier.sh` et `scripts/questions.sh`, qui passent les fichiers `cypher/` et `questions/` à `cypher-shell` | [ADR-0003](adr/0003-mvp-chargement-cypher-pur.md) |
-| Agents (jalons 2 à 4)                    | à choisir au démarrage du jalon 2                                                                                                                           | [ROADMAP](ROADMAP.md)                             |
+| Composant                                | Choix                                                                                                                                                       | Voir                                               |
+| ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- |
+| Chargement, vérification et banc d'essai | **scripts bash** `scripts/charger.sh`, `scripts/verifier.sh` et `scripts/questions.sh`, qui passent les fichiers `cypher/` et `questions/` à `cypher-shell` | [ADR-0003](adr/0003-mvp-chargement-cypher-pur.md)  |
+| Agents (jalon 2)                         | Claude Code piloté par l'Agent SDK, et Google ADK, branchés sur `neo4j/mcp` v1.6.0 en lecture seule ; retenus le 2026-10-01, installés à partir de T0.1     | [spec 002](specs/002-agent-text-to-cypher/plan.md) |
 
 ## Stockage & data
 
@@ -42,9 +42,10 @@
 
 ## LLM providers (par feature)
 
-| Feature                            | LLM utilisé | Coût estimé | Notes                             |
-| ---------------------------------- | ----------- | ----------- | --------------------------------- |
-| _(aucun usage LLM pour l'instant)_ | —           | —           | à choisir au démarrage du jalon 2 |
+| Feature                       | LLM utilisé                                                                                       | Coût estimé                         | Notes                            |
+| ----------------------------- | ------------------------------------------------------------------------------------------------- | ----------------------------------- | -------------------------------- |
+| Spec 002 : Claude Code et ADK | `claude-sonnet-5-5` via Vertex `eu`, et `claude-haiku-4-5` pour les tâches annexes de Claude Code | 1,5 à 3 $ par passe de 30 questions | prix exact relevé en T0.2        |
+| Spec 002 : ADK                | `gemini-3.8-flash` via Vertex `eu`                                                                | ~0,5 $ par passe                    | tarif doublé après le 2026-12-31 |
 
 ⚠️ **Si une feature utilise un LLM**, documenter ici **ET** dans `specs/00X-feature/plan.md` (section "LLM choisi + raison + coût estimé").
 
@@ -60,7 +61,7 @@ Options envisagées : voir le jalon 2 de la [ROADMAP](ROADMAP.md).
 | **Cloud Monitoring** (projet `jleroy-labo`)                 | alerte par e-mail quand le job échoue (condition de journaux)                                    | ✅ en place (2026-09-30) | gratuit aujourd'hui ; 0,35 $ par mois pour cette alerte au plus tôt à partir du 2027-09-01, annoncé 90 et 30 jours avant                   | [RUNBOOK](RUNBOOK.md)                                                         |
 | **Cloud Build et Artifact Registry** (projet `jleroy-labo`) | construction et stockage de l'image du job `reveil-aura` (`gcloud run jobs deploy --source`)     | ✅ en place (2026-09-30) | gratuit : 2 500 minutes de build et 0,5 Gio d'images par mois (2 images gardées) ; bucket des sources à Paris : quelques Ko, sans gratuité | [ACCESS](ACCESS.md)                                                           |
 | **Jira Cloud** (projet NEO, Kanban géré par l'équipe)       | suivi : un epic par jalon, un ticket par phase ; le dépôt fait foi                               | ✅ actif                 | gratuit (offre Free)                                                                                                                       | [README](../../README.md)                                                     |
-| **GitHub** (dépôt privé `kurt83340/node4jPOC`)              | code et PR, fusionnées en squash dans `main`                                                     | ✅ actif                 | gratuit (offre Free)                                                                                                                       | [git-workflow](../rules/git-workflow.md)                                      |
+| **GitHub** (dépôt privé `kurt83340/node4jPOC`)              | code et PR, une par phase, fusionnées en merge commit dans `main`                                | ✅ actif                 | gratuit (offre Free)                                                                                                                       | [git-workflow](../rules/git-workflow.md)                                      |
 | **GitHub for Atlassian**                                    | relie le dépôt à NEO : une clé de ticket dans un commit ou un titre de PR remonte dans le ticket | ✅ actif                 | gratuit                                                                                                                                    | [git-workflow](../rules/git-workflow.md)                                      |
 
 ❌ **Pas utilisé** : dbt, Graph Data Science for BigQuery, Spanner Graph (voir « Hors POC » dans la [ROADMAP](ROADMAP.md)).

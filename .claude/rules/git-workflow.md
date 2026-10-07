@@ -30,21 +30,30 @@ commits n'est pas celui du compte Jira.
 ## Branches
 
 - `main` : prod-ready, protégée
-- `feature/00X-nom-court` : 1 spec = 1 branche (mapping `specs/00X-*`)
+- `feature/00X-phase-N` : une branche par phase de `specs/00X-*/tasks.md`, tirée de `main` à jour, vivante quelques
+  heures ; la conception d'une spec est sa première phase (`feature/00X-conception`)
 - `fix/description-courte` : bug fixes
 - `hotfix/description` : urgences prod (merge direct dans main + tag)
-- Pas de clé Jira dans le nom d'une branche : `/feature-done` pousse exactement `feature/<spec>`
+- Pas de clé Jira dans le nom d'une branche : elle va dans les commits et dans le titre de la PR
 
 ## PR / merge
 
-- 1 spec terminée = 1 PR
-- Squash merge (1 commit par feature dans main)
-- Description PR : lien vers `specs/00X-*/spec.md`
-- Titre de PR : il finit par la clé de l'epic du jalon, par exemple `(NEO-1)`, ce qui relie la PR à l'epic dans Jira
+- 1 phase = 1 PR, courte : la conception ouvre la spec, `/feature-done` ouvre la dernière (ROADMAP, CHANGELOG, tag)
+- **Merge commit**, jamais squash ni rebase (seul mode permis par le dépôt) : tous les commits restent dans `main`,
+  et `git log --first-parent main` en donne le résumé, une ligne par PR
+- Avant la PR : `git merge main` dans la branche si `main` a bougé ; des commits propres (Conventional Commits,
+  clé NEO, pas de « wip »)
+- Description PR : lien vers `specs/00X-*/spec.md` et vers la phase de `tasks.md`
+- Titre de PR : il finit par la clé du ticket de la phase, par exemple `(NEO-15)`, enfant de l'epic du jalon ; si la
+  phase relève de deux tickets, les deux : `(NEO-15, NEO-16)`. La PR
+  de conception porte la clé de l'epic, par exemple `(NEO-2)`. Le commit de fusion reprend ce titre (réglage du dépôt)
+- Branche supprimée à la fusion (réglage du dépôt) : ses commits restent dans `main`
 - CI verte obligatoire (tests + lint + type check) — si le projet a une CI
 
 ## Tags
 
+- Tag annoté `jalon-N` sur `main` quand un jalon est livré (`/feature-done`) :
+  `git log --first-parent jalon-1..jalon-2` liste ce que le jalon 2 a livré
 - Tag sur main après chaque déploiement prod : `vYYYY.MM.DD-HHMM`
 - Pas de SemVer (projet client, pas une lib)
 

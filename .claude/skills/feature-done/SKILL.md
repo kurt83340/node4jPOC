@@ -1,6 +1,6 @@
 ---
 name: feature-done
-description: Marque une feature comme livrée. Coche dans .claude/docs/ROADMAP.md, ajoute entry dans .claude/docs/CHANGELOG.md, met à jour .claude/docs/HANDOFF.md, suggère ADRs si décisions tech structurantes, vérifie que .claude/docs/code-map.md est à jour, propose la PR GitHub (gh — 1 spec = 1 PR, squash). À invoquer après livraison d'une feature (tous les tasks de specs/00X/tasks.md cochés).
+description: Marque une feature comme livrée. Coche dans .claude/docs/ROADMAP.md, ajoute entry dans .claude/docs/CHANGELOG.md, met à jour .claude/docs/HANDOFF.md, suggère ADRs si décisions tech structurantes, vérifie que .claude/docs/code-map.md est à jour, propose la dernière PR du jalon (gh — une PR par phase, merge commit) et le tag jalon-N. À invoquer après livraison d'une feature (tous les tasks de specs/00X/tasks.md cochés).
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash(git status), Bash(git log:*), Bash(git diff:*), Bash(date:*)
 disable-model-invocation: false
 ---
@@ -132,18 +132,19 @@ Si la feature est issue d'une `.claude/docs/idees/YYYY-MM-DD-titre.md` :
 ```bash
 git status --short                      # relire : aucun fichier sensible / hors périmètre
 git add <fichiers de la feature> .claude/docs/
-git commit -m "feat(<spec-id>): <titre court>"
+git commit -m "feat(<spec-id>): <titre court> (NEO-<ticket>)"
 ```
 
-**PR GitHub (si remote + `gh` dispo)** — règle git-workflow : **1 spec = 1 PR, squash merge** :
+**PR GitHub (si remote + `gh` dispo)** — règle git-workflow : **une PR par phase, merge commit** ; celle-ci est la dernière de la spec :
 
 ```bash
-git push -u origin feature/<spec-id>   # push = permission « ask » → confirmation user
-gh pr create --title "feat(<spec-id>): <titre court>" \
-  --body "Spec : .claude/docs/specs/<spec-id>/spec.md · Tasks X/X ✅ · Tests : <résultat>"
+git push -u origin feature/<NNN>-phase-<N>   # branche de la dernière phase ; push = permission « ask »
+gh pr create --title "feat(<spec-id>): <titre court> (NEO-<ticket de la phase>)" \
+  --body "Spec : .claude/docs/specs/<spec-id>/spec.md · phase <N> de tasks.md · Tasks X/X ✅ · Tests : <résultat>"
 ```
 
-- CI verte obligatoire avant merge ; squash merge (1 commit par feature dans main).
+- CI verte obligatoire avant merge ; merge commit (seul mode permis par le dépôt), puis tag annoté du jalon :
+  `git tag -a jalon-<N> -m "Jalon <N> livré : <titre>"` sur `main` à jour, et `git push origin jalon-<N>`.
 - Pas de remote / pas de `gh` / solo sans PR → rester sur le commit local, et si release :
 
 ```bash
@@ -164,7 +165,7 @@ git tag -a v$(date +%Y.%m.%d-%H%M) -m "Feature <spec-id> livrée"
 📚 ADRs proposés :
 - ADR-0004-mvp-pattern-retry-tenacity ← user à valider
 
-🔀 PR : feature/001-erp-connector → main proposée (gh pr create) — squash après CI verte
+🔀 PR : feature/001-phase-6 → main proposée (gh pr create) — merge commit après CI verte, puis tag jalon-N
 
 🚀 Suivant : démarrer feature 002-notion-writer ? (lance /spec ou créer manuellement)
 ```
