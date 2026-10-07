@@ -1,0 +1,67 @@
+# Prix des modèles du banc d'essai (plan 002, D10) : dollars par million de tokens, point d'accès
+# multirégion `eu` de Vertex (Gemini Enterprise Agent Platform), relevés le 2026-10-07.
+#
+# La réflexion se facture comme la sortie. Contexte de 200k tokens au plus par requête : au-delà,
+# un autre palier existe, que le banc n'atteint pas. Un prix change : nouvelle période datée, jamais
+# une réécriture, pour que chaque campagne garde le tarif de son jour.
+#
+# Sources :
+# - anthropic : https://platform.claude.com/docs/en/about-claude/pricing (prix de base, multiplicateurs
+#   du cache, +10 % des points d'accès régionaux et multirégionaux de Google Cloud)
+# - google : https://cloud.google.com/gemini-enterprise-agent-platform/generative-ai/pricing (onglet
+#   « EU Multi-Region » pour Claude, ligne « Non-global » pour Gemini)
+# - marketplace : console Google Cloud, accord Marketplace anthropic-915 (Claude Sonnet 5.5), lieu
+#   « eu », prix en euros à 0,88 € le dollar ; Sonnet 5.5 n'est pas encore sur la page de Google
+
+[[tarif]]
+modele = "claude-sonnet-5-5"
+du = 2026-10-07
+entree = 2.20
+sortie = 11.00
+cache_ecriture_5m = 2.75
+cache_ecriture_1h = 4.40
+cache_lecture = 0.22
+source = "marketplace"
+
+[[tarif]]
+modele = "claude-sonnet-5"
+du = 2026-10-07
+entree = 2.20
+sortie = 11.00
+cache_ecriture_5m = 2.75
+cache_ecriture_1h = 4.40
+cache_lecture = 0.22
+source = "google"
+
+[[tarif]]
+modele = "claude-haiku-4-5@20251001"
+du = 2026-10-07
+entree = 1.10
+sortie = 5.50
+cache_ecriture_5m = 1.375
+cache_ecriture_1h = 2.20
+cache_lecture = 0.11
+source = "google"
+
+# Prix de lancement jusqu'au 2026-12-31, puis prix standard. Pas d'écriture en cache facturée :
+# le cache implicite de Gemini ne coûte qu'à la lecture.
+[[tarif]]
+modele = "gemini-3.8-flash"
+du = 2026-10-07
+au = 2026-12-31
+entree = 0.825
+sortie = 4.125
+cache_ecriture_5m = 0
+cache_ecriture_1h = 0
+cache_lecture = 0.0825
+source = "google"
+
+[[tarif]]
+modele = "gemini-3.8-flash"
+du = 2027-01-01
+entree = 1.65
+sortie = 8.25
+cache_ecriture_5m = 0
+cache_ecriture_1h = 0
+cache_lecture = 0.165
+source = "google"

@@ -1,5 +1,5 @@
 # shellcheck shell=bash
-# Fonctions communes aux scripts qui interrogent Aura (charger.sh, verifier.sh) : à sourcer, pas à lancer.
+# Fonctions communes aux scripts qui interrogent Aura (charger.sh, mcp-neo4j.sh…) : à sourcer, pas à lancer.
 #
 # Identifiants lus au lancement dans GCP Secret Manager (ADR-0007) : jamais écrits sur le disque ni
 # affichés. Seules les 4 variables NEO4J_* passent à cypher-shell, par l'environnement : un argument
@@ -29,11 +29,12 @@ erreur() {
 
 # gcloud est installé dans ~/google-cloud-sdk, absent du PATH des shells non interactifs.
 trouver_outils() {
+  (($#)) || set -- gcloud cypher-shell # outils vérifiés : ceux passés en arguments, sinon ceux-ci
   if ! command -v gcloud >/dev/null 2>&1 && [[ -x "$HOME/google-cloud-sdk/bin/gcloud" ]]; then
     PATH="$HOME/google-cloud-sdk/bin:$PATH"
   fi
   local outil
-  for outil in gcloud cypher-shell; do
+  for outil in "$@"; do
     if ! command -v "$outil" >/dev/null 2>&1; then
       erreur "$outil introuvable"
       exit 2
@@ -119,4 +120,18 @@ centiemes() {
   local depuis_demarrage _
   read -r depuis_demarrage _ </proc/uptime
   printf '%s' "${depuis_demarrage/./}"
+}
+
+# Garde-fou d'un flux continu (stderr d'un serveur lancé par exec), ligne à ligne, selon les règles
+# de filtrer. Un flux ne peut pas tout arrêter : une ligne qui contiendrait le mot de passe n'est pas
+# écrite, un avertissement la remplace.
+filtrer_flux() {
+  local ligne
+  while IFS= read -r ligne || [[ -n "$ligne" ]]; do
+    if [[ "$ligne" == *"$NEO4J_PASSWORD"* ]]; then
+      erreur "ligne masquée : elle contenait le mot de passe"
+    else
+      printf '%s\n' "${ligne//"$NEO4J_USERNAME"/‹instance›}"
+    fi
+  done
 }
