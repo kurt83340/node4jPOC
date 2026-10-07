@@ -152,9 +152,6 @@ gh pr create --title "feat(<spec-id>): <titre court> (NEO-<ticket de la phase>)"
 
 - CI verte obligatoire avant merge ; merge commit (seul mode permis par le dépôt), puis tag annoté du jalon :
   `git tag -a jalon-<N> -m "Jalon <N> livré : <titre>"` sur `main` à jour, et `git push origin jalon-<N>`.
-- **Outil de suivi** (Jira…) : clore l'epic du jalon avec son skill, après relecture de sa description ; chaque
-  critère de réussite a son résultat, chaque question ouverte sa réponse, et ce que ses tickets ont trouvé y
-  remonte (skill jira : `statut <epic> Terminé --relu`).
 - Pas de remote / pas de `gh` / solo sans PR → rester sur le commit local, et si release :
 
 ```bash
