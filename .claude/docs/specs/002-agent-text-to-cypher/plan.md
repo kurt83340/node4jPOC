@@ -101,11 +101,19 @@ Mode « faux serveur » (avant le 2026-10-04) : serveur MCP, validation des noms
 **Pourquoi :** le même modèle dans deux clients isole l'effet du client ; deux modèles dans le même client isolent l'effet du modèle ; les coûts sont réels et comparables.
 **Alternatives écartées :** 2 cellules (option A) ; des modèles plus chers (Opus 5.5, Gemini 3.1 Pro), reportés. Repli : Sonnet 5 pour les **deux** cellules Claude si Sonnet 5.5 bute dans l'une d'elles.
 
+**Relevé T0.2 (2026-10-07)** : `banc acces` fait un appel minimal par client.
+
+- **Quotas** : Claude à 0 sur `jleroy-labo`, en `eu` comme en `global` (Sonnet 5 et 5.5 comptés sous `anthropic-claude-sonnet`, Haiku 4.5 sous `anthropic-claude-haiku-4-5`). Hausse demandée le 2026-10-07 par `gcloud beta quotas preferences` : 20 requêtes, 300 000 tokens d'entrée et 30 000 de sortie par minute pour Sonnet ; 10, 100 000 et 10 000 pour Haiku. Ces quotas bornent aussi la vitesse de dépense (environ 1 $ par minute au pire).
+- **Gemini 3.8 Flash** répond depuis `eu` (ADK, `thinking_level` HIGH : 139 tokens de réflexion pour un « OK »).
+- **Prix** : `banc/prix.toml` ; Sonnet 5.5 relevé sur son SKU Marketplace, absent de la page de prix de Google.
+- **ADK + Claude** : l'effort ne joue qu'avec la réflexion adaptative (`thinking_budget=-1`) ; le cache n'est demandé qu'avec un `ContextCacheConfig`, sur 1 h (écriture à 2 fois l'entrée) dès que son TTL atteint 3 600 s. À régler en T4.2, sinon la cellule paierait toute son entrée à chaque tour.
+
 ### D3 — Claude Code par l'Agent SDK, isolé
 
 **Choix :** lancé en `env -i` avec une liste blanche : HOME temporaire, `CLOUDSDK_CONFIG` vers la configuration `gcloud` (identifiants ADC), PATH vers `gcloud` et `neo4j-mcp`, variables Vertex, `CLAUDE_CODE_USE_VERTEX`, `CLAUDE_CODE_EFFORT_LEVEL=high`, `ANTHROPIC_DEFAULT_HAIKU_MODEL` ; `CLAUDE_CONFIG_DIR` temporaire ; `setting_sources=[]`, `tools=[]`, `read-cypher` seul ; dossier de travail vide hors du dépôt ; budget par conversation. La connexion au serveur est établie avant le chrono : `connect()`, puis `get_mcp_status()` jusqu'à « connected », car le message `init` n'arrive qu'au début de chaque requête.
 **Pourquoi :** le SDK fusionne l'environnement du parent avec le sien, et la session de Claude Code qui lance le harnais exporte ses propres variables ; sans isolement, l'agent hériterait de réglages, d'identifiants OAuth et de la doc du dépôt, qui décrit le schéma et les réponses. Sans connexion préalable, le premier tour de la seule cellule SDK compterait le démarrage du serveur.
 **Alternative écartée :** `claude -p --bare` (clé API exigée ou non, `--mcp-config` lu ou non en mode `--bare`, à vérifier), gardé pour un contrôle ponctuel.
+**Relevé T0.2 (2026-10-07)** : liste blanche dans `banc/src/banc/isolement.py`, complétée de `GOOGLE_APPLICATION_CREDENTIALS` (Claude Code, en Node, ne cherche l'ADC que sous HOME et ignore `CLOUDSDK_CONFIG`), de `GOOGLE_CLOUD_QUOTA_PROJECT=jleroy-labo` (l'ADC du poste a `jleroy-outils` pour projet de quota) et de `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1` (ni mise à jour du binaire figé, ni télémétrie). Le Claude Code mesuré est celui qu'embarque `claude-agent-sdk` 0.2.164 : la version 2.1.292.
 
 ### D4 — Notation mixte, sans juge LLM ; source citée vérifiée sur la trace
 
@@ -169,12 +177,13 @@ Mode « faux serveur » (avant le 2026-10-04) : serveur MCP, validation des noms
 
 **Choix :** une panne d'infrastructure (serveur MCP absent, Vertex 429 ou 5xx) relance la conversation, ou la paire ; un échec de l'agent (180 s, 10 tours, budget dépassé) compte **faux**, avec sa cause. Les reprises internes des clients sont journalisées ; un délai dépassé à cause d'elles compte comme panne (comportement de reprise relevé en T0.2). À l'abandon, le harnais tue le groupe de processus, et `scripts/transactions.sh` arrête la lecture restée active sur Aura (`neo4j/mcp` n'impose aucun délai, #293).
 **Pourquoi :** sinon, une requête coûteuse, comme un produit cartésien, sortirait du score au lieu de compter, et continuerait de tourner sur l'instance ; à l'inverse, une lenteur de Vertex ne doit pas compter contre l'agent.
+**Reprises internes relevées (T0.2, source des versions figées)** : Claude Code reprend jusqu'à 10 fois (`CLAUDE_CODE_MAX_RETRIES`, 10 min au plus par appel) : sur un 429 persistant, il dépasse les 180 s (vu le 2026-10-07), la cellule plafonnera donc cette variable (T4.1). Le client Anthropic d'ADK : 2 reprises (0,5 à 8 s) sur 408, 409, 429 et 5xx. Gemini dans ADK : aucune reprise par défaut (`retry_options` vide), sinon 5 essais (1 à 60 s) sur 408, 429, 500, 502, 503 et 504.
 
 ### LLM choisi, raison et coût estimé
 
 | Cellule                     | Modèle                      | Prix Vertex `eu` (entrée / sortie, $ par million) | Coût par passe    |
 | --------------------------- | --------------------------- | ------------------------------------------------- | ----------------- |
-| Claude Code, ADK + Claude   | `claude-sonnet-5-5`         | à relever en T0.2 (Sonnet 5 : 2,20 / 11)          | 1,5 à 3 $         |
+| Claude Code, ADK + Claude   | `claude-sonnet-5-5`         | 2,20 / 11 (relevé en T0.2, `banc/prix.toml`)      | 1,5 à 3 $         |
 | Claude Code, tâches annexes | `claude-haiku-4-5@20251001` | 1,10 / 5,50                                       | quelques centimes |
 | ADK + Gemini                | `gemini-3.8-flash`          | 0,825 / 4,125 jusqu'au 2026-12-31                 | ~0,5 $            |
 

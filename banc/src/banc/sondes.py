@@ -1,0 +1,138 @@
+"""Sondes d'accès à Vertex (T0.2) : un appel minimal par client, chacune dans son processus.
+
+`banc acces` lance `python -m banc.sondes <client> <modèle>` depuis un dossier vide, avec la liste
+blanche de D3 pour seul environnement ; la sonde écrit son relevé en une ligne JSON sur stdout.
+"""
+
+import asyncio
+import json
+import sys
+import time
+from collections.abc import Mapping
+from dataclasses import asdict, dataclass, field
+from pathlib import Path
+from typing import Any
+
+from anthropic import AsyncAnthropicVertex
+from claude_agent_sdk import ClaudeAgentOptions, ResultMessage, SystemMessage, query
+from google.adk.agents import LlmAgent
+from google.adk.models import Gemini
+from google.adk.models.anthropic_llm import AnthropicGenerateContentConfig, Claude
+from google.adk.runners import Runner
+from google.adk.sessions import InMemorySessionService
+from google.genai import types
+
+from banc.isolement import EFFORT, PROJET, REGION
+from banc.prix import Usage
+
+QUESTION = "Réponds seulement : OK"
+CONSIGNE = "Tu réponds en un seul mot."
+
+
+@dataclass
+class Releve:
+    """Ce qu'une sonde rapporte : réponse, tokens par modèle, durée de l'appel, observations."""
+
+    client: str
+    modele: str
+    reponse: str = ""
+    usages: dict[str, Usage] = field(default_factory=dict)
+    duree_s: float = 0.0
+    observations: dict[str, Any] = field(default_factory=dict)
+
+
+def usage_claude_code(model_usage: Mapping[str, Mapping[str, Any]]) -> dict[str, Usage]:
+    """Tokens par modèle d'un ResultMessage ; cache écrit compté à 5 min (durée par défaut)."""
+    return {
+        modele: Usage(
+            entree=compte.get("inputTokens", 0),
+            sortie=compte.get("outputTokens", 0),
+            cache_ecriture_5m=compte.get("cacheCreationInputTokens", 0),
+            cache_lecture=compte.get("cacheReadInputTokens", 0),
+        )
+        for modele, compte in model_usage.items()
+    }
+
+
+def usage_adk(meta: types.GenerateContentResponseUsageMetadata) -> Usage:
+    """Tokens d'une réponse d'ADK : l'entrée comprend le cache, la sortie exclut la réflexion."""
+    lu = meta.cached_content_token_count or 0
+    ecrit: int = getattr(meta, "cache_creation_input_tokens", None) or 0
+    return Usage(
+        entree=(meta.prompt_token_count or 0) - lu - ecrit,
+        sortie=(meta.candidates_token_count or 0) + (meta.thoughts_token_count or 0),
+        cache_ecriture_5m=ecrit,
+        cache_lecture=lu,
+    )
+
+
+async def claude_code(modele: str) -> Releve:
+    """Claude Code par l'Agent SDK : aucun réglage lu, aucun outil, un seul tour."""
+    releve = Releve("claude-code", modele)
+    options = ClaudeAgentOptions(
+        model=modele,
+        system_prompt=CONSIGNE,
+        setting_sources=[],
+        tools=[],
+        max_turns=1,
+        cwd=Path.cwd(),
+    )
+    async for message in query(prompt=QUESTION, options=options):
+        if isinstance(message, SystemMessage) and message.subtype == "init":
+            scalaires = {k: v for k, v in message.data.items() if isinstance(v, str | int | bool)}
+            releve.observations["init"] = scalaires
+        elif isinstance(message, ResultMessage):
+            releve.reponse = message.result or ""
+            releve.usages = usage_claude_code(message.model_usage or {})
+            releve.observations["cout_annonce_usd"] = message.total_cost_usd
+            releve.observations["erreur_api"] = message.api_error_status
+    return releve
+
+
+async def adk(client: str, modele: str) -> Releve:
+    """ADK avec Claude (effort, réflexion adaptative) ou Gemini (niveau de réflexion)."""
+    llm: Claude | Gemini
+    config: types.GenerateContentConfig
+    if client == "adk-claude":
+        llm = Claude(model=modele, client=AsyncAnthropicVertex(project_id=PROJET, region=REGION))
+        adaptative = types.ThinkingConfig(thinking_budget=-1)
+        config = AnthropicGenerateContentConfig(effort=EFFORT, thinking_config=adaptative)
+    else:
+        options = {"enterprise": True, "project": PROJET, "location": REGION}
+        llm = Gemini(model=modele, client_kwargs=options)
+        niveau = types.ThinkingConfig(thinking_level=types.ThinkingLevel.HIGH)
+        config = types.GenerateContentConfig(thinking_config=niveau)
+    agent = LlmAgent(name="sonde", model=llm, instruction=CONSIGNE, generate_content_config=config)
+    sessions = InMemorySessionService()
+    runner = Runner(app_name="banc", agent=agent, session_service=sessions)
+    session = await sessions.create_session(app_name="banc", user_id="banc")
+    message = types.Content(role="user", parts=[types.Part(text=QUESTION)])
+    releve = Releve(client, modele)
+    usage, reflexion = Usage(), 0
+    async for evenement in runner.run_async(
+        user_id="banc", session_id=session.id, new_message=message
+    ):
+        if evenement.usage_metadata:
+            usage += usage_adk(evenement.usage_metadata)
+            reflexion += evenement.usage_metadata.thoughts_token_count or 0
+        if evenement.content and evenement.content.parts:
+            textes = (p.text for p in evenement.content.parts if p.text and not p.thought)
+            releve.reponse += "".join(textes)
+    releve.usages = {modele: usage}
+    releve.observations["reflexion_tokens"] = reflexion
+    return releve
+
+
+def main() -> int:
+    """Lance la sonde demandée et écrit son relevé ; une erreur remonte telle quelle (stderr)."""
+    client, modele = sys.argv[1:3]
+    debut = time.monotonic()
+    appel = claude_code(modele) if client == "claude-code" else adk(client, modele)
+    releve = asyncio.run(appel)
+    releve.duree_s = round(time.monotonic() - debut, 2)
+    print(json.dumps(asdict(releve)))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
