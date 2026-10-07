@@ -63,3 +63,10 @@
   MCP : rien n'y passe avant l'`exec` ([plan 002, D1](specs/002-agent-text-to-cypher/plan.md), vu le 2026-10-07).
 - ⚠️ `banc/tests/test_lanceur.py` — un faux outil écrit en Python ajoute `LC_CTYPE` à son `os.environ` quand aucune
   locale n'est fixée (PEP 538) : lire l'environnement reçu à l'exec dans `/proc/self/environ` (vu le 2026-10-07).
+- ⚠️ `banc/src/banc/isolement.py` — Claude Code choisit son accès dans un ordre fixe : fournisseur cloud
+  (`CLAUDE_CODE_USE_VERTEX`…), puis `ANTHROPIC_AUTH_TOKEN`, puis `ANTHROPIC_API_KEY`… Une variable Vertex dans la
+  liste blanche ferait passer la cellule par Vertex malgré la clé. La source réelle se lit dans le message `init`
+  (`apiKeySource`), que la sonde exige à `ANTHROPIC_API_KEY` ([ADR-0011](adr/0011-infra-claude-par-api-anthropic.md), vu le 2026-10-08).
+- ⚠️ `banc/prix.toml` — l'identifiant d'un modèle dépend de la voie : `claude-haiku-4-5-20251001` sur l'API,
+  `claude-haiku-4-5@20251001` chez Google ; Sonnet 5.5 garde `claude-sonnet-5-5` des deux côtés, d'où la clé `acces`
+  (vu le 2026-10-08).
