@@ -7,7 +7,7 @@
 >
 > ⚠️ Avant d'éditer un fichier, vérifie les **règles de couplage** ci-dessous.
 
-**Dernière MAJ :** 2026-10-01
+**Dernière MAJ :** 2026-10-07
 
 > 🧭 **Principe (aligné [best-practices Anthropic](https://code.claude.com/docs/en/best-practices))** :
 > à EXCLURE d'ici → tout ce que Claude « peut trouver en lisant le code » : descriptions
@@ -20,13 +20,15 @@
 ```
 Secret Manager ─┬─► scripts/ ─► cypher-shell ─► AuraDB Free ◄─ LOAD CSV ─ CSV PokéAPI (commit figé)
                 │      ├─ cypher/     00 → 06 : chargement · 90 : vérification
-                │      └─ questions/  banc d'essai : requêtes et réponses de référence (jalons 1 à 4)
+                │      ├─ questions/  banc d'essai : requêtes et réponses de référence (jalons 1 à 4)
+                │      └─ mcp-neo4j.sh ─► neo4j-mcp (stdio, lecture seule) ─► AuraDB Free ◄─ agents de banc/
                 └─► infra/reveil-aura/ ─► Query API ─► AuraDB Free (RETURN 1 quotidien, alerte e-mail)
 ```
 
 → Orientation rapide : chargement → `cypher/NN-*.cypher` (ordre fixe : [ARCHITECTURE § 3](conception/ARCHITECTURE.md)) ;
 identifiants, purge, codes retour → `scripts/` (fonctions partagées : `scripts/commun.sh`) ; banc d'essai → `questions/` ; réveil quotidien d'Aura et
 son alerte → `infra/reveil-aura/` (job Cloud Run, [RUNBOOK](RUNBOOK.md)). Réponses de référence : `questions/attendu/`, rejouées par `scripts/questions.sh`.
+Harnais du banc d'essai (cellules, notation, mesures) → `banc/` ([plan 002](specs/002-agent-text-to-cypher/plan.md)).
 Le détail fichier-par-fichier se découvre à la demande (`grep`, lecture) — pas ici.
 
 ## Règles de couplage (⭐ le cœur — non déductible du code)
@@ -40,9 +42,12 @@ Le détail fichier-par-fichier se découvre à la demande (`grep`, lecture) — 
   ([ADR-0003](adr/0003-mvp-chargement-cypher-pur.md)) ; tout écart passe par Julien (circuit breaker du plan 001).
 - ✅ Seuls `scripts/` (poste local) et `infra/reveil-aura/` (Cloud Run) lisent les identifiants
   ([ADR-0007](adr/0007-infra-secrets-et-services-geres.md)). `scripts/` : secret lu au lancement, les 4 `NEO4J_*`
-  passés par l'environnement (`scripts/commun.sh:58`), jamais en argument ni sur le disque ; toute sortie de
-  `cypher-shell` passe par `filtrer` (`scripts/commun.sh:73`). Le job : secret monté en fichier par Cloud Run,
+  passés par l'environnement (`scripts/commun.sh:59`), jamais en argument ni sur le disque ; toute sortie de
+  `cypher-shell` passe par `filtrer` (`scripts/commun.sh:74`). Le job : secret monté en fichier par Cloud Run,
   sous un compte qui ne lit que lui ; tout message passe par `masquer` (`infra/reveil-aura/reveil.py:161`).
+- ✅ Les agents ne joignent la base que par `scripts/mcp-neo4j.sh`, chemin absolu (plan 002, D1) : `neo4j-mcp`
+  y reçoit les `NEO4J_MCP_*` (lecture seule, sans télémétrie), sans option ni `NEO4J_*` hérité ; stderr par
+  `filtrer_flux` (`scripts/commun.sh:128`). ❌ Aucune config MCP sur le disque : `banc/` la passe en mémoire.
 - ✅ Seul le chargement (purge et preuve d'idempotence comprises) écrit dans la base : go/no-go, vérification et techniques du banc
   d'essai lisent (`--access-mode read`, `scripts/verifier.sh:45`), le réveil quotidien aussi (`accessMode: Read`,
   `infra/reveil-aura/reveil.py:119`) ; exception prévue : la mémoire d'agent (jalon 5).

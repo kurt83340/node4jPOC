@@ -11,7 +11,7 @@
 ## Globaux (injectés pour TOUTE édition de code — max 5 lignes)
 
 - ⚠️ Mesurer une durée (journal, temps de réponse du banc d'essai) : horloge monotone, `/proc/uptime` en bash
-  (`scripts/commun.sh:120`), `time.monotonic()` en Python. Sous WSL2, `date +%s`, `SECONDS`, `EPOCHREALTIME` reculent.
+  (`scripts/commun.sh:121`), `time.monotonic()` en Python. Sous WSL2, `date +%s`, `SECONDS`, `EPOCHREALTIME` reculent.
 - ⚠️ Write, Edit et Bash (heredoc de commit compris) décodent la séquence d'échappement de l'espace fine insécable
   U+202F en vrai caractère, invisible. Fichier : écrire un marqueur, le remplacer via Python par `chr(92) + "u202F"`,
   vérifier qu'aucun `chr(0x202F)` ne reste. Commit, doc, chat : écrire « U+202F » (vu le 2026-09-29 et le 2026-10-01).
@@ -57,3 +57,9 @@
   filtrer sur `severity>=ERROR`, pas sur un texte (observé le 2026-09-30). Un extracteur `labelExtractors` sur
   `jsonPayload.message` a donné « (null) » dans l'e-mail : l'incident peut naître de l'entrée d'audit, qui n'a
   pas ce champ ; l'e-mail renvoie donc aux journaux.
+- ⚠️ `scripts/mcp-neo4j.sh` — `neo4j-mcp` v1.6.0 : un booléen invalide (« oui ») prend le défaut, soit l'écriture
+  permise et la télémétrie active ; ses options passent avant l'environnement ; un `NEO4J_MCP_*` vide retombe sur
+  l'ancien nom ; un échec de connexion au démarrage sort avec le code 0 (lire le statut MCP). stdout est le canal
+  MCP : rien n'y passe avant l'`exec` ([plan 002, D1](specs/002-agent-text-to-cypher/plan.md), vu le 2026-10-07).
+- ⚠️ `banc/tests/test_lanceur.py` — un faux outil écrit en Python ajoute `LC_CTYPE` à son `os.environ` quand aucune
+  locale n'est fixée (PEP 538) : lire l'environnement reçu à l'exec dans `/proc/self/environ` (vu le 2026-10-07).
