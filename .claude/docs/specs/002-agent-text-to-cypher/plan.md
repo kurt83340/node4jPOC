@@ -103,7 +103,7 @@ Mode « faux serveur » (avant le 2026-10-04) : serveur MCP, validation des noms
 
 **Relevé T0.2 (2026-10-07)** : `banc acces` fait un appel minimal par client.
 
-- **Quotas** : Claude à 0 sur `jleroy-labo`, en `eu` comme en `global` (Sonnet 5 et 5.5 comptés sous `anthropic-claude-sonnet`, Haiku 4.5 sous `anthropic-claude-haiku-4-5`). Hausse demandée le 2026-10-07 par `gcloud beta quotas preferences` : 20 requêtes, 300 000 tokens d'entrée et 30 000 de sortie par minute pour Sonnet ; 10, 100 000 et 10 000 pour Haiku. Ces quotas bornent aussi la vitesse de dépense (environ 1 $ par minute au pire).
+- **Quotas** : Claude à 0 sur `jleroy-labo`, en `eu` comme en `global` (Sonnet 5 et 5.5 comptés sous `anthropic-claude-sonnet`, Haiku 4.5 sous `anthropic-claude-haiku-4-5`). Hausse demandée le 2026-10-07 par `gcloud beta quotas preferences` (20 requêtes, 300 000 tokens d'entrée et 30 000 de sortie par minute pour Sonnet ; 10, 100 000 et 10 000 pour Haiku), **refusée** dans les minutes qui ont suivi (« Quota request denied », refus automatique) : circuit breaker « Claude injoignable par Vertex », parking et question à Julien. Ces quotas borneraient aussi la vitesse de dépense (environ 1 $ par minute au pire).
 - **Gemini 3.8 Flash** répond depuis `eu` (ADK, `thinking_level` HIGH : 139 tokens de réflexion pour un « OK »).
 - **Prix** : `banc/prix.toml` ; Sonnet 5.5 relevé sur son SKU Marketplace, absent de la page de prix de Google.
 - **ADK + Claude** : l'effort ne joue qu'avec la réflexion adaptative (`thinking_budget=-1`) ; le cache n'est demandé qu'avec un `ContextCacheConfig`, sur 1 h (écriture à 2 fois l'entrée) dès que son TTL atteint 3 600 s. À régler en T4.2, sinon la cellule paierait toute son entrée à chaque tour.
