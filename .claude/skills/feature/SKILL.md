@@ -51,6 +51,7 @@ ROADMAP) et propose de **reprendre à l'étape suivante**, pas de repartir de z�
 Dépose `.claude/skills/feature/pipelines/<nom>.md` — il apparaît à l'Étape 0 sans rien
 recâbler. Format :
 
+<!-- prettier-ignore -->
 ```markdown
 # <nom> — <une ligne : QUAND utiliser ce pipeline>
 

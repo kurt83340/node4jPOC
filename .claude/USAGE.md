@@ -10,8 +10,8 @@
 
 ```bash
 # 1. Copier le template (exclut l'exemple ACME, test, la CI, et la source plugins/marketplace)
-rsync -av --exclude='EXAMPLES/' --exclude='test/' --exclude='.github/' --exclude='.git/' \
-  --exclude='plugins/' --exclude='.claude-plugin/' \
+rsync -av --exclude='/EXAMPLES/' --exclude='/test/' --exclude='/.github/' --exclude='/.git' \
+  --exclude='/plugins/' --exclude='/.claude-plugin/' \
   /chemin/vers/template/ /chemin/vers/mon-nouveau-projet/
 
 # 2. Aller dedans
@@ -97,10 +97,12 @@ Ton projet a déjà du code et une histoire ? **Ne pas** utiliser `/init-from-te
 
 ```bash
 cd /chemin/vers/projet-existant     # working tree PROPRE (commit/stash avant)
+# excludes ANCRÉS (« / » initial) : sans lui, rsync écarte ces noms à TOUS les niveaux
+#   (vécu : 11 README imbriqués perdus, dont .claude/skills/README.md — l'inventaire des skills)
 rsync -av --ignore-existing \
-  --exclude='EXAMPLES/' --exclude='test/' --exclude='.github/' \
-  --exclude='plugins/' --exclude='.claude-plugin/' \
-  --exclude='.git/' --exclude='README.md' --exclude='.env.example' \
+  --exclude='/EXAMPLES/' --exclude='/test/' --exclude='/.github/' \
+  --exclude='/plugins/' --exclude='/.claude-plugin/' \
+  --exclude='/.git' --exclude='/README.md' --exclude='/.env.example' \
   /chemin/vers/template/ .
 # (Recommandé) Dépose MAINTENANT tes matériaux — le skill les ingère :
 #   docs client → .claude/docs/cadrage/documents/   tickets → cadrage/tickets/
@@ -129,13 +131,14 @@ Projet généré avec une version plus ancienne du template → `/upgrade-templa
 
 - **base** = l'init de TA version rejouée depuis le tag git du template (même profil) · **cible** = l'init de la
   nouvelle version · **nous** = ton projet. Profil, mode et source lus dans `.claude/template-lock.json` (écrit à
-  l'init, sans aucune variable d'init) ; absent (projet < 1.5) → profil et mode déduits, à confirmer.
+  l'init, sans aucune variable d'init) ; absent (projet < 1.5) → profil et mode déduits, à confirmer (web-app deviné du seul `package.json` :
+  refusé sans `--profile`, les inits python-app et web-app étant identiques avant 1.5).
 - Fichier jamais touché → la cible s'applique · template inchangé → ta personnalisation reste · les deux ont
   bougé → `git merge-file` (fusion clé par clé pour `settings.json`, règles de permission et hooks compris ;
   projet adopté : les hooks et règles du template qui lui manquent sont ajoutés).
 - **Jamais touché** : la doc projet `.claude/docs/` (seules des migrations versionnées y écrivent — ex. 1.4.0 :
   journal HANDOFF et gotchas sortis des fichiers auto-chargés), ton code, `README.md`, `.env.example`,
-  `settings.local.json`. Équipe d'agents activée → flag et `teammateMode` conservés, rule d'équipe mise à jour depuis le plugin.
+  `settings.local.json`. Équipe d'agents activée → flag et `teammateMode` conservés (une rule d'équipe héritée est signalée : `/agent-teams:team status` la retire).
 - Toujours un `--dry-run` montré et validé d'abord, sur un arbre git propre, en un seul commit (`git revert` pour annuler).
 - **Conflit** (ex. modifié des deux côtés sans fusion propre) → ton fichier est **gardé tel quel** ; la version cible
   (`<fichier>.template`) et le merge annoté (`<fichier>.merge`) atterrissent dans `.claude/.cache/upgrade-<version>/`
@@ -214,7 +217,7 @@ Claude va :
 1. Lire git status + log + diff + tests
 2. Lire HANDOFF.md actuel
 3. Te proposer un nouveau HANDOFF **réécrit** (≤ 40 lignes, jamais empilé : status / échecs / blockers / next steps
-   + **Continuation State** : 5 clés `Clé: valeur` machine-readable — le point de reprise parseable)
+   - **Continuation State** : 5 clés `Clé: valeur` machine-readable — le point de reprise parseable)
 4. Te demander confirmation avant d'écrire, puis ajouter 1 ligne à `HANDOFF-journal.md` (non auto-chargé)
 
 Toujours **dans la session qui a travaillé** : elle seule a la conversation (échecs tentés, blockers) — jamais
@@ -263,59 +266,59 @@ Claude va :
 
 Audit complet qui scanne sans modifier :
 
-| Check                                                   | Seuil                          | Priorité |
-| ------------------------------------------------------- | ------------------------------ | -------- |
-| Budget de contexte auto-chargé (`context-budget.py`)    | > 25k tokens                   | 🔴       |
-| Fraîcheur HANDOFF                                       | > 7j                           | 🔴       |
-| Growth triggers (API_KEY → ACCESS.md, deploy → RUNBOOK) | > 5 hits                       | 🟢       |
-| ADRs manquants (décisions dans plan.md sans ADR)        | ratio > 5                      | 🟢       |
-| Leçons `🆕 new` en attente                              | > 5 ou >14j                    | 🟠       |
-| Drift code-map vs code                                  | dernier commit > date code-map | 🟠       |
-| Placeholders **CORE** non remplis (`{{UPPER_SNAKE}}`)   | > 0                            | 🔴       |
-| Placeholders **CONTENT** non remplis (`{{libre}}`)      | informationnel — pas un signal | 🟢       |
-| ADRs sans status valide                                 | > 0                            | 🔴       |
-| Specs `[~]` EN COURS stalled                            | > 30j                          | 🟠       |
-| Incohérence ROADMAP ↔ frontmatter `status:` des specs   | > 0                            | 🟠       |
+| Check                                                    | Seuil                          | Priorité |
+| -------------------------------------------------------- | ------------------------------ | -------- |
+| Budget de contexte auto-chargé (`context-budget.py`)     | > 25k tokens                   | 🔴       |
+| Fraîcheur HANDOFF                                        | > 7j                           | 🔴       |
+| Growth triggers (API_KEY → ACCESS.md, deploy → RUNBOOK)  | > 5 hits                       | 🟢       |
+| ADRs manquants (décisions dans plan.md sans ADR)         | ratio > 5                      | 🟢       |
+| Leçons `🆕 new` en attente                               | > 5 ou >14j                    | 🟠       |
+| Drift code-map vs code                                   | dernier commit > date code-map | 🟠       |
+| Placeholders **CORE** non remplis (`{{UPPER_SNAKE}}`)    | > 0                            | 🔴       |
+| Placeholders **CONTENT** non remplis (`{{libre}}`)       | informationnel — pas un signal | 🟢       |
+| ADRs sans status valide                                  | > 0                            | 🔴       |
+| Specs `[~]` EN COURS stalled                             | > 30j                          | 🟠       |
+| Incohérence ROADMAP ↔ frontmatter `status:` des specs    | > 0                            | 🟠       |
 | Instructions mortes dans les skills (refs `/x`, chemins) | > 0                            | 🟠       |
-| Idées sans décision                                     | > 30j                          | 🟢       |
-| Liens cassés dans docs                                  | > 0                            | 🔴       |
-| Patterns auto-memory stables non consolidés             | informationnel                 | 🟢       |
+| Idées sans décision                                      | > 30j                          | 🟢       |
+| Liens cassés dans docs                                   | > 0                            | 🔴       |
+| Patterns auto-memory stables non consolidés              | informationnel                 | 🟢       |
 
 Rapport généré → tu suis les actions par priorité.
 
 ## 📋 Cheat sheet — Quand utiliser quoi
 
-| Situation                                  | Skill / Action                                                                |
-| ------------------------------------------ | ----------------------------------------------------------------------------- |
-| Mettre à jour la méthode (template récent) | `/upgrade-template [vX.Y.Z]` — merge 3 voies, conflits signalés, doc intacte  |
-| Démarrer une feature                       | `/spec "<titre>"` (scaffold 4 fichiers + ROADMAP)                             |
-| Dérouler le pipeline complet (avec gates)  | `/feature "<titre>" [standard·tdd·custom]` — enchaîne spec→conception→code→tests→review→done                             |
-| Arrêter le plan d'une feature              | `/conception <spec-id>` (explore → options → décision → plan + revue adverse) |
-| Fin de session                             | `/handoff`                                                                    |
-| Feature livrée                             | `/feature-done <spec-id>`                                                     |
-| Décision tech structurante (cross-feature) | `/adr <scope> "<titre>"`                                                      |
-| Décision tech locale à 1 feature           | Section `## Décisions` dans `specs/00X/plan.md`                               |
-| Bug/observation à noter rapidement         | `/lecon <scope> "<titre>"`                                                    |
-| Débugger un bug non trivial                | `/debug "<symptôme>"` (repro → cause → fix minimal → leçon)                   |
-| Idée perso à capturer                      | `/idee "<titre>"`                                                             |
-| Refacto majeur sur le code                 | `/codemap`                                                                    |
-| Créer un skill / agent / pipeline conforme | `/scaffold skill·agent·pipeline "<nom>"` — conventions + référencement auto  |
-| Audit hebdo                                | `/doc-health`                                                                 |
-| BDD migration (Alembic)                    | plugin `db-migration` (`/plugin install db-migration@claude-setup`)          |
-| Doc en lot (livraisons, audit + actions)   | agent `doc-maintainer` (Task) — jamais le HANDOFF                             |
-| Déléguer une feature à une équipe          | `/agent-teams:team <spec-id>` (plugin, opt-in — le 1er lancement active l'équipe) |
-| Pivot client                               | `/pivot "<raison>"` (workflow 9 étapes orchestrées)                           |
-| Promotion leçon → ADR / rule               | `/lecon promote <date>`                                                       |
-| Promotion idée → spec                      | `/idee promote <date>`                                                        |
-| Supersede un ADR                           | `/adr supersede <NN> <scope> "<titre>"`                                       |
-| Lister tous les ADRs                       | `/adr list [scope]`                                                           |
-| Archiver leçons/idées vieilles             | `/lecon archive` ou `/idee archive`                                           |
-| Projet terminé/abandonné → archiver        | `/archive-projet "<raison>"` — bilan + marquage + move vers `_archives/`      |
-| Reprendre un projet archivé                | `/archive-projet restore`                                                     |
-| Reprendre exactement où on en était        | `/resume` (built-in Claude)                                                   |
-| Compaction context (auto)                  | RIEN — hooks gèrent                                                           |
-| Édition fichier code (auto)                | RIEN — hook injecte les gotchas qui ciblent ce fichier                        |
-| Mention API_KEY/deploy dans code (auto)    | RIEN — hook flag dans growth-suggestions                                      |
+| Situation                                  | Skill / Action                                                                               |
+| ------------------------------------------ | -------------------------------------------------------------------------------------------- |
+| Mettre à jour la méthode (template récent) | `/upgrade-template [vX.Y.Z]` — merge 3 voies, conflits signalés, doc intacte                 |
+| Démarrer une feature                       | `/spec "<titre>"` (scaffold 4 fichiers + ROADMAP)                                            |
+| Dérouler le pipeline complet (avec gates)  | `/feature "<titre>" [standard·tdd·custom]` — enchaîne spec→conception→code→tests→review→done |
+| Arrêter le plan d'une feature              | `/conception <spec-id>` (explore → options → décision → plan + revue adverse)                |
+| Fin de session                             | `/handoff`                                                                                   |
+| Feature livrée                             | `/feature-done <spec-id>`                                                                    |
+| Décision tech structurante (cross-feature) | `/adr <scope> "<titre>"`                                                                     |
+| Décision tech locale à 1 feature           | Section `## Décisions` dans `specs/00X/plan.md`                                              |
+| Bug/observation à noter rapidement         | `/lecon <scope> "<titre>"`                                                                   |
+| Débugger un bug non trivial                | `/debug "<symptôme>"` (repro → cause → fix minimal → leçon)                                  |
+| Idée perso à capturer                      | `/idee "<titre>"`                                                                            |
+| Refacto majeur sur le code                 | `/codemap`                                                                                   |
+| Créer un skill / agent / pipeline conforme | `/scaffold skill·agent·pipeline "<nom>"` — conventions + référencement auto                  |
+| Audit hebdo                                | `/doc-health`                                                                                |
+| BDD migration (Alembic)                    | plugin `db-migration` (`/plugin install db-migration@claude-setup`)                          |
+| Doc en lot (livraisons, audit + actions)   | agent `doc-maintainer` (Task) — jamais le HANDOFF                                            |
+| Déléguer une feature à une équipe          | `/agent-teams:team <spec-id>` (plugin, opt-in — `on` · `off` · `status` pour l'interrupteur) |
+| Pivot client                               | `/pivot "<raison>"` (workflow 9 étapes orchestrées)                                          |
+| Promotion leçon → ADR / rule               | `/lecon promote <date>`                                                                      |
+| Promotion idée → spec                      | `/idee promote <date>`                                                                       |
+| Supersede un ADR                           | `/adr supersede <NN> <scope> "<titre>"`                                                      |
+| Lister tous les ADRs                       | `/adr list [scope]`                                                                          |
+| Archiver leçons/idées vieilles             | `/lecon archive` ou `/idee archive`                                                          |
+| Projet terminé/abandonné → archiver        | `/archive-projet "<raison>"` — bilan + marquage + move vers `_archives/`                     |
+| Reprendre un projet archivé                | `/archive-projet restore`                                                                    |
+| Reprendre exactement où on en était        | `/resume` (built-in Claude)                                                                  |
+| Compaction context (auto)                  | RIEN — hooks gèrent                                                                          |
+| Édition fichier code (auto)                | RIEN — hook injecte les gotchas qui ciblent ce fichier                                       |
+| Mention API_KEY/deploy dans code (auto)    | RIEN — hook flag dans growth-suggestions                                                     |
 
 ## 🔁 Workflow type pour une feature complète
 
@@ -534,14 +537,14 @@ contexte vide (ni échecs tentés, ni blockers) et ne peut pas obtenir ta valida
 
 ### Quand préférer l'agent vs un skill
 
-| Tu veux                                                 | Préfère                                  |
-| ------------------------------------------------------- | ---------------------------------------- |
-| 1 action ciblée rapide (< 1 min)                        | Skill (`/adr`, `/lecon`, etc.)           |
+| Tu veux                                                 | Préfère                                     |
+| ------------------------------------------------------- | ------------------------------------------- |
+| 1 action ciblée rapide (< 1 min)                        | Skill (`/adr`, `/lecon`, etc.)              |
 | Fin de session (HANDOFF)                                | `/handoff` — toujours dans le fil principal |
-| Plusieurs specs livrées d'un coup (ROADMAP + CHANGELOG) | Agent `doc-maintainer`                   |
-| Pivot client (9 étapes)                                 | `/pivot` (l'agent peut le pré-remplir)   |
-| Audit + actions (vs juste audit)                        | Agent                                    |
-| Promotion multiple leçons → ADRs en une passe           | Agent                                    |
+| Plusieurs specs livrées d'un coup (ROADMAP + CHANGELOG) | Agent `doc-maintainer`                      |
+| Pivot client (9 étapes)                                 | `/pivot` (l'agent peut le pré-remplir)      |
+| Audit + actions (vs juste audit)                        | Agent                                       |
+| Promotion multiple leçons → ADRs en une passe           | Agent                                       |
 
 ### Comment l'invoquer
 
@@ -560,20 +563,27 @@ Lance l'agent doc-maintainer pour faire l'audit complet du projet et proposer to
 
 ## 🧑‍🤝‍🧑 Agent teams — déléguer à une équipe (opt-in)
 
-**Rien n'est câblé dans le cœur** (v1.5) : le flag expérimental monte une équipe à chaque session et la rule
-d'équipe pesait sur chaque session, même solo. Le skill `/agent-teams:team`, les rôles d'exécution
+**Rien n'est câblé dans le cœur** (v1.5) : le flag expérimental monte une équipe à chaque session et transforme
+tout subagent nommé en teammate ; et rien n'est auto-chargé (plugin 1.2 : les invariants arrivent au spawn). Le skill `/agent-teams:team`, les rôles d'exécution
 (`worker`/`front-end`/`back-end`/`tester`) et le hook de trace viennent du **plugin `agent-teams`** ;
 `reviewer` et les `explore-*` restent dans le cœur (utilisables en subagents sans équipe).
 
 ```
 /plugin install agent-teams@claude-setup   # une fois (marketplace kurt83340/claude-Setup)
-/agent-teams:team 001-erp-connector       # 1er lancement = ACTIVATION, puis relance de Claude Code
+/agent-teams:team on                      # active (avec ton accord), puis relance de Claude Code
+/agent-teams:team 001-erp-connector       # lance l'équipe sur une spec
+/agent-teams:team status                  # où est le flag (local / projet / user), rule héritée ?
+/agent-teams:team off                     # coupe — effet immédiat sur les prochains spawns
 ```
 
-**Activation** (1er lancement, avec ton accord) : copie la rule d'équipe du plugin dans `.claude/rules/agent-teams.md`
-(invariants lead/teammate, auto-chargée), pose `env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS: "1"` + `teammateMode: "auto"`
-dans `settings.json` (ou `settings.local.json` si tu ne veux pas le partager), puis demande une **relance** (flag lu au
-démarrage) — rappelle ensuite `/agent-teams:team <id>`. `auto` = un pane tmux par teammate si la session tourne
+**`on`** (avec ton accord, après un `--dry-run` montré) : pose `env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS: "1"` +
+`teammateMode: "auto"` (si rien ne le définit) dans `settings.json` (`--scope local` : `settings.local.json`, non partagé),
+puis demande une **relance** (l'équipe se monte au démarrage). **`off`** retire le flag, ou le met à `"0"` s'il reste à 1
+ailleurs (settings user, export shell). Les deux retirent une rule héritée `.claude/rules/agent-teams.md` (plugin ≤ 1.1,
+~1,9k tokens à chaque session) vers `.claude/.cache/`. Un spec-id avec l'équipe coupée → le skill propose `on`.
+**Invariants au spawn** : le hook du plugin ajoute les règles teammate à la fin du prompt de chaque teammate et donne
+les règles lead au lead au 1er spawn — 0 token pour les sessions sans équipe. **Plugin absent mais flag à 1** → le hook
+SessionStart du cœur le signale au démarrage (`CLAUDE_TEAMS_PLUGIN_CHECK=off` pour le taire). `auto` = un pane tmux par teammate si la session tourne
 **dans** tmux (`tmux new -s <projet>` avant `claude`), sinon teammates in-process dans le terminal courant.
 ⚠️ En mode panes, le corps d'une définition d'agent **remplace** le system prompt par défaut du teammate (en
 in-process il s'y ajoute) : chaque rôle du plugin porte donc son propre « Cadre de travail ».
@@ -592,25 +602,26 @@ fermer (user-owned). **Topologie** : par défaut chaque teammate ne parle qu'au 
 permission du lead** au spawn → un seul levier. Soit le flag ponctuel
 (`tmux new -s <projet> 'claude --resume --dangerously-skip-permissions'`), soit persistant
 dans `.claude/settings.local.json` (non versionné) :
-`{ "permissions": { "defaultMode": "bypassPermissions" } }`. Les règles `deny` (rm -rf,
-`.env`…) restent appliquées. ⚠️ À réserver aux bacs à essai — sur un projet client, garde le
+`{ "permissions": { "defaultMode": "bypassPermissions" } }`. Les règles `deny` (`.env`…)
+restent appliquées, et les règles `ask` demandent toujours ton accord : tu vois chaque commande
+`rm` avant qu'elle parte. ⚠️ À réserver aux bacs à essai — sur un projet client, garde le
 mode normal (les `allow`/`ask` du template existent pour ça).
 
-→ Invariants : `.claude/rules/agent-teams.md` (posée par l'activation) · protocole complet : `skills/team/protocole.md` du plugin (lu par `/agent-teams:team`).
+→ Invariants : `skills/team/invariants.md` du plugin (injectés au spawn) · protocole complet : `skills/team/protocole.md` (lu par `/agent-teams:team`).
 
 ## 🤖 Comprendre les hooks automatiques
 
-| Hook                       | Quand ça se déclenche         | Ce que ça fait                            |
-| -------------------------- | ----------------------------- | ----------------------------------------- |
-| `PreCompact`               | Avant compaction du contexte  | Snapshot (git + derniers messages humains) dans `.claude/.cache/` (non-versionné) + marker `/tmp/` |
-| `SessionStart` (compact)   | Reprise après compaction      | Re-inject le snapshot + ré-arme l'injection des gotchas |
-| `SessionEnd`               | Fin de session **sans `/handoff`** ayant laissé une trace git (commit ou arbre modifié) | Filet « n'oublie rien » : snapshot (git + derniers messages humains) dans `.claude/.cache/`. Rien après un `/handoff` ni après une session sans trace (v1.5 : fini la fausse alerte à chaque démarrage) |
-| `SessionStart` (startup)   | Nouveau démarrage             | Marqueur de début de session (heure + empreinte git) ; purge du cache par-session > 7 j ; injecte le filet fin-de-session s'il est plus frais que HANDOFF.md, puis le consomme ; **filet budget** : surface auto-chargée > 25k tokens → coupables + remède injectés (`CLAUDE_CONTEXT_BUDGET_MAX`, 0 = off) |
-| `SessionStart` (resume · clear) | `claude --resume`, `/clear` | Marqueur de début de session (base du filet `SessionEnd`) |
-| `PreToolUse(Edit\|Write)`  | Édition d'un fichier de code du projet (hors `.claude/`, docs, config) | Gotchas de `code-map-gotchas.md` qui **ciblent ce fichier**, 1×/fichier/session (ré-armé après compaction) — arrivent avec le résultat de l'outil, juste après l'édition. Couplage + intention : déjà en contexte via `code-map.md` |
-| `PostToolUse(Edit\|Write)` | Après Edit/Write fichier      | Détecte API_KEY/deploy/RGPD → flag growth |
-| `Stop`                     | Fin de tour Claude            | Rappel `/handoff` si HANDOFF > 24h + changements git — **1×/session** ; **garde-fou taille** : HANDOFF > 12 Ko → rappel 1×/session (`CLAUDE_HANDOFF_MAX_BYTES`, 0 = off) |
-| `TaskCreated`/`TaskCompleted`/`TeammateIdle` | Événements d'équipe (plugin `agent-teams`) | Trace JSON dans `.claude/.cache/team-progress.log` |
+| Hook                                         | Quand ça se déclenche                                                                   | Ce que ça fait                                                                                                                                                                                                                                                                                             |
+| -------------------------------------------- | --------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `PreCompact`                                 | Avant compaction du contexte                                                            | Snapshot (git + derniers messages humains) dans `.claude/.cache/` (non-versionné) + marker `/tmp/`                                                                                                                                                                                                         |
+| `SessionStart` (compact)                     | Reprise après compaction                                                                | Re-inject le snapshot + ré-arme l'injection des gotchas                                                                                                                                                                                                                                                    |
+| `SessionEnd`                                 | Fin de session **sans `/handoff`** ayant laissé une trace git (commit ou arbre modifié) | Filet « n'oublie rien » : snapshot (git + derniers messages humains) dans `.claude/.cache/`. Rien après un `/handoff` ni après une session sans trace (v1.5 : fini la fausse alerte à chaque démarrage)                                                                                                    |
+| `SessionStart` (startup)                     | Nouveau démarrage                                                                       | Marqueur de début de session (heure + empreinte git) ; purge du cache par-session > 7 j ; injecte le filet fin-de-session s'il est plus frais que HANDOFF.md, puis le consomme ; **filet budget** : surface auto-chargée > 25k tokens → coupables + remède injectés (`CLAUDE_CONTEXT_BUDGET_MAX`, 0 = off) |
+| `SessionStart` (resume · clear)              | `claude --resume`, `/clear`                                                             | Marqueur de début de session (base du filet `SessionEnd`)                                                                                                                                                                                                                                                  |
+| `PreToolUse(Edit\|Write)`                    | Édition d'un fichier de code du projet (hors `.claude/`, docs, config)                  | Gotchas de `code-map-gotchas.md` qui **ciblent ce fichier**, 1×/fichier/session (ré-armé après compaction) — arrivent avec le résultat de l'outil, juste après l'édition. Couplage + intention : déjà en contexte via `code-map.md`                                                                        |
+| `PostToolUse(Edit\|Write)`                   | Après Edit/Write fichier                                                                | Détecte API_KEY/deploy/RGPD → flag growth                                                                                                                                                                                                                                                                  |
+| `Stop`                                       | Fin de tour Claude                                                                      | Rappel `/handoff` si HANDOFF > 24h + changements git — **1×/session** ; **garde-fou taille** : HANDOFF > 12 Ko → rappel 1×/session (`CLAUDE_HANDOFF_MAX_BYTES`, 0 = off)                                                                                                                                   |
+| `TaskCreated`/`TaskCompleted`/`TeammateIdle` | Événements d'équipe (plugin `agent-teams`)                                              | Trace JSON dans `.claude/.cache/team-progress.log`                                                                                                                                                                                                                                                         |
 
 **Tous non-bloquants** : si un hook échoue, Claude continue. Lancés via `python3 …` / `bash …` depuis
 `settings.json` — pas de `chmod +x` à faire.
@@ -641,8 +652,12 @@ mode normal (les `allow`/`ask` du template existent pour ça).
 **Defaults du template** :
 
 - `allow` : pytest, ruff, mypy, alembic, uv, npm, `git add/commit/tag/branch`, `git worktree add/list/prune`, `git init`, `cp`, `date`, scripts du template (render, cleanup, archive-projet), `Edit(./**)` — les lectures (Read, `git status/log/diff`, grep…) sont déjà autorisées nativement : plus listées (v1.5)
-- `ask` : `git push`, `git reset`, `git merge`, `git branch -d/-D`, `git tag -d`, `git worktree remove`, `alembic downgrade`, `./scripts/deploy`
-- `deny` : `rm -rf`, `Read(.env)` + `Read(.env.*)` **à toute profondeur** avec exceptions pour les gabarits (`Read(!.env.example)`, `!.env.sample`, `!.env.template`), `secrets.*`, `*.pem`, `*.key` — `ACCESS.md` n'est **pas** en deny : y référencer les accès par NOM (où trouver quoi), jamais les valeurs
+- `ask` : `git push`, `git reset`, `git merge`, `git branch -d/-D`, `git tag -d`, `git worktree remove`, `alembic downgrade`, `./scripts/deploy`, `rm`
+- `deny` : `Read(.env)` + `Read(.env.*)` **à toute profondeur** avec exceptions pour les gabarits (`Read(!.env.example)`, `!.env.sample`, `!.env.template`), `secrets.*`, `*.pem`, `*.key` — `ACCESS.md` n'est **pas** en deny : y référencer les accès par NOM (où trouver quoi), jamais les valeurs
+
+**`rm` en `ask`** : toute commande `rm` demande l'accord (règle `ask`), même en bypassPermissions ; avant, un `deny`
+la refusait sans prévenir et laissait passer `rm -fr`. La règle `Bash(rm:*)` vaut aussi dans une commande composée
+(`cd x && rm …`), pas pour `rmdir` ; en `claude -p` (non interactif), un `rm` est refusé au lieu d'être demandé.
 
 **Secrets — 3 filets** (v1.5) : `.gitignore` ignore **tous** les `.env*` sauf les gabarits (`.env.example/.sample/.template`),
 ainsi que `secrets.*`, `*.key`, `*.pem`, `credentials.json` · deny `Read` ci-dessus · **gitleaks** au commit (`.pre-commit-config.yaml`,
@@ -768,6 +783,10 @@ jamais déclenchée par Claude tout seul.
 - Normal s'il n'y a aucun gotcha pour ce fichier : le hook n'injecte QUE les entrées de `code-map-gotchas.md` qui
   le ciblent (chemin, nom de fichier ou dossier cité en backticks, ou heading `###` ; section « Globaux » = toute
   édition de code) — 1×/fichier/session. Projet < 1.4 sans `code-map-gotchas.md` → § Gotchas de `code-map.md`
+- Ordre : le fichier exact d'abord, puis le dossier le plus profond, les parents, les Globaux en dernier ; coupe à
+  2 500 caractères entre deux entrées entières, avec « N gotcha(s) non injecté(s) » quand il en reste
+- Section « À classer » (créée par la migration 1.4 au-delà de 5 entrées sans chemin) : jamais injectée — cite le
+  fichier ou le dossier en backticks et range l'entrée sous un titre de zone
 - Rien pour `.claude/`, les docs et la config (`.md`, `.json`, `.yaml`…) ; tout autre fichier du projet compte (plus
   de liste fixe `src/`/`tests/`/`lib/`/`app/`)
 - L'injection arrive **avec le résultat** de l'Edit/Write (juste après l'édition), pas avant
@@ -821,17 +840,17 @@ plugins, MCP) se voit aussi dans le rapport (`user, hors projet`).
 
 ## 📚 Aller plus loin
 
-| Fichier                                                                        | Pour quoi                                                       |
-| ------------------------------------------------------------------------------ | --------------------------------------------------------------- |
-| [STRUCTURE.md](STRUCTURE.md)                                                   | **Référence** : arborescence + conventions (naming, ADR, statuts, diagrammes, quand créer) |
-| [CLAUDE.md](../CLAUDE.md)                                                      | Index **projet** : résumé + nav doc + conventions               |
-| [.claude/CLAUDE.md](CLAUDE.md)                                         | Index **méthode** (mince) : où est quoi, pipelines, agents, plugins, version |
-| [.claude/skills/README.md](skills/README.md)                           | Inventaire canonique des skills (CI-vérifié) + conventions      |
-| [.claude/rules/template-maintenance.md](rules/template-maintenance.md) | Invariants d'écriture de la doc (chargée quand Claude lit `.claude/docs/`) |
-| [.claude/docs/adr/README.md](docs/adr/README.md)                       | Convention ADRs détaillée                                       |
-| [.claude/docs/conception/README.md](docs/conception/README.md)         | Pattern mirror macro/micro                                      |
-| [.claude/docs/cadrage/README.md](docs/cadrage/README.md)               | Template cadrage initial                                        |
-| `EXAMPLES/acme-sync-erp-notion-docs/`                                          | Exemple rempli (repo template ; exclu de ton projet par l'init) |
+| Fichier                                                                | Pour quoi                                                                                  |
+| ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| [STRUCTURE.md](STRUCTURE.md)                                           | **Référence** : arborescence + conventions (naming, ADR, statuts, diagrammes, quand créer) |
+| [CLAUDE.md](../CLAUDE.md)                                              | Index **projet** : résumé + nav doc + conventions                                          |
+| [.claude/CLAUDE.md](CLAUDE.md)                                         | Index **méthode** (mince) : où est quoi, pipelines, agents, plugins, version               |
+| [.claude/skills/README.md](skills/README.md)                           | Inventaire canonique des skills (CI-vérifié) + conventions                                 |
+| [.claude/rules/template-maintenance.md](rules/template-maintenance.md) | Invariants d'écriture de la doc (chargée quand Claude lit `.claude/docs/`)                 |
+| [.claude/docs/adr/README.md](docs/adr/README.md)                       | Convention ADRs détaillée                                                                  |
+| [.claude/docs/conception/README.md](docs/conception/README.md)         | Pattern mirror macro/micro                                                                 |
+| [.claude/docs/cadrage/README.md](docs/cadrage/README.md)               | Template cadrage initial                                                                   |
+| `EXAMPLES/acme-sync-erp-notion-docs/`                                  | Exemple rempli (repo template ; exclu de ton projet par l'init)                            |
 
 ## 🎯 Philosophie
 

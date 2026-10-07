@@ -48,7 +48,7 @@ mon-projet/
     │   ├── git-workflow.md         # convention commits (Conventional Commits), branches, PRs, tags
     │   ├── doc-lookup.md           # recherche de doc externe : context7 (MCP) → MCP docs → web — SOURCE UNIQUE
     │   ├── template-maintenance.md # invariants d'écriture de la doc (scopée `paths: .claude/docs/**`) — formats → skills, conventions → CE fichier
-    │   └── (agent-teams.md)        # OPT-IN — posée par le 1er `/agent-teams:team` (plugin) : invariants lead/teammate ; absente du cœur
+    │   └── (agent-teams.md)        # HÉRITÉE (plugin ≤ 1.1) — plus jamais posée : invariants injectés au spawn par le plugin ; `/agent-teams:team on|off` la retire
     │
     ├── skills/                     # skills perso — À PLAT (Claude Code scanne 1 niveau, cf issue #18192)
     │   ├── README.md               # INVENTAIRE canonique des skills cœur (compte CI-vérifié) + conventions (préfixe, plugins, import)
@@ -150,11 +150,11 @@ mon-projet/
 
 ## Convention diagrammes
 
-| Format                         | Quand                                          | Lisible par Claude ?        |
-| ------------------------------ | ---------------------------------------------- | --------------------------- |
-| **ASCII inline** dans le `.md` | Par défaut — flow, arbre, séquence simple      | ✅ parfait                  |
-| **Excalidraw + export SVG**    | Schéma visuel complexe (> ~50 lignes d'ASCII)  | ⚠️ SVG via Read explicite   |
-| **PNG / JPG**                  | Screenshots, photos uniquement                 | ⚠️ pas fiable               |
+| Format                         | Quand                                         | Lisible par Claude ?      |
+| ------------------------------ | --------------------------------------------- | ------------------------- |
+| **ASCII inline** dans le `.md` | Par défaut — flow, arbre, séquence simple     | ✅ parfait                |
+| **Excalidraw + export SVG**    | Schéma visuel complexe (> ~50 lignes d'ASCII) | ⚠️ SVG via Read explicite |
+| **PNG / JPG**                  | Screenshots, photos uniquement                | ⚠️ pas fiable             |
 
 **Règle d'or** : commit la **source éditable ET l'export** côte à côte (`flow-X.excalidraw` + `flow-X.svg`).
 
@@ -184,11 +184,11 @@ mon-projet/
 **Pattern mirror macro ↔ micro (macro dans `conception/`, micro dans `specs/` — dossiers frères) :**
 
 | Macro (`conception/`) | Micro (`specs/00X-feature/`) | Question                                |
-| --------------------- | --------------------------------------- | --------------------------------------- |
-| `research.md`         | `research.md`                           | Quelles options on a explorées ?        |
-| `PRD.md`              | `spec.md`                               | Qu'est-ce qu'on construit et pourquoi ? |
-| `ARCHITECTURE.md`     | `plan.md`                               | Comment on l'implémente ?               |
-| `tasks.md` (plan MVP) | `tasks.md`                              | Quoi exécuter et dans quel ordre ?      |
+| --------------------- | ---------------------------- | --------------------------------------- |
+| `research.md`         | `research.md`                | Quelles options on a explorées ?        |
+| `PRD.md`              | `spec.md`                    | Qu'est-ce qu'on construit et pourquoi ? |
+| `ARCHITECTURE.md`     | `plan.md`                    | Comment on l'implémente ?               |
+| `tasks.md` (plan MVP) | `tasks.md`                   | Quoi exécuter et dans quel ordre ?      |
 
 → `docs/ROADMAP.md` (racine de `docs/`) = **dashboard vivant** qui synthétise l'état (status + blockers).
 
@@ -226,7 +226,7 @@ Vue actionnable jour-1 / plus-tard → checklist « Démarrer un nouveau projet 
 | Niveau                  | Quoi                                 | Où                                            |
 | ----------------------- | ------------------------------------ | --------------------------------------------- |
 | **Macro (app entière)** | Vision, archi, plan d'exécution MVP  | `.claude/docs/conception/` (+ ROADMAP racine) |
-| **Micro (une feature)** | Recherche, spec, plan, tasks feature | `.claude/docs/specs/00X-feature/`  |
+| **Micro (une feature)** | Recherche, spec, plan, tasks feature | `.claude/docs/specs/00X-feature/`             |
 
 ---
 
@@ -270,10 +270,10 @@ Dates ISO `YYYY-MM-DD` partout, liens relatifs. Numéros specs/ADR = max + 1, ja
 | 8. Accès à obtenir             | API keys, comptes, OAuth scopes       | `.claude/docs/ACCESS.md`                                                                                          |
 | 9. Interlocuteurs              | Qui demande, qui valide               | Section dans `.claude/docs/cadrage/README.md` (sauf gros projet → `STAKEHOLDERS.md`)                              |
 | 10. Principes immuables        | Conventions, règles métier            | `.specify/memory/constitution.md` (Spec Kit)                                                                      |
-| 11. Brainstorm d'UNE feature   | Recherche, options                    | `.claude/docs/specs/00X/research.md`                                                                   |
-| 12. PRD d'UNE feature          | Spec détaillée                        | `.claude/docs/specs/00X/spec.md`                                                                       |
-| 13. Plan technique feature     | Comment implémenter                   | `.claude/docs/specs/00X/plan.md`                                                                       |
-| 14. Checklist feature          | Tasks atomiques à cocher              | `.claude/docs/specs/00X/tasks.md`                                                                      |
+| 11. Brainstorm d'UNE feature   | Recherche, options                    | `.claude/docs/specs/00X/research.md`                                                                              |
+| 12. PRD d'UNE feature          | Spec détaillée                        | `.claude/docs/specs/00X/spec.md`                                                                                  |
+| 13. Plan technique feature     | Comment implémenter                   | `.claude/docs/specs/00X/plan.md`                                                                                  |
+| 14. Checklist feature          | Tasks atomiques à cocher              | `.claude/docs/specs/00X/tasks.md`                                                                                 |
 | 15. Décisions structurantes    | Choix tech irréversibles              | `.claude/docs/adr/00XX-*.md`                                                                                      |
 | 16. Réunion / décision verbale | Compte-rendu                          | `.claude/docs/cadrage/reunions/2026-MM-DD-titre.md`                                                               |
 | 17. Pivot demandé              | Nouvelle direction (hiérarchie)       | Réunion dans cadrage/reunions/ + section dans `conception/research.md` + bump PRD + refonte `conception/tasks.md` |
@@ -579,12 +579,12 @@ Fichier court (≤ 1 page) qui capture **une décision technique structurante** 
 
 **ADR ou section `## Décisions` de `plan.md` ?**
 
-| Niveau de décision                          | Où l'écrire                                  |
-| ------------------------------------------- | -------------------------------------------- |
-| Cross-feature (impacte > 1 spec)            | ADR global `.claude/docs/adr/`               |
-| Survit à la mort de la feature              | ADR global `.claude/docs/adr/`               |
+| Niveau de décision                          | Où l'écrire                                   |
+| ------------------------------------------- | --------------------------------------------- |
+| Cross-feature (impacte > 1 spec)            | ADR global `.claude/docs/adr/`                |
+| Survit à la mort de la feature              | ADR global `.claude/docs/adr/`                |
 | Locale à UNE feature (lib, pattern interne) | Section `## Décisions` de `specs/00X/plan.md` |
-| Devient cross-feature plus tard             | **Promouvoir** depuis `plan.md` → ADR global |
+| Devient cross-feature plus tard             | **Promouvoir** depuis `plan.md` → ADR global  |
 
 - **Naming** : `00XX-<scope>-<titre-court>.md` — scope dans le nom, séquentiel sans reset.
 - **5 scopes** : `cadrage` (contraintes imposées au départ, souvent par le client) · `mvp` (structurant, projet entier) · `feature-00X` (réutilisable, propre à une feature — rare) · `infra` (hébergement, déploiement, secrets, monitoring) · `operations` (post-prod, incidents, runbook).
@@ -851,13 +851,13 @@ Pour un gros pivot (v2, refonte), 2 options :
 
 ## Adaptations par type de projet
 
-| Type                 | Spécificité                                                                                                                                           |
-| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Python**           | `pyproject.toml`, `tests/`. Plan.md documente modules et dépendances                                                                                  |
-| **Scripts**          | `spec.md` souvent inutile → juste `README.md` + commentaires en tête                                                                                  |
+| Type                 | Spécificité                                                                                                                                |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Python**           | `pyproject.toml`, `tests/`. Plan.md documente modules et dépendances                                                                       |
+| **Scripts**          | `spec.md` souvent inutile → juste `README.md` + commentaires en tête                                                                       |
 | **n8n**              | `.claude/docs/specs/00X/spec.md` = logique métier, `tasks.md` = checklist de nœuds. JSON exporté dans `workflows/`. RUNBOOK indispensable. |
-| **BDD**              | ADRs **obligatoires** pour migrations de schéma. Dossier `db/migrations/` avec scripts numérotés                                                      |
-| **Client/freelance** | Brief (`cadrage/README.md`), ACCESS, STAKEHOLDERS, RUNBOOK = **obligatoires**. Pour projet perso, optionnels.                                         |
+| **BDD**              | ADRs **obligatoires** pour migrations de schéma. Dossier `db/migrations/` avec scripts numérotés                                           |
+| **Client/freelance** | Brief (`cadrage/README.md`), ACCESS, STAKEHOLDERS, RUNBOOK = **obligatoires**. Pour projet perso, optionnels.                              |
 
 ---
 

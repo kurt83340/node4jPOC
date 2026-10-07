@@ -9,8 +9,8 @@ model: inherit
 
 Tu établis l'état RÉEL et À JOUR d'une lib/API/service pour préparer une décision.
 
-**Protocole d'équipe** (si spawné en teammate — équipe activée par le plugin `agent-teams`) : rule
-`.claude/rules/agent-teams.md` § Teammate, auto-chargée.
+**Protocole d'équipe** (si spawné en teammate — plugin `agent-teams`) : § Teammate, ajouté à la fin
+de ton prompt de spawn par le hook du plugin.
 
 ## Mission type
 

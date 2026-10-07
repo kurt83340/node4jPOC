@@ -45,8 +45,9 @@ python3 "$TPL/.claude/skills/upgrade-template/scripts/upgrade.py" --project . --
 ```
 
 (argument `vX.Y.Z` → ajouter `--to vX.Y.Z` ; sinon dernier tag.) Présente à l'utilisateur :
-versions (de → vers), profil et mode (déduits ? → les faire confirmer ; `--profile <type>`,
-`--mode greenfield|brownfield` sinon), fichiers
+versions (de → vers), profil et mode (« (déduit) » → les faire confirmer, avec l'indice donné dans
+les avertissements ; `--profile <type>`, `--mode greenfield|brownfield` sinon — un profil web-app
+deviné du seul `package.json` est **refusé** à l'Étape 3 tant qu'il n'est pas confirmé), fichiers
 mis à jour / ajoutés / retirés / fusionnés, personnalisations gardées, **conflits**, changements de
 `settings.json`, migrations de la doc. Résume les nouveautés depuis `"$TPL/.github/CHANGELOG.md"`
 (sections entre les deux versions). **AskUserQuestion** : appliquer / ajuster le profil / annuler.
@@ -68,7 +69,8 @@ ou un script fusionné se re-teste (`python3 -m py_compile …`, `bash -n …`).
 un **lien symbolique** (dossier partagé hors projet) n'est jamais modifié : le signaler, ne pas forcer.
 
 Les conflits sont mémorisés dans `.claude/template-lock.json` (`pending_conflicts`, versionné) : une
-relance les re-signale (code 1) tant qu'ils ne sont pas acquittés. Une fois TOUS résolus :
+relance les re-signale (code 1) tant qu'ils ne sont pas acquittés. Une fois TOUS résolus (l'arbre
+est forcément non commité à ce stade : l'acquittement l'accepte, il ne réécrit que le lock) :
 
 ```bash
 python3 "$TPL/.claude/skills/upgrade-template/scripts/upgrade.py" --project . --template "$TPL" --ack-conflicts

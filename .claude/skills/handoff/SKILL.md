@@ -54,6 +54,27 @@ sous `## Archive YYYY-MM-DD` (jamais supprimées, jamais résumées en silence �
 wc -l -c .claude/docs/HANDOFF.md   # > 40 lignes ou > 12 000 octets → archiver en Étape 3, pas préserver
 ```
 
+## Étape 2bis — Consigner avant de réécrire
+
+Le HANDOFF est réécrit à chaque session : ce qui n'existe que dans la conversation, dans
+l'auto-memory ou dans l'ancien HANDOFF est perdu à la suivante. Avant de composer, passe la session
+en revue et vérifie que chaque élément durable a sa place versionnée :
+
+- décision structurante, qui dépasse la spec → ADR (`/adr`) ;
+- décision locale à la spec → `specs/00X-*/plan.md` § Décisions ;
+- accès obtenu ou ressource créée (compte, console, API activée, budget, quota, conditions
+  acceptées) → `ACCESS.md` (où le trouver, jamais la valeur) ;
+- piège, échec payé → `/lecon`, ou `code-map-gotchas.md` s'il vise un fichier ;
+- avancement → `specs/00X-*/tasks.md`.
+
+Ce qui n'a pas encore sa place → le proposer à l'utilisateur **avant** l'Étape 3, par le skill
+indiqué. Une ligne de l'ancien HANDOFF qui disparaît (échec, blocker, next) doit, elle aussi, être
+consignée ailleurs. L'Étape 4 dit, pour chaque élément, où il est consigné.
+
+> Vécu 2026-10-07 (node4jPOC) : HANDOFF réécrit alors qu'un plafond de dépense décidé en session, un
+> accès cloud ouvert et un faux positif de règle `deny` n'existaient que dans l'auto-memory et le
+> nouveau HANDOFF → ADR, ACCESS.md et leçon créés après coup, sur remarque de l'utilisateur.
+
 ## Étape 3 — Composer le nouveau HANDOFF
 
 Format strict — **réécriture complète**, ≤ 40 lignes (le fichier est auto-chargé à chaque session) :
@@ -113,7 +134,6 @@ chaque session et le journal grossit sans borne ; mesuré 25k tokens sur un proj
 > 1 ligne par session, ajoutée par `/handoff`, **jamais réécrite**. Non auto-chargé : lu à la demande.
 
 ## Journal
-
 ```
 
 2. **Migration** (projet < v1.4) : si HANDOFF.md contient encore une section `## Journal` → déplacer
@@ -132,6 +152,8 @@ chaque session et le journal grossit sans borne ; mesuré 25k tokens sur un proj
 📋 Nouveau HANDOFF proposé :
 
 <diff colorisé>
+
+Consigné ailleurs (Étape 2bis) : <élément> → <fichier>, …
 
 OK pour écrire ? (yes/edit/cancel)
 ```
@@ -168,6 +190,8 @@ Budget contexte (si `/doc-health` est installé sur ce projet) :
 - ❌ Dupliquer ce qui est déjà dans CHANGELOG (factuel) ou auto-memory (patterns)
 - ❌ Lister TOUS les commits (juste le sens général)
 - ❌ Mentionner des credentials/secrets
+- ❌ Réécrire le HANDOFF avant d'avoir consigné les décisions, accès et pièges de la session
+  (Étape 2bis) : ce qui ne vit que dans le HANDOFF disparaît à la session suivante
 
 ## Note : filets automatiques (hooks) — complémentaires, pas remplaçants
 

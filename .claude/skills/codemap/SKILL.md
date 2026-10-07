@@ -44,6 +44,7 @@ On ne le recopie pas dans le fichier (déductible + périssable).
 ## Étape 3 — Mettre à jour les sections non-déductibles
 
 Dans `.claude/docs/code-map.md`, mettre à jour / proposer :
+
 - **Vue d'ensemble macro** : sous-systèmes + sens des flux (1 ligne chacun)
 - **Règles de couplage** : les `❌ A ne doit jamais importer B` et le sens des dépendances
 - **Intention & décisions locales** : le POURQUOI du découpage, les patterns imposés (avec pointers `fichier:ligne`)

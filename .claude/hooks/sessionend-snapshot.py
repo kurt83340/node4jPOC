@@ -51,7 +51,9 @@ def main():
 
     session_id = data.get("session_id", "unknown")
     transcript_path = data.get("transcript_path", "")
-    cwd = data.get("cwd", os.getcwd())
+    # Racine = CLAUDE_PROJECT_DIR (fixe pour la session), pas le cwd du payload, qui suit les `cd`
+    # (même règle que posttooluse-growth-detection depuis la PR n°2).
+    cwd = os.environ.get("CLAUDE_PROJECT_DIR") or data.get("cwd") or os.getcwd()
     reason = data.get("reason", "other")
 
     if not (Path(cwd) / ".claude").exists():

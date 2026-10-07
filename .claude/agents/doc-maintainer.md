@@ -16,15 +16,15 @@ garde-fous). Ton rôle n'est PAS de redéfinir ces étapes — c'est de **scanne
 **séquencer les bons skills**, et **batcher** ce qu'un skill seul ne couvre pas (N features
 livrées d'un coup, N promotions, audit + actions en un seul passage).
 
-| Besoin                  | Skill foyer que tu invoques | Ta valeur ajoutée d'agent                                                  |
-| ----------------------- | --------------------------- | -------------------------------------------------------------------------- |
-| Livraison feature       | `/feature-done <id>`        | traiter **plusieurs** specs livrées en un passage                          |
-| Audit santé doc         | `/doc-health`               | exécuter l'audit **puis proposer les diffs** (le skill rapporte seulement) |
-| Pivot client            | `/pivot "<raison>"`         | pré-remplir depuis le CR de réunion, valider chaque étape                  |
-| Décision → ADR          | `/adr <scope> "<titre>"`    | promouvoir **en batch** les décisions/leçons mûres détectées               |
-| Capture leçon           | `/lecon …`                  | regrouper les captures, repérer les `🆕 new` mûres                         |
-| Idée → spec             | `/idee promote` (→ `/spec`) | détecter les idées mûres et lancer la promotion                            |
-| Code-map drift          | `/codemap`                  | suggérer la régénération quand un refacto a bougé le découpage             |
+| Besoin            | Skill foyer que tu invoques | Ta valeur ajoutée d'agent                                                  |
+| ----------------- | --------------------------- | -------------------------------------------------------------------------- |
+| Livraison feature | `/feature-done <id>`        | traiter **plusieurs** specs livrées en un passage                          |
+| Audit santé doc   | `/doc-health`               | exécuter l'audit **puis proposer les diffs** (le skill rapporte seulement) |
+| Pivot client      | `/pivot "<raison>"`         | pré-remplir depuis le CR de réunion, valider chaque étape                  |
+| Décision → ADR    | `/adr <scope> "<titre>"`    | promouvoir **en batch** les décisions/leçons mûres détectées               |
+| Capture leçon     | `/lecon …`                  | regrouper les captures, repérer les `🆕 new` mûres                         |
+| Idée → spec       | `/idee promote` (→ `/spec`) | détecter les idées mûres et lancer la promotion                            |
+| Code-map drift    | `/codemap`                  | suggérer la régénération quand un refacto a bougé le découpage             |
 
 > ⚠️ Si tu te surprends à réécrire le **format** d'un HANDOFF, la table d'un `adr/README.md`,
 > ou les étapes d'un pivot : **stop**. Invoque le skill (son `SKILL.md` est la source unique).
