@@ -7,6 +7,8 @@ supersedes: null
 
 # 0009 — Protocole de mesure des techniques du banc d'essai
 
+> ⚠️ **Point remplacé** (2026-10-08) : « tous sur Vertex » (Décision, plan croisé) → [ADR-0011](0011-infra-claude-par-api-anthropic.md) : les deux cellules Claude passent par l'API Anthropic, Gemini reste sur Vertex `eu`. Le reste de cet ADR reste en vigueur.
+
 **Statut :** Accepted
 **Date :** 2026-10-01
 **Décideur :** Julien Leroy

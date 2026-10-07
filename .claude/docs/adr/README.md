@@ -46,6 +46,7 @@
 | ----------------------------------------------- | --------------------------------------------------------------------- | -------- |
 | [0007](0007-infra-secrets-et-services-geres.md) | Secrets dans Secret Manager, services gérés, poste local client       | Accepted |
 | [0010](0010-infra-plafond-de-depense.md)        | Plafond de dépense : budget de 100 € et coupure automatique de Vertex | Accepted |
+| [0011](0011-infra-claude-par-api-anthropic.md)  | Claude par l'API Anthropic, plafonné par des crédits prépayés         | Accepted |
 
 ### 🛠️ operations — Post-prod & incidents
 
