@@ -125,11 +125,23 @@ Mode « faux serveur » (avant le 2026-10-04) : serveur MCP, validation des noms
 
 - La consigne demande de finir par « Réponse : … » et « Sources : … ».
 - Pré-notation automatique : valeurs attendues ; **distracteurs** par question (une réponse comparative cite forcément l'autre Pokémon) → « à revoir » ; règle des longues listes (Q7, Q14 : compte ou extrait) écrite avant le pilote ; tables de l'ADR-0008 ; contrôle de Q2.
-- Revue humaine à l'aveugle des « à revoir » et de Q10, Q29 et Q30. Une décision n'est réutilisée, par réponse courte normalisée, que pour les questions à valeur, dont la note ne dépend que de la réponse courte ; jamais quand la règle exige une explication (Q11, Q27), un signalement (Q7, Q12, Q13, Q28) ou la correction d'une prémisse (Q29). Les décisions sont datées à partir du gel ; aucune n'est héritée du pilote. Estimation : ~200 cas sur toute la spec, environ 3 h pour Julien.
+- Revue humaine à l'aveugle des « à revoir » et de Q10, Q29 et Q30 (et de Q27 et Q28 depuis T2.2). Une décision n'est réutilisée, par réponse courte normalisée, que pour les questions à valeur, dont la note ne dépend que de la réponse courte ; jamais quand la règle exige une explication (Q11, Q27), un signalement (Q7, Q12, Q13, Q28) ou la correction d'une prémisse (Q29). Les décisions sont datées à partir du gel ; aucune n'est héritée du pilote. Estimation : ~200 cas sur toute la spec, environ 3 h pour Julien.
 - **Source citée** : au moins une requête de « Sources » a été exécutée pendant le tour (aux espaces près) et son résultat contient les valeurs de la réponse ; une description citée doit avoir été renvoyée par un `read-cypher` du tour. Pas de source exigée pour Q10 (« pas dans les données », fondé sur un résultat vide) ni pour Q30 quand l'agent demande un critère.
 - Les appels d'introspection du schéma sont comptés, pas pénalisés.
 
 **Fixé en T1.1 (2026-10-08, relu par Julien)** : `questions/banc.toml` donne à chaque question son mode (valeur, ensemble, liste ordonnée, longue liste, sémantique, contrôle, revue) ; un nombre attendu se compare comme un nombre. Un distracteur est une valeur dont la présence dans la réponse courte impose la revue : erreur probable (la capacité Z de Q1, la famille de Q8, l'autre Pokémon de Q18 et Q21, une attaque Électrik gardée à Q28) ou variante que le README accepte si elle est signalée (formes de Q12, Q14 et Q15, talents et formes de Q7, Lance-Flammes de Q13) ; tous relevés dans les CSV du commit figé. Écartés exprès, plus coûteux en revue qu'utiles : Normal à Q25 (l'Eau gagne sous toutes les lectures), Poison à Q11, « spéciale » à Q24, « Pokémon Lézard » à Q23. Longues listes : liste complète, ou compte exact avec un extrait sans intrus (README). Q27 et Q28 : une réponse incomplète passe à revoir, car une autre attaque expliquée peut être juste (Nœud Herbe fait ×4 contre Onix, plus que Surf). Q8 : la tolérance admet Braségali et Typhlosion en 5e place.
+
+**Fixé en T2.1 (2026-10-08, choix de Julien)** : une espèce citée se reconnaît par la liste des 1 025 noms tirée de la base (`questions/especes.cypher`, réponse dans `attendu/especes.txt`, rejouée par `questions.sh --verifier`), par la plus longue correspondance en mots entiers. Un intrus de longue liste, une espèce hors table ou hors du classement de Q8 se voient donc. Écartée : s'en tenir aux distracteurs et aux tables, où une espèce inconnue restait invisible, d'où des « juste » à tort (précision surestimée), sauf à revoir toutes les réponses justes de ces questions. Faux positifs relevés : « Draco » dans 12 attaques Draco-…, « Ronflex » dans « Gare au Ronflex », « Épine-de-Fer » dans le talent « Épine de Fer » ; ils mènent à « à revoir », jamais à « juste ».
+
+**Fixé en T2.2 (2026-10-08)** : `banc.notation` pré-note un tour ; tout doute mène à « à revoir », jamais à « juste ».
+
+- **Trace** (choix de Julien) : la notation ne lit qu'un contrat minimal, `banc/trace.py` : la réponse finale du tour et ses appels, dans l'ordre (outil, requête, paramètres, résultat tel que l'agent l'a reçu, erreur). T3.1 l'entoure (JSONL, masquage, mesures) sans le changer. Écartés : le résultat stocké déjà décodé (dépendant du format de neo4j-mcp), et tout le format de T3.1 dès la phase 2 (phase doublée).
+- **Pluriel** (choix de Julien) : sous les seuils de l'ADR-0008, partielle avec au moins une espèce juste, fausse sinon (README).
+- **Q27 et Q28 en revue systématique** (choix de Julien, après la revue adverse) : un mot attendu présent ne prouvait ni le signalement de Q28 ni l'absence d'une autre attaque conseillée. Remplace pour elles « une réponse incomplète passe à revoir » (T1.1) ; `un_parmi` et `revoir_si_incomplete` restent dans le format, sans question. Revue : une trentaine de cas de plus.
+- **Q8** : la tolérance permet des échanges entre espèces à moins de 0,01, jamais des glissements cumulés (Reshiram oublié et la liste remontée d'un cran : partiel) ; une espèce de tête sans score passe « à revoir ». **Q9** : types exacts, écrits avec leur majuscule (« l'eau » d'une raison n'est pas le type Eau) ; un écart passe « à revoir ».
+- **Espèces** : un nom collé par un tiret au mot suivant n'est pas cité (Draco-Météore) ; une espèce nommée comme une forme (Méga-…, … d'Alola, Motisma Lavage) passe « à revoir » dans les modes à espèces ; Q2 aussi quand l'équipe compte un membre de la référence. Le code recopié dans « Réponse » ne compte pas comme dit.
+- **Source citée** : valeurs à retrouver, les valeurs justes de la réponse, à défaut les espèces qu'elle avance (une réponse fausse n'obtient pas « oui » plus facilement qu'une juste) ; requête exécutée sans erreur dans le tour, aux espaces et commentaires `//` près, résultats porteurs de ces valeurs ; description renvoyée par un enregistrement qui porte aussi l'une d'elles ; rien à vérifier, ou citation introuvable à côté d'une source valable : « à revoir ». Q10 exemptée ; Q27 à Q30 jugées en revue.
+- **Revue adverse** (agent `reviewer`, contexte frais) : 12 constats rejoués dans le code, tous traités ; mutations : 33 fautes sur la première version, 59 sur la version corrigée, toutes détectées.
 
 **Pourquoi :** rejouable et identique pour toutes les techniques ; juge LLM écarté par l'ADR-0008.
 
@@ -146,6 +158,8 @@ Mode « faux serveur » (avant le 2026-10-04) : serveur MCP, validation des noms
 **Pourquoi :** sans l'équipe, la question n'a pas de réponse ; placée dans la consigne, elle empêcherait Q18 de mesurer la mémoire ; un texte libre ne doit jamais devenir du Cypher.
 
 **Fait en T1.3 (2026-10-08)** : `questions.sh` passe `$proposee` à chaque requête, une équipe valide par défaut. Reste à ouvrir, avec la lecture des réponses (T2.1), la voie qui lui passe les 6 noms extraits, validés puis échappés.
+
+**Fait en T2.1 (2026-10-08)** : les 6 noms sont les espèces citées dans « Réponse », remises à leur orthographe exacte par la liste des espèces (D4) ; s'il y en a plus de 6, l'équipe de référence citée dans l'explication est écartée ; sans exactement 6 noms, « à revoir », rien n'est envoyé. Validés (caractères des 1 025 noms réels : lettres, chiffres, espace, point, deux-points, tiret, ♀, ♂) puis échappés par `banc.lecture.liste_cypher`, ils passent à `questions.sh --controle`, qui revérifie la forme avant tout appel (6 chaînes sans apostrophe, antislash ni caractère de contrôle) ; stdout n'y porte que la réponse, relue par `banc.attendu`.
 
 ### D7 — Un pilote, puis 3 passes comptées ; protocole gelé entre les deux
 
@@ -165,7 +179,7 @@ Mode « faux serveur » (avant le 2026-10-04) : serveur MCP, validation des noms
 **Pourquoi :** une seule instance Free ; une copie entrerait en collision sur `Pokemon`, `Type` et `Description` ; ni paiement ni second secret.
 **Repli :** `charger.sh --purge`, puis `--tout`. **Limite :** la conclusion ne vaut que pour Gemini 3.8 Flash.
 
-**Contrat de `--dossier` (T1.3, 2026-10-08)** : `questions.sh --dossier D` lit `D/qNN.cypher` et, pour `--exemples`, `D/exemples/*.cypher`, dont `D/exemples/dracofeu.cypher` ; `banc traduire --vers D` (T6.2) écrit sous cette forme.
+**Contrat de `--dossier` (T1.3, 2026-10-08)** : `questions.sh --dossier D` lit `D/qNN.cypher` (et `D/especes.cypher` s'il existe, depuis T2.1) et, pour `--exemples`, `D/exemples/*.cypher`, dont `D/exemples/dracofeu.cypher` ; `banc traduire --vers D` (T6.2) écrit sous cette forme.
 
 ### D9 — Index plein texte dans la chaîne de chargement
 
@@ -202,7 +216,7 @@ Mode « faux serveur » (avant le 2026-10-04) : serveur MCP, validation des noms
 | Claude Code, tâches annexes | `claude-haiku-4-5-20251001` | 1 / 5, API Anthropic                           | quelques centimes |
 | ADK + Gemini                | `gemini-3.8-flash`          | 0,825 / 4,125 jusqu'au 2026-12-31, Vertex `eu` | ~0,5 $            |
 
-Total : pilote, 3 passes comptées, 3 passes anglaises et 1 passe de contrôle, soit 24 à 33 $ (Claude 9 % moins cher par l'API que sur Vertex `eu`). Revue humaine : ~200 cas, environ 3 h.
+Total : pilote, 3 passes comptées, 3 passes anglaises et 1 passe de contrôle, soit 24 à 33 $ (Claude 9 % moins cher par l'API que sur Vertex `eu`). Revue humaine : ~200 cas, environ 3 h (une trentaine de plus depuis que Q27 et Q28 sont revues, T2.2).
 
 ## Sécurité
 

@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# Banc d'essai (spec 001, T7.1 ; spec 002, T1.3) : rejoue les requêtes de référence (questions/qNN.cypher) et
-# compare leurs réponses à celles enregistrées dans questions/attendu/ (plan D11) ; exécute les exemples de la
-# fiche de schéma. Tout en lecture seule (--access-mode read), comme chaque technique du banc d'essai
-# (code-map).
+# Banc d'essai (spec 001, T7.1 ; spec 002, T1.3 et T2.1) : rejoue les requêtes de référence (questions/qNN.cypher
+# et la liste des espèces) et compare leurs réponses à celles enregistrées dans questions/attendu/ (plan D11) ;
+# exécute les exemples de la fiche de schéma ; contrôle l'équipe de Q2 proposée par un agent. Tout en lecture
+# seule (--access-mode read), comme chaque technique du banc d'essai (code-map).
 #
 # Identifiants, garde-fou de sortie et codes retour communs (0 = conforme · 1 = écart constaté ·
 # 2 = erreur technique) : voir commun.sh (ADR-0007).
@@ -20,8 +20,13 @@ readonly DOSSIER_QUESTIONS
 DOSSIER_REQUETES="$DOSSIER_QUESTIONS"
 PAR_DOSSIER=0
 # Équipe proposée, passée à chaque requête comme $proposee (q02.cypher, spec 002 D6) : Cypher n'a pas de
-# paramètre optionnel. Par défaut, une équipe valide (6 espèces reconnues, aucun type non couvert).
-readonly PROPOSEE="['Magnéton', 'Dracolosse', 'Flagadoss', 'Noadkoko', 'Staross', 'Parasect']"
+# paramètre optionnel. Par défaut, une équipe valide (6 espèces reconnues, aucun type non couvert) ; --controle
+# la remplace par celle d'un agent.
+PROPOSEE="['Magnéton', 'Dracolosse', 'Flagadoss', 'Noadkoko', 'Staross', 'Parasect']"
+# Forme exigée de l'équipe de --controle : 6 noms entre apostrophes droites, séparés par « , », sans apostrophe,
+# antislash ni caractère de contrôle. Rien ne peut alors sortir d'une chaîne Cypher : jamais un texte libre
+# dans -P (D6). Le harnais n'envoie que des noms de la liste des espèces, validés puis échappés (banc.lecture).
+readonly FORME_EQUIPE="^\\['[^'\\\\[:cntrl:]]+'(, '[^'\\\\[:cntrl:]]+'){5}]$"
 # Recherche approchée de Q19 (spec 002, D9) : ici, pour qu'une base sans index rende un écart (1) et non une
 # erreur (2). Sur le schéma anglais, sa traduction vient du dossier (exemples/dracofeu.cypher).
 readonly DRACOFEU="CALL db.index.fulltext.queryNodes('noms_plein_texte', 'dracofeu~') YIELD node
@@ -29,20 +34,26 @@ RETURN node.nom AS nom"
 
 usage() {
   cat <<'EOF'
-Usage : scripts/questions.sh [--dossier D] --verifier | --enregistrer [qNN…] | --exemples
+Usage : scripts/questions.sh [--dossier D] --verifier | --enregistrer [qNN|especes…] | --exemples
+       scripts/questions.sh [--dossier D] --controle "['Nom', 'Nom', 'Nom', 'Nom', 'Nom', 'Nom']"
 
-Rejoue les requêtes de référence de questions/ (qNN.cypher), en lecture seule.
+Rejoue les requêtes de référence de questions/ (qNN.cypher, puis la liste des espèces especes.cypher),
+en lecture seule.
 
-  --verifier     compare chaque réponse à celle enregistrée dans questions/attendu/qNN.txt
-  --enregistrer  écrit les réponses de la base actuelle dans questions/attendu/, toutes ou celles des
-                 qNN nommées ; à relire avant de commiter : ce sont les réponses de référence
+  --verifier     compare chaque réponse à celle enregistrée dans questions/attendu/ (qNN.txt, especes.txt)
+  --enregistrer  écrit les réponses de la base actuelle dans questions/attendu/, toutes ou celles nommées
+                 (qNN, especes) ; à relire avant de commiter : ce sont les réponses de référence
   --exemples     exécute les exemples de questions/fiche-schema.md et la recherche approchée dracofeu~ :
                  chacun doit rendre au moins une ligne, et dracofeu~ trouver Dracaufeu
-  --dossier D    lit les requêtes dans D plutôt que dans questions/ : D/qNN.cypher, et pour --exemples
-                 D/exemples/*.cypher, dont D/exemples/dracofeu.cypher ; les réponses attendues restent
-                 celles de questions/attendu/ ; refusé avec --enregistrer
+  --controle E   contrôle de Q2 sur l'équipe E proposée par un agent : q02.cypher avec $proposee = E ;
+                 E : 6 noms entre apostrophes droites, séparés par « , », sans apostrophe ni antislash ;
+                 stdout ne porte que la réponse, au format de questions/attendu/
+  --dossier D    lit les requêtes dans D plutôt que dans questions/ : D/qNN.cypher (et D/especes.cypher
+                 s'il existe), et pour --exemples D/exemples/*.cypher, dont D/exemples/dracofeu.cypher ;
+                 les réponses attendues restent celles de questions/attendu/ ; refusé avec --enregistrer
 
-Chaque requête reçoit $proposee, l'équipe que contrôle q02.cypher : une équipe valide par défaut.
+Chaque requête reçoit $proposee, l'équipe que contrôle q02.cypher : une équipe valide par défaut, celle
+de --controle sinon.
 Variables : NEO4J_SECRET (défaut neo4j-aura-poc), GCP_PROJET (défaut jleroy-labo).
 Codes retour : 0 = conforme · 1 = écart constaté · 2 = erreur technique.
 EOF
@@ -60,8 +71,9 @@ repondre() {
   printf '// PokéAPI %s · %s\n%s\n' "$COMMIT_POKEAPI" "${fichier##*/}" "$SORTIE"
 }
 
-# FICHIERS reçoit les questions à traiter : celles nommées (q01 ou q01.cypher), sinon toutes. Pas de
-# sous-shell : une question inconnue arrête vraiment tout (voir lire_noms dans charger.sh).
+# FICHIERS reçoit les requêtes à traiter : celles nommées (q01 ou q01.cypher, especes), sinon toutes : les
+# questions, puis la liste des espèces (spec 002, D4) si le dossier la porte (questions/ la porte toujours).
+# Pas de sous-shell : une requête inconnue arrête vraiment tout (voir lire_noms dans charger.sh).
 FICHIERS=()
 choisir() {
   local nom
@@ -72,12 +84,15 @@ choisir() {
       erreur "aucune question dans $DOSSIER_REQUETES"
       exit 2
     fi
+    if [[ -f "$DOSSIER_REQUETES/especes.cypher" ]]; then
+      FICHIERS+=("$DOSSIER_REQUETES/especes.cypher")
+    fi
     return
   fi
   for nom in "$@"; do
     nom="${nom%.cypher}"
-    if [[ ! "$nom" =~ ^q[0-9][0-9]$ || ! -f "$DOSSIER_REQUETES/$nom.cypher" ]]; then
-      erreur "question inconnue : $nom"
+    if [[ ! "$nom" =~ ^(q[0-9][0-9]|especes)$ || ! -f "$DOSSIER_REQUETES/$nom.cypher" ]]; then
+      erreur "requête inconnue : $nom"
       exit 2
     fi
     FICHIERS+=("$DOSSIER_REQUETES/$nom.cypher")
@@ -118,10 +133,21 @@ verifier() {
     fi
   done
   if ((ecarts > 0)); then
-    printf 'ÉCART : %d question(s) sur %d.\n' "$ecarts" "${#FICHIERS[@]}"
+    printf 'ÉCART : %d requête(s) sur %d.\n' "$ecarts" "${#FICHIERS[@]}"
     exit 1
   fi
-  printf 'CONFORME : %d questions.\n' "${#FICHIERS[@]}"
+  printf 'CONFORME : %d requêtes.\n' "${#FICHIERS[@]}"
+}
+
+# Contrôle de Q2 sur l'équipe d'un agent (PROPOSEE, déjà vérifiée par main) : q02.cypher, ou sa traduction avec
+# --dossier (spec 002, D6). La réponse s'écrit comme les réponses de référence ; le harnais la relit et juge.
+controler() {
+  local fichier="$DOSSIER_REQUETES/q02.cypher"
+  if [[ ! -f "$fichier" ]]; then
+    erreur "aucune requête q02.cypher dans $DOSSIER_REQUETES"
+    exit 2
+  fi
+  repondre "$fichier"
 }
 
 # EXEMPLES reçoit les requêtes d'exemple et NOMS_EXEMPLES leurs noms : les blocs ```cypher de la fiche, puis
@@ -201,6 +227,19 @@ main() {
         fi
         mode="$1"
         ;;
+      --controle)
+        if [[ -n "$mode" ]] || (($# < 2)); then
+          usage >&2
+          exit 2
+        fi
+        if [[ ! "$2" =~ $FORME_EQUIPE ]]; then
+          erreur "--controle : 6 noms attendus, ['Nom', 'Nom', …], sans apostrophe ni antislash dans un nom"
+          exit 2
+        fi
+        mode="$1"
+        PROPOSEE="$2"
+        shift
+        ;;
       --dossier)
         if (($# < 2)) || [[ ! -d "$2" ]]; then
           erreur "--dossier : dossier introuvable (${2:-aucun})"
@@ -233,13 +272,20 @@ main() {
     erreur "--dossier : refusé avec --enregistrer"
     exit 2
   fi
+  readonly PROPOSEE
   trouver_outils
   lire_identifiants
-  ping_aura
+  # Avec --controle, stdout ne porte que la réponse, que le harnais relit : le test de connexion passe sur stderr.
+  if [[ "$mode" == --controle ]]; then
+    ping_aura >&2
+  else
+    ping_aura
+  fi
   case "$mode" in
     --verifier) verifier ;;
     --enregistrer) enregistrer "${noms[@]}" ;;
     --exemples) exemples ;;
+    --controle) controler ;;
   esac
 }
 

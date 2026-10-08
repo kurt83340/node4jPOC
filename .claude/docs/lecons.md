@@ -48,6 +48,14 @@ Archive 📦 au bout de N mois (entries promues stables)
 
 ---
 
+## 2026-10-08 — Un test d'exclusion doit employer une entrée que le code accepterait sans elle
+
+**scope:** feature-002 | **status:** 🆕 new
+
+Phase 2, mutations : 3 tests sur 60 fautes passaient pour une autre raison que la règle visée. Un en-tête « // Réponse : » dans un bloc de code était déjà invalide hors bloc ; un faux message d'erreur de read-cypher ne portait pas la valeur, alors qu'un vrai message Neo4j recopie la requête ; la tolérance de Q8 (« à moins de 0,01 ») n'avait aucun cas pile à la borne.
+Corrigé dans `banc/tests/test_lecture.py` et `test_notation.py`, et les mutations l'ont montré : les garder à chaque phase.
+→ Piste : 🔧 rule `testing.md` (« le cas d'une exclusion serait accepté sans elle ; une borne se teste pile dessus »).
+
 ## 2026-10-07 — Règle deny `Neo4j-*.txt` insensible à la casse
 
 **scope:** infra | **status:** 🆕 new

@@ -50,6 +50,25 @@
 - ⚠️ `questions/banc.toml`, `questions/README.md` — `banc/tests/test_banc_toml.py` les tient cohérents entre eux et
   avec `questions/attendu/` (texte posé, catégorie, tour précédent, équipe de Q2, scores de Q8 cités par le README) :
   changer l'un, c'est mettre l'autre à jour dans le même commit.
+- ⚠️ `banc/src/banc/` — texte français : une élision (d', l', qu'…) colle l'apostrophe au nom qui suit (« d'Évoli ») ;
+  la détacher avant de chercher des noms, mais garder l'apostrophe d'un nom PokéAPI (« Écras’Face »). Vu le
+  2026-10-08 dans `banc/tests/test_contamination.py` : sans cela, « d'Évoli » échappait au contrôle des noms propres.
+- ⚠️ `questions/attendu/especes.txt` — la liste des espèces n'est pas une réponse : `banc/tests/test_contamination.py` ne
+  lit que `attendu/q*.txt`. Renommée en `q…`, elle interdirait à la fiche les 1 025 noms, ses exemples compris.
+- ⚠️ `scripts/questions.sh` — avec `--controle`, stdout ne porte que la réponse, que le harnais relit : tout autre
+  message passe sur stderr (`ping_aura >&2`). `FORME_EQUIPE` est une ERE entre guillemets doubles de bash : `\\[`
+  y devient `\[` ; testée en locale C (celle des tests) et UTF-8 (vu le 2026-10-08).
+- ⚠️ `banc/src/banc/lecture.py` — liste des espèces : un nom collé par un tiret au mot suivant n'est pas cité
+  (Draco-Météore) ; restent « Ronflex » dans « Gare au Ronflex » et « Épine-de-Fer » dans le talent « Épine de Fer »,
+  que la notation envoie « à revoir ». `♀` et `♂` restent dans le mot, sinon Nidoran♀ et Nidoran♂ se confondent.
+  Les positions des citations sont celles du texte mis en NFC (`prose`, `citations`). L'espace fine U+202F d'une
+  regex s'écrit par sa séquence d'échappement, sinon Write la rend invisible (vu encore le 2026-10-08).
+- ⚠️ `banc/src/banc/notation.py` — tout doute mène à « à revoir », jamais à « juste » : un « juste » à tort gonfle
+  un score en silence (revue adverse du 2026-10-08 : 12 constats). La notation ne lit que `banc/src/banc/trace.py`,
+  jamais le JSONL ni le format d'un client. Un message d'erreur de Neo4j recopie la requête, noms compris : un appel
+  en erreur n'est jamais une source. Un test d'exclusion emploie une entrée que le code accepterait sans elle.
+- ⚠️ `banc/src/banc/trace.py` — contrat lu par la notation (choix de Julien du 2026-10-08) : T3.1 l'entoure (JSONL,
+  masquage, mesures) ; y ajouter un champ, oui ; en changer le sens, jamais sans revoir `notation.py`.
 - ⚠️ `infra/reveil-aura/reveil.py` — la Query API d'Aura répond 202 même quand la requête échoue ; seul un
   refus d'authentification donne 401. Lire `errors` dans le corps, jamais le seul code HTTP
   ([doc Query API](https://neo4j.com/docs/query-api/current/query/), lue le 2026-09-30).
