@@ -1,40 +1,40 @@
-# HANDOFF — 2026-10-07 19h45
+# HANDOFF — 2026-10-08 02h09
 
 > Court, narratif, versionné. Patterns techniques → auto-memory. Reprise précise → /resume.
 
-**Branche** : `main`, avec 7 fichiers de doc non commités (HANDOFF, journal, ADR-0010, ACCESS, CHANGELOG, `adr/README`, `lecons`) : à committer sur `feature/002-phase-1`, jamais sur `main`
-**Spec en cours** : [002-agent-text-to-cypher](specs/002-agent-text-to-cypher/spec.md) (4/33 tasks : T7.1, T0.1, T0.3, T0.4)
-**Goal session** : phase 0 de la spec 002 (T0.1 à T0.4) ; template claude-Setup publié en 1.6.0
+**Branche** : `feature/002-phase-1` (12 commits, poussée sur GitHub, pas encore de PR)
+**Spec en cours** : [002-agent-text-to-cypher](specs/002-agent-text-to-cypher/spec.md) (5/33 tasks : T7.1, T0.1 à T0.4)
+**Goal session** : reprise (doc, template 1.6.1, plugin `agent-teams`), voie pour Claude, T0.2
 
 ## Status
 
-- ✅ Phase 0 fusionnée (PR n°5), NEO-14 « Terminé » ; `banc/` : 38 tests, ruff et mypy strict propres ; shellcheck propre
-- ⏳ T0.2 (NEO-15) : `banc acces` prêt, Gemini répond depuis `eu` ; Claude en parking. Budget de 100 € avec alertes ([ADR-0010](adr/0010-infra-plafond-de-depense.md))
-- ✅ Template claude-Setup 1.6.0 (tag `v1.6.0`) : `/handoff` consigne avant de réécrire, `/feature-done` relit avant de clore ; node4jPOC encore en 1.5.0
+- ✅ `banc/` : 75 tests, ruff et mypy strict propres ; shellcheck propre ; `scripts/banc.sh acces` passe (5 clients, 0,0027 $)
+- ✅ Phase 0 terminée : NEO-14 et NEO-15 « Terminé » ; NEO-16 (phase 1) « En cours »
+- ✅ Claude par l'API Anthropic ([ADR-0011](adr/0011-infra-claude-par-api-anthropic.md)) : secret `anthropic-api-banc`, 20 $ de crédits sans recharge
+- ✅ Template claude-Setup 1.6.1 publié et appliqué (sans conflit) ; plugin `agent-teams` 1.2.1 actif
 
 ## Échecs tentés (à ne pas refaire)
 
-- Hausse du quota Claude par `gcloud beta quotas preferences` → refusée d'office : compte non éligible (mémoire globale `vertex-claude-quota`)
-- Claude Code sous HOME temporaire avec le seul `CLOUDSDK_CONFIG` → ADC introuvable : `GOOGLE_APPLICATION_CREDENTIALS` requis
-- Télécharger `neo4j-mcp_1.6.0_checksums.txt` sous son nom → bloqué par la règle deny `Neo4j-*.txt` ([leçon du 2026-10-07](lecons.md))
+- Claude sur Vertex : quota à 0, hausse refusée d'office (mémoire globale `vertex-claude-quota`) → API Anthropic
+- Saisie masquée vide (ou « jj ») à l'invite `read -rs` → secret sans version, puis conflit à la recréation ([ACCESS](ACCESS.md))
 
 ## Blocked on
 
-- Claude sur Vertex : quota à 0 ; Julien penche pour l'API Anthropic directe, à trancher (clé dans Secret Manager, D2, ADR)
+- Rien
 
 ## Next (par ordre)
 
-1. Sur `feature/002-phase-1` : committer les 7 fichiers de doc, puis `/upgrade-template` 1.5.0 → 1.6.0 (arbre propre exigé)
-2. Décisions de Julien : voie pour Claude (API Anthropic : dépense hors budget GCP, limite à poser chez Anthropic) ; durée du cache à noter dans `plan.md` (D10)
-3. Coupure automatique à 100 € (ADR-0010), branche à part, avant toute campagne ; **Phase 1** (NEO-16) : `banc.toml`, consigne et fiche, `$proposee`
-4. Mineurs : resserrer la règle deny ; plafonner `CLAUDE_CODE_MAX_RETRIES` (T4.1) ; pre-commit (shellcheck, Prettier, pytest) ; Julien : 5 tables sémantiques, chrono de la technique 1
+1. **Phase 1 (NEO-16)** : T1.1 `questions/banc.toml` en TDD ; T1.2 consigne et fiche (test de contamination, relecture de Julien) ; T1.3 `$proposee`, `--dossier`, `--exemples`
+2. Avant toute campagne payante (au plus tard T5.1) : coupure automatique de l'ADR-0010, branche à part
+3. T4.1 : fixer `permissionMode`, couper la socket `/tmp/cc-socks/` si possible, plafonner `CLAUDE_CODE_MAX_RETRIES` (plan, D3 et D13)
+4. Mineurs : code-map à 3,3k tokens (cible < 3k, T11.2) ; règle deny ([leçon](lecons.md)) ; pre-commit (shellcheck, Prettier, pytest) ; flag des équipes en portée user (mémoire globale)
 
 ## Continuation State (machine-readable — grammaire fixe `Clé: valeur`, 1 ligne chacune)
 
 Spec: 002-agent-text-to-cypher
 Task: T1.1
-Fichiers en cours: .claude/docs/HANDOFF.md, .claude/docs/HANDOFF-journal.md, .claude/docs/ACCESS.md, .claude/docs/CHANGELOG.md, .claude/docs/adr/README.md, .claude/docs/adr/0010-infra-plafond-de-depense.md, .claude/docs/lecons.md (non commités)
-Bloqué sur: voie pour Claude (T0.2, décision de Julien)
-Commande de reprise: git switch main && git pull && git switch -c feature/002-phase-1
+Fichiers en cours: aucun
+Bloqué sur: rien
+Commande de reprise: git switch feature/002-phase-1 && git pull
 
 → **Journal des sessions** (append-only) : [HANDOFF-journal.md](HANDOFF-journal.md) — non auto-chargé.
