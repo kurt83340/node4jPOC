@@ -8,7 +8,7 @@
 > il « perd le fil » (échecs ×4 constatés en télémétrie, Morph 2026) → découper la phase.
 
 **Date :** 2026-10-01
-**Status :** [~] 11/33 tasks → MAJ au fil de l'eau
+**Status :** [~] 12/33 tasks → MAJ au fil de l'eau
 
 > Phases 0 à 6 : sans la base (prévues pendant la période creuse de NEO-13, close le 2026-10-07). Phases 7 à 11 : sur la base.
 > Les tests n'appellent aucun outil réel : PATH réduit aux faux outils, HOME temporaire.
@@ -46,7 +46,7 @@
 
 - [x] **T3.1** : traces et mesures : une trace JSONL par conversation (identifiant masqué), une ligne CSV sans prose (cause d'un échec, introspections), coût par modèle avec cache, réflexion et petit modèle de Claude Code — fait le 2026-10-08 : `banc.mesures` (trace écrite au fil de l'eau, un événement par ligne, relue en tours de `banc.trace`, inchangé ; une ligne CSV par tour et par essai, pannes comprises, sans prose vérifiée ; tokens du modèle de la cellule, `cout_usd` total et `cout_annexe_usd`, choix de Julien ; tokens de l'API Anthropic, d'ADK et de Claude Code, part 1 h du cache comprise) ; identifiant masqué par le lanceur sur le stdout de `neo4j-mcp` (perl, choix de Julien) ; 84 tests, couverture 100 % ; 84 fautes injectées, toutes détectées
   - DoD : `command_passes: uv run --directory banc pytest tests/test_mesures.py -q`
-- [ ] **T3.2** : revue humaine à l'aveugle (`banc revoir`) : décisions datées à partir du gel, aucune héritée du pilote ; réutilisées par réponse courte normalisée pour les seules questions à valeur (jamais Q7, Q11, Q12, Q13, Q27, Q28, Q29), dans `banc/mesures/revues.toml`
+- [x] **T3.2** : revue humaine à l'aveugle (`banc revoir`) : décisions datées à partir du gel, aucune héritée du pilote ; réutilisées par réponse courte normalisée pour les seules questions à valeur (jamais Q7, Q11, Q12, Q13, Q27, Q28, Q29), dans `banc/mesures/revues.toml` — fait le 2026-10-08 : `banc.revue` (cas du dernier essai, présentés sans rien qui trahisse la cellule ; décisions ajoutées à `revues.toml`, codes et date-heure, motif facultatif, choix de Julien ; note seule réutilisée, à partir du gel posé en T8.1 ; jamais non plus pour Q10, Q14, Q15 et Q30, choix de Julien ; `--verifier`) ; 75 tests, couverture 100 % ; 70 fautes injectées, toutes détectées
   - DoD : `command_passes: uv run --directory banc pytest tests/test_revue.py -q`
 
 ## Phase 4 — Cellules (NEO-18)

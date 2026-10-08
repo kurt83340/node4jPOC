@@ -90,6 +90,10 @@
 - ⚠️ `scripts/mcp-neo4j.sh` — son stdout masqué est le canal MCP, un message JSON par ligne : le filtre rend chaque
   ligne aussitôt (`$| = 1` de perl), sinon le client attend sa réponse sans fin ; il ne peut pas non plus retirer
   une ligne (même blocage) ; l'identifiant lui arrive par l'environnement, jamais en argument (`ps`) (vu le 2026-10-08).
+- ⚠️ `banc/mesures/revues.toml` — `gel` s'écrit en date-heure (`gel = 2026-10-20T10:00:00`), tout en haut, avant
+  toute table : une date seule est refusée exprès, car une décision du pilote prise le jour du gel serait
+  réutilisée. Une correction de décision se fait dans le fichier, jamais en ajoutant une seconde décision au même
+  cas (refusée) ([plan 002, D4](specs/002-agent-text-to-cypher/plan.md), vu le 2026-10-08).
 - ⚠️ `banc/src/banc/mesures.py` — `ModelUsage` de Claude Code (SDK 0.2.164) et l'usage d'ADK (2.11.0) ne séparent
   pas l'écriture du cache à 5 min et à 1 h, facturée 1,6 fois plus cher à 1 h : sa part vient des messages de
   l'assistant ou de `ContextCacheConfig`. `output_tokens` d'Anthropic comprend la réflexion,
