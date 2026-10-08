@@ -136,5 +136,5 @@ La feature est livrée quand :
 - Quotas Claude à 0 sur `jleroy-labo` : hausse demandée le 2026-10-07 et refusée automatiquement ; Claude injoignable par Vertex, parking et décision de Julien (prix et reprises internes relevés). Tranché le 2026-10-08 : API Anthropic ([ADR-0011](../../adr/0011-infra-claude-par-api-anthropic.md)).
 - Compatibilité de Python 3.14 avec ADK et l'Agent SDK : vérifiée le 2026-10-07 (T0.1).
 - `TERMINATE TRANSACTIONS` permis sur Aura Free ? (T7.4)
-- Q18 (ou Q28) quand Q2 (ou Q27) échoue : la session est arrêtée, le second tour n'est jamais posé et n'a pas de ligne ; faux d'office avec une cause à créer ? À trancher par Julien avant T4.3 (revue adverse de la phase 3).
+- Q18 (ou Q28) quand Q2 (ou Q27) échoue : la session est arrêtée, le second tour n'est jamais posé. Tranché le 2026-10-09 (Julien) : fausse d'office, ligne « echec » à 0 s, cause à créer ; à coder en T4.3 (plan, D13).
 - Noms de propriétés orphelins après la bascule (`db.propertyKeys()`) : à vérifier au jalon 4, avant qu'Aura Agent ne lise le schéma.

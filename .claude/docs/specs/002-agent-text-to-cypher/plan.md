@@ -243,7 +243,7 @@ Mode « faux serveur » (avant le 2026-10-04) : serveur MCP, validation des noms
 
 - T4.1 (Claude Code) : `usage_du_tour` à chaque `ResultMessage`, cumulé sur la session ; part du cache à 1 h tirée des messages de l'assistant, dédoublonnés par `message_id` ; à 180 s, `interrupt()` avant d'arrêter le groupe, pour recevoir l'usage du tour (sinon un échec coûte 0 $) ; appels de Haiku et `api_retry` entre deux tours, que `Journal` refuse hors d'un tour.
 - T4.2 (ADK) : `mcp` 2.3.0 (`client/stdio.py`) lance le serveur dans sa propre session (`start_new_session=True`), hors du groupe de la cellule ; sans `env` explicite, il ne lui passe que HOME, LOGNAME, PATH, SHELL, TERM et USER, donc pas `CLOUDSDK_CONFIG` : lui donner la liste blanche, et l'arrêter par son propre groupe ; ne pas additionner des événements partiels en streaming ; à vérifier : `tool_use_prompt_token_count` et le coût de stockage d'un `ContextCacheConfig` pour Gemini.
-- T4.3 : `Journal.fin` à l'échéance, avant l'arrêt et `scripts/transactions.sh`, sinon le nettoyage entre dans la durée ; Q18 (Q28) quand Q2 (Q27) échoue : question ouverte (tasks, Blockers).
+- T4.3 : `Journal.fin` à l'échéance, avant l'arrêt et `scripts/transactions.sh`, sinon le nettoyage entre dans la durée ; Q18 (Q28) quand Q2 (Q27) échoue, la session arrêtée : fausse d'office, une ligne « echec » à 0 s avec une cause à créer pour le tour précédent en échec (choix de Julien du 2026-10-09 ; D13 : un échec ne se relance pas, et Q18 n'a pas de sens sans la réponse de Q2).
 
 ### LLM choisi, raison et coût estimé
 
