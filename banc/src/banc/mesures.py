@@ -18,7 +18,7 @@ import json
 import re
 import time
 from collections.abc import Callable, Iterable, Mapping, Sequence
-from dataclasses import asdict, dataclass, field, replace
+from dataclasses import asdict, dataclass, field, fields, replace
 from datetime import date
 from decimal import Decimal
 from pathlib import Path
@@ -26,7 +26,7 @@ from typing import Any, Protocol, Self, get_args
 
 from banc import attendu
 from banc.lecture import mots, prose, sections
-from banc.notation import Notation, Note, Source, introspections
+from banc.notation import LECTURE, OUTILS_D_INTROSPECTION, Notation, Note, Source, introspections
 from banc.prix import ACCES, Tarif, Usage, tarif
 from banc.trace import Appel, Tour
 
@@ -52,8 +52,9 @@ CHAMP = re.compile(r"[A-Za-z0-9][A-Za-z0-9._:;=+-]*")
 QUESTION = re.compile(r"Q[1-9]\d*")
 COMMIT = re.compile(r"[0-9a-f]{40}")
 EN_TETE_ATTENDU = re.compile(r"// PokéAPI ([0-9a-f]{40}) · ")
-# La notation compare le nom MCP nu (banc.trace) : le client préfixe les siens (mcp__neo4j__…).
-PREFIXE_CLIENT = "mcp__"
+# Outils de neo4j-mcp que la notation reconnaît (banc.trace), par leur nom MCP nu : le client
+# préfixe les siens (mcp__neo4j__ de Claude Code, tool_name_prefix d'ADK).
+OUTILS = frozenset({LECTURE, *OUTILS_D_INTROSPECTION})
 MICRO = Decimal("0.000001")
 COLONNES = (
     "campagne", "cellule", "passe", "question", "essai", "issue", "cause",
@@ -88,9 +89,12 @@ class Entete:
     effort: str
     versions: Mapping[str, str]
     commit_pokeapi: str
+    # Modèles que la cellule peut appeler en plus du sien (petit modèle de Claude Code) : tout
+    # autre modèle dans les tokens arrête la mesure.
+    annexes: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
-        textes = [*self.versions, *self.versions.values(), self.modele, self.effort]
+        textes = [*self.versions, *self.versions.values(), self.modele, self.effort, *self.annexes]
         problemes = {
             "campagne": not CODE.fullmatch(self.campagne),
             "cellule": not CODE.fullmatch(self.cellule),
@@ -102,6 +106,7 @@ class Entete:
             "acces": self.acces not in ACCES,
             "modele, effort ou versions": not all(JETON.fullmatch(texte) for texte in textes),
             "commit_pokeapi": not COMMIT.fullmatch(self.commit_pokeapi),
+            "annexes": self.modele in self.annexes or len(set(self.annexes)) != len(self.annexes),
         }
         if fautifs := [champ for champ, probleme in problemes.items() if probleme]:
             raise MesureError(f"en-tête de conversation invalide : {', '.join(fautifs)}")
@@ -181,6 +186,7 @@ class Journal:
             )
         self._posees += 1
         self._en_cours = question
+        self._appels, self._resultats = set(), set()
         self._ecrire("question", message=message)
 
     def llm(
@@ -210,8 +216,8 @@ class Journal:
     ) -> None:
         """Un appel d'outil, noté dès son envoi : s'il ne revient pas, sa requête reste lisible."""
         self._tour("appel")
-        if outil.startswith(PREFIXE_CLIENT):
-            raise MesureError(f"outil {outil} : le nom MCP nu est attendu, sans préfixe du client")
+        if outil not in OUTILS:
+            raise MesureError(f"outil {outil} : nom MCP nu attendu, parmi {sorted(OUTILS)}")
         if ident in self._appels:
             raise MesureError(f"appel {ident} déjà noté")
         self._appels.add(ident)
@@ -271,6 +277,10 @@ def lire(fichier: Path) -> Conversation:
             lignes = list(flux)
     except OSError as erreur:
         raise MesureError(f"{fichier} illisible : {erreur.strerror}") from erreur
+    # Une ligne s'écrit d'un bloc, fin de ligne comprise : sans elle, le harnais a été interrompu
+    # pendant l'écriture, et la ligne coupée ne se lit pas (le tour reste inachevé).
+    if lignes and not lignes[-1].endswith("\n"):
+        lignes.pop()
     relecture = _Relecture()
     for numero, texte in enumerate(lignes, start=1):
         try:
@@ -328,8 +338,11 @@ def usage_claude_code(
     model_usage: Mapping[str, Mapping[str, Any]], ecritures_1h: Mapping[str, int] | None = None
 ) -> dict[str, Usage]:
     """Tokens par modèle d'un ResultMessage de Claude Code (SDK 0.2.164, ModelUsage), petit modèle
-    compris. ModelUsage ne sépare pas l'écriture à 1 h : sa part, tirée des messages de
-    l'assistant (usage_anthropic), vient d'ecritures_1h ; le reste compte à 5 min."""
+    compris. ModelUsage cumule toute la session (« read the latest result rather than summing
+    across results », Claude Code 2.1.292) : le tour se tire de deux relevés par usage_du_tour.
+    Il ne sépare pas non plus l'écriture à 1 h : sa part, tirée des messages de l'assistant
+    (usage_anthropic, dédoublonnés par message_id), vient d'ecritures_1h ; le reste compte à
+    5 min."""
     parts = dict(ecritures_1h or {})
     if inconnus := sorted(set(parts) - set(model_usage)):
         raise MesureError(f"écriture à 1 h pour un modèle sans usage : {inconnus}")
@@ -347,6 +360,23 @@ def usage_claude_code(
             cache_lecture=compte.get("cacheReadInputTokens", 0),
         )
     return usages
+
+
+def usage_du_tour(avant: Mapping[str, Usage], apres: Mapping[str, Usage]) -> dict[str, Usage]:
+    """Tokens d'un tour, par modèle, à partir de deux relevés cumulés de la session (avant et après
+    le tour) ; un modèle sans tokens dans le tour n'y figure pas. Un compteur qui recule (relevés
+    inversés, session reprise) arrête la mesure."""
+    tour = {}
+    for modele in {*avant, *apres}:
+        debut, fin = avant.get(modele, Usage()), apres.get(modele, Usage())
+        ecarts = {f.name: getattr(fin, f.name) - getattr(debut, f.name) for f in fields(Usage)}
+        if any(ecart < 0 for ecart in ecarts.values()):
+            raise MesureError(
+                f"{modele} : recul des tokens entre deux relevés ({debut} puis {fin})"
+            )
+        if any(ecarts.values()):
+            tour[modele] = Usage(**ecarts)
+    return tour
 
 
 def usage_adk(meta: UsageGenai, *, cache_1h: bool = False) -> Usage:
@@ -407,6 +437,10 @@ def ligne(
         raise MesureError(f"{tour.question} ({tour.issue}) : pas de notation sans réponse")
     elif tour.issue == "echec":
         note, source = "faux", "non"
+    if inconnus := sorted(set(tour.usages) - {entete.modele, *entete.annexes}):
+        raise MesureError(f"{tour.question} : modèles absents de l'en-tête {inconnus}")
+    if tour.issue == "reponse" and entete.modele not in tour.usages:
+        raise MesureError(f"{tour.question} : aucun token de {entete.modele}, modèle de la cellule")
     principal = tour.usages.get(entete.modele, Usage())
     par_modele = couts(tour.usages, tarifs, entete.jour, entete.acces)
     annexe = (cout for modele, cout in par_modele.items() if modele != entete.modele)
@@ -466,6 +500,7 @@ def ecrire(fichier: Path, lignes: Iterable[Mapping[str, str]]) -> None:
     for valeurs in lignes:
         if set(valeurs) != set(COLONNES):
             raise MesureError(f"ligne aux colonnes {list(valeurs)}, attendu {list(COLONNES)}")
+        _sans_prose(valeurs)
     nouveau = not fichier.exists()
     if not nouveau:
         with fichier.open(encoding="utf-8", newline="") as flux:
@@ -566,6 +601,10 @@ class _Relecture:
         if self.entete is None:
             raise MesureError("en-tête de conversation attendu en première ligne")
         if genre == "question":
+            attendues = self.entete.questions
+            suivante = attendues[len(self.tours)] if len(self.tours) < len(attendues) else None
+            if evenement["question"] != suivante:
+                raise MesureError(f"question {evenement['question']} : attendue {suivante}")
             if self.tours and self.tours[-1].fin is None:
                 raise MesureError(f"question {evenement['question']} : tour précédent pas fini")
             self.tours.append(_Tour(evenement["question"], evenement["message"], t))
@@ -612,6 +651,7 @@ def _entete_json(entete: Entete) -> dict[str, object]:
         "questions": list(entete.questions),
         "jour": entete.jour.isoformat(),
         "versions": dict(sorted(entete.versions.items())),
+        "annexes": list(entete.annexes),
     }
 
 
@@ -628,6 +668,7 @@ def _entete_lu(evenement: Mapping[str, Any]) -> Entete:
         effort=evenement["effort"],
         versions=dict(evenement["versions"]),
         commit_pokeapi=evenement["commit_pokeapi"],
+        annexes=tuple(evenement["annexes"]),
     )
 
 

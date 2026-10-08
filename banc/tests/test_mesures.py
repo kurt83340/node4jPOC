@@ -5,7 +5,9 @@ modèle, cache, réflexion et petit modèle de Claude Code compris. Ni base ni L
 """
 
 import csv
+import inspect
 import json
+import time
 from collections.abc import Callable
 from dataclasses import replace
 from datetime import date
@@ -34,6 +36,7 @@ from banc.mesures import (
     usage_adk,
     usage_anthropic,
     usage_claude_code,
+    usage_du_tour,
 )
 from banc.notation import Notation
 from banc.prix import PrixError, Usage, charger
@@ -55,6 +58,7 @@ ENTETE = Entete(
     effort="high",
     versions={"neo4j-mcp": "1.6.0", "claude-agent-sdk": "0.2.164", "claude-code": "2.1.292"},
     commit_pokeapi=COMMIT,
+    annexes=(HAIKU,),
 )
 MESSAGE_Q2 = "Mon équipe : Lokhlass, …\n\nQuelle équipe proposes-tu ?"
 REQUETE = "MATCH (p:Pokemon) RETURN p.nom AS nom"
@@ -215,12 +219,32 @@ def test_question_avant_la_fin_du_tour(tmp_path: Path) -> None:
             journal.question("Q18", "?")
 
 
-def test_nom_d_outil_nu(tmp_path: Path) -> None:
-    # La notation compare le nom MCP nu (banc.trace) : la cellule retire le préfixe du client.
+@pytest.mark.parametrize(
+    "outil", ["mcp__neo4j__read-cypher", "neo4j_read-cypher", "write-cypher", "Read"]
+)
+def test_nom_d_outil_nu(tmp_path: Path, outil: str) -> None:
+    # La notation compare le nom MCP nu (banc.trace) : la cellule retire le préfixe du client
+    # (mcp__neo4j__ de Claude Code, tool_name_prefix d'ADK) ; neo4j-mcp n'expose rien d'autre.
     with Journal(tmp_path / "trace.jsonl", ENTETE, Horloge()) as journal:
         journal.question("Q2", MESSAGE_Q2)
         with pytest.raises(MesureError, match="nom MCP nu"):
-            journal.appel("toolu_1", "mcp__neo4j__read-cypher", REQUETE)
+            journal.appel("toolu_1", outil, REQUETE)
+
+
+def test_resultat_d_un_tour_precedent(tmp_path: Path) -> None:
+    # Les appels se rapprochent de leurs résultats tour par tour, à l'écriture comme à la relecture.
+    with Journal(tmp_path / "trace.jsonl", ENTETE, Horloge()) as journal:
+        journal.question("Q2", MESSAGE_Q2)
+        journal.appel("toolu_1", "read-cypher", REQUETE)
+        journal.fin("reponse", reponse=REPONSE_Q2)
+        journal.question("Q18", "?")
+        with pytest.raises(MesureError, match="sans appel"):
+            journal.resultat("toolu_1", RESULTAT)
+
+
+def test_horloge_monotone_par_defaut() -> None:
+    # Sous WSL2, l'horloge murale recule par à-coups : une durée se mesure à l'horloge monotone.
+    assert inspect.signature(Journal).parameters["horloge"].default is time.monotonic
 
 
 @pytest.mark.parametrize(
@@ -281,6 +305,15 @@ def test_evenement_inconnu_refuse(trace: Path) -> None:
         lire(trace)
 
 
+def test_derniere_ligne_coupee(trace: Path) -> None:
+    # Harnais tué pendant une écriture : la ligne coupée, sans fin de ligne, est ignorée ; une
+    # ligne complète mais illisible reste une erreur (test suivant).
+    avant = lire(trace)
+    with trace.open("a") as flux:
+        flux.write('{"type": "llm", "t": 200.0, "question": "Q18", "modele": "claude-son')
+    assert lire(trace) == avant
+
+
 def test_ligne_illisible_refusee(trace: Path) -> None:
     with trace.open("a") as flux:
         flux.write('{"type": "fin", "t":\n')
@@ -314,6 +347,7 @@ def modifier(evenements: Evenements, rang: int, **champs: object) -> Evenements:
         pytest.param(lambda e: modifier(e, 8, cause="fatigue"), "issue", id="cause-inventee"),
         pytest.param(lambda e: modifier(e, 0, format=2), "format", id="format-inconnu"),
         pytest.param(lambda e: [], "vide", id="vide"),
+        pytest.param(lambda e: modifier(e, 1, question="Q5"), "attendue", id="autre-question"),
     ],
 )
 def test_trace_retouchee_refusee(
@@ -351,6 +385,8 @@ def test_fichier_de_la_trace(tmp_path: Path) -> None:
         pytest.param({"acces": "vertex"}, id="acces"),
         pytest.param({"commit_pokeapi": "168b1e8"}, id="commit"),
         pytest.param({"versions": {"claude code": "2.1.292"}}, id="version-en-prose"),
+        pytest.param({"annexes": ("claude haiku",)}, id="annexe-en-prose"),
+        pytest.param({"annexes": (SONNET,)}, id="modele-en-annexe"),
     ],
 )
 def test_entete_refuse(champs: dict[str, Any]) -> None:
@@ -420,6 +456,25 @@ def test_claude_code_par_modele() -> None:
     )
 
 
+def test_usage_du_tour() -> None:
+    # Le model_usage de Claude Code est cumulé sur la session (binaire 2.1.292 : « read the latest
+    # result rather than summing across results ») : le tour, c'est l'écart entre deux relevés.
+    apres_q2 = {SONNET: Usage(entree=8_000, sortie=2_000), HAIKU: Usage(entree=50, sortie=5)}
+    apres_q18 = {SONNET: Usage(entree=9_000, sortie=2_300), HAIKU: Usage(entree=50, sortie=5)}
+    assert usage_du_tour(apres_q2, apres_q18) == {SONNET: Usage(entree=1_000, sortie=300)}
+    assert usage_du_tour({}, apres_q2) == apres_q2
+
+
+@pytest.mark.parametrize(
+    "apres",
+    [{SONNET: Usage(entree=9)}, {}, {SONNET: Usage(entree=10, cache_lecture=-1)}],
+    ids=["moins", "modele-disparu", "negatif"],
+)
+def test_usage_du_tour_qui_recule(apres: dict[str, Usage]) -> None:
+    with pytest.raises(MesureError, match="recul"):
+        usage_du_tour({SONNET: Usage(entree=10)}, apres)
+
+
 def test_claude_code_part_1h_impossible() -> None:
     model_usage = {SONNET: {"inputTokens": 1, "cacheCreationInputTokens": 40}}
     with pytest.raises(MesureError, match="1 h"):
@@ -467,6 +522,22 @@ def test_cout_par_modele() -> None:
     sonnet = (30 * 2 + 500 * 10 + 9_000 * 4 + 9_000 * Decimal("0.2")) / 1_000_000
     haiku = Decimal(50 * 1 + 5 * 5) / 1_000_000
     assert couts(usages, TARIFS, date(2026, 10, 8), "api") == {SONNET: sonnet, HAIKU: haiku}
+
+
+def test_modeles_declares(tmp_path: Path) -> None:
+    # Un repli vers un autre modèle, ou une clé de modèle inattendue : la mesure s'arrête au lieu de
+    # compter 0 token pour la cellule et de tout passer en annexe.
+    fichier = tmp_path / "trace.jsonl"
+    with Journal(fichier, ENTETE, Horloge()) as journal:
+        journal.question("Q2", MESSAGE_Q2)
+        journal.llm(SONNET, Usage(entree=10))
+        journal.llm("claude-sonnet-5", Usage(entree=10))
+        journal.fin("reponse", reponse=REPONSE_Q2)
+    [tour] = lire(fichier).tours
+    with pytest.raises(MesureError, match=r"absents de l'en-tête \['claude-sonnet-5'\]"):
+        ligne(ENTETE, tour, Notation("juste"), TARIFS)
+    with pytest.raises(MesureError, match="aucun token"):
+        ligne(ENTETE, replace(tour, usages={HAIKU: Usage(entree=1)}), Notation("juste"), TARIFS)
 
 
 def test_modele_sans_tarif() -> None:
@@ -617,6 +688,14 @@ def test_csv_relu_refuse(tmp_path: Path) -> None:
     fichier.write_text("campagne,note\nc1,juste\n")
     with pytest.raises(MesureError, match="colonnes"):
         lire_lignes(fichier)
+
+
+def test_csv_sans_prose_a_l_ecriture(trace: Path, tmp_path: Path) -> None:
+    # Une ligne faite à la main ne fait pas entrer de texte libre dans le CSV versionné.
+    q2, _ = lire(trace).tours
+    valeurs = ligne(ENTETE, q2, Notation("juste"), TARIFS) | {"motifs": "il vit près des volcans"}
+    with pytest.raises(MesureError, match="prose"):
+        ecrire(tmp_path / "essai.csv", [valeurs])
 
 
 def test_csv_d_un_autre_format_refuse(trace: Path, tmp_path: Path) -> None:

@@ -5,7 +5,7 @@ tours écrits à la main.
 """
 
 from collections.abc import Mapping
-from datetime import date, datetime
+from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Any
 
@@ -110,6 +110,26 @@ def test_dernier_essai_seul_compte() -> None:
     assert en_attente(lignes, Revues()) == [lignes[3]]
 
 
+@pytest.mark.parametrize(
+    "premier",
+    [
+        pytest.param({"issue": "echec", "note": "faux", "source": "non"}, id="apres-un-echec"),
+        pytest.param({"note": "juste"}, id="apres-une-reponse"),
+    ],
+)
+def test_essai_remplace_sans_panne(premier: dict[str, str]) -> None:
+    # D13 : un échec compte faux et ne se relance jamais ; seule une panne ou un arrêt de la
+    # conversation (la paire pour Q18 et Q28) justifie un essai suivant.
+    with pytest.raises(RevueError, match="sans panne"):
+        retenues([ligne_csv("Q5", essai=1, **premier), ligne_csv("Q5", essai=2, note="juste")])
+
+
+def test_doublon_d_un_essai_ancien() -> None:
+    panne = ligne_csv("Q5", essai=1, issue="panne", note="", source="")
+    with pytest.raises(RevueError, match="double"):
+        retenues([panne, ligne_csv("Q5", essai=2), panne])
+
+
 def test_ligne_en_double() -> None:
     with pytest.raises(RevueError, match="double"):
         retenues([ligne_csv("Q5"), ligne_csv("Q5", note="juste")])
@@ -159,7 +179,10 @@ def test_rien_d_herite_d_avant_le_gel(gel: datetime | None, quand: datetime) -> 
 def test_questions_sans_reutilisation() -> None:
     # Plan, D4 ; Q10, Q14, Q15 et Q30 ajoutées par Julien le 2026-10-08 : culture générale, formes
     # ou critère signalés, hors de la réponse courte.
-    attendues = {"Q7", "Q10", "Q11", "Q12", "Q13", "Q14", "Q15", "Q27", "Q28", "Q29", "Q30"}
+    # Puis Q4 et Q19, après la revue adverse (talent ou type d'une méga-forme, accepté s'il est
+    # signalé), choix de Julien du 2026-10-08.
+    attendues = {"Q4", "Q7", "Q10", "Q11", "Q12", "Q13", "Q14", "Q15", "Q19"}
+    attendues |= {"Q27", "Q28", "Q29", "Q30"}
     assert attendues == SANS_REUTILISATION
 
 
@@ -181,6 +204,21 @@ def test_sans_reponse_courte_rien_a_reutiliser() -> None:
     revues = Revues(GEL, (decision(cellule="claude-code", empreinte=""),))
     sans = ligne_csv(empreinte="")
     assert en_attente([sans], revues) == [sans]
+
+
+def test_source_pre_notee_gardee() -> None:
+    # Après une renotation, une source décidée sur le cas ne remplace pas une source pré-notée.
+    revues = Revues(decisions=(decision(note=None, source="oui"),))
+    assert finale(ligne_csv(note="juste", source="non"), revues) == Finale(
+        "juste", "non", "pre-note", ""
+    )
+
+
+def test_rien_d_herite_du_pilote() -> None:
+    # Une décision du pilote ne se réutilise jamais, même datée après le gel (plan, D4).
+    du_pilote = Decision("pilote", "claude-code", 1, "Q5", 1, EMPREINTE, APRES, "juste")
+    revues = Revues(GEL, (du_pilote,), pilote="pilote")
+    assert en_attente([ligne_csv()], revues) == [ligne_csv()]
 
 
 def test_pre_note_gardee() -> None:
@@ -217,9 +255,9 @@ def test_decisions_ajoutees_puis_relues(tmp_path: Path) -> None:
 
 def test_gel_relu(tmp_path: Path) -> None:
     fichier = tmp_path / "revues.toml"
-    fichier.write_text("gel = 2026-10-20T10:00:00\n")
+    fichier.write_text('gel = 2026-10-20T10:00:00\npilote = "pilote"\n')
     ajouter(fichier, decision())
-    assert charger(fichier) == Revues(GEL, (decision(),))
+    assert charger(fichier) == Revues(GEL, (decision(),), "pilote")
 
 
 def test_aucune_revue(tmp_path: Path) -> None:
@@ -230,10 +268,13 @@ def test_aucune_revue(tmp_path: Path) -> None:
     "contenu",
     [
         pytest.param("[[revue]]\nnote = \n", id="toml-invalide"),
-        pytest.param('gel = "demain"\n', id="gel-en-texte"),
-        pytest.param("gel = 2026-10-20\n", id="gel-sans-heure"),
+        pytest.param('gel = "demain"\npilote = "pilote"\n', id="gel-en-texte"),
+        pytest.param('gel = 2026-10-20\npilote = "pilote"\n', id="gel-sans-heure"),
         pytest.param('[[revue]]\ncampagne = "c1"\n', id="decision-incomplete"),
         pytest.param('autre = "x"\n', id="cle-inconnue"),
+        pytest.param('gel = 2026-10-20T10:00:00+02:00\npilote = "pilote"\n', id="gel-avec-fuseau"),
+        pytest.param("gel = 2026-10-20T10:00:00\n", id="gel-sans-pilote"),
+        pytest.param('pilote = "Pilote 1"\n', id="pilote-en-prose"),
     ],
 )
 def test_fichier_refuse(tmp_path: Path, contenu: str) -> None:
@@ -257,6 +298,7 @@ def test_fichier_refuse(tmp_path: Path, contenu: str) -> None:
         pytest.param({"passe": 0}, id="passe"),
         pytest.param({"essai": 0}, id="essai"),
         pytest.param({"empreinte": "zz"}, id="empreinte"),
+        pytest.param({"date": datetime(2026, 10, 21, 9, 30, tzinfo=UTC)}, id="date-avec-fuseau"),
         pytest.param({"date": date(2026, 10, 21)}, id="date-sans-heure"),
     ],
 )
@@ -288,10 +330,10 @@ def test_presentation_complete() -> None:
 
 def test_second_tour_avec_le_precedent() -> None:
     # Q18 se juge sur l'équipe proposée à Q2, dans la même conversation.
-    q2 = tour("Q2", "Réponse : Lokhlass, Florizarre")
+    q2 = tour("Q2", "Réponse : Lokhlass, Florizarre (proposée par Gemini)")
     texte = presenter(ligne_csv("Q18"), tour("Q18"), q2, "REF")
     assert "Question Q2 telle que posée ?" in texte
-    assert "Réponse : Lokhlass, Florizarre" in texte
+    assert "Réponse : Lokhlass, Florizarre (proposée par ‹modèle›)" in texte
 
 
 @pytest.mark.parametrize(("source", "montrees"), [("à revoir", True), ("oui", False)])
@@ -399,7 +441,7 @@ def lancer(
     décisions enregistrées et le clavier."""
     fichier = tmp_path / "revues.toml"
     if gel is not None:
-        fichier.write_text(f"gel = {gel.isoformat()}\n")
+        fichier.write_text(f'gel = {gel.isoformat()}\npilote = "pilote"\n')
     index: Mapping[revue.Cle, tuple[TourMesure, TourMesure | None]] = {
         cle(ligne): (tour(ligne["question"]), None) for ligne in lignes
     }
@@ -466,6 +508,18 @@ def test_reutilisee_pendant_la_revue(tmp_path: Path) -> None:
     assert en_attente(lignes, revues) == []
 
 
+def test_cas_deja_tranche_en_partie(tmp_path: Path) -> None:
+    # Sa source tranchée, puis sa note devenue « à revoir » après une renotation : une seconde
+    # décision pour le même cas rendrait revues.toml illisible ; la revue renvoie au fichier.
+    fichier = tmp_path / "revues.toml"
+    ajouter(fichier, decision(note=None, source="oui"))
+    avant = fichier.read_text()
+    _, sorties, _, clavier = lancer(tmp_path, [ligne_csv()], "j")
+    assert (fichier.read_text(), clavier.invites) == (avant, [])
+    assert any("à compléter à la main" in sortie for sortie in sorties)
+    assert "0 décision enregistrée ; 1 cas restant" in sorties[-1]
+
+
 def test_trace_manquante(tmp_path: Path) -> None:
     with pytest.raises(RevueError, match="trace"):
         revoir([ligne_csv()], {}, tmp_path / "revues.toml", Console(Clavier("j")))
@@ -480,6 +534,8 @@ def test_ordre_melange_mais_stable() -> None:
     melange = melanger(cas)
     assert sorted(map(cle, melange)) == sorted(map(cle, cas))
     assert melange != cas
+    cellules = [ligne["cellule"] for ligne in melange]
+    assert cellules not in (sorted(cellules), sorted(cellules, reverse=True))
     reste = cas[3:]
     assert melanger(reste) == [ligne for ligne in melange if ligne in reste]
 
@@ -492,6 +548,14 @@ def test_verifier() -> None:
     assert verifier([ligne_csv("Q5"), ligne_csv("Q6", note="juste")], Revues(), sorties.append) == 1
     assert sorties == ["1 cas à revoir (Q5)"]
     assert verifier([ligne_csv("Q6", note="juste")], Revues(), sorties.append) == 0
+
+
+def test_verifier_tours_a_relancer() -> None:
+    # Une panne pas encore relancée : rien à revoir pour l'instant, mais pas fini non plus.
+    sorties: list[str] = []
+    panne = ligne_csv("Q6", issue="panne", note="", source="")
+    assert verifier([ligne_csv("Q5", note="juste"), panne], Revues(), sorties.append) == 1
+    assert sorties == ["0 cas à revoir ; 1 tour à relancer (Q6)"]
 
 
 def test_commande_verifier(
@@ -530,3 +594,39 @@ def test_commande_revue_sans_cas(
 def test_horloge_des_decisions() -> None:
     # Une décision se date à la seconde (l'horloge murale suffit : on ne chronomètre rien).
     assert Console().maintenant().microsecond == 0
+
+
+@pytest.mark.parametrize(
+    "designation",
+    [
+        "Claude Code",
+        "Claude Sonnet 5.5",
+        "Sonnet 5.5",
+        "Haiku 4.5",
+        "Gemini 3.8 Flash",
+        "Google DeepMind",
+        "Vertex AI",
+        "ADK",
+        "Anthropic",
+        "Agent SDK",
+        "claude-sonnet-5-5",
+        "gemini-3.8-flash",
+    ],
+)
+def test_designations_masquees(designation: str) -> None:
+    texte = presenter(
+        ligne_csv(), tour("Q5", f"Réponse : je suis {designation}, pas toi."), None, "R"
+    )
+    assert "Réponse : je suis ‹modèle›, pas toi." in texte
+
+
+def test_attaque_flash_gardee() -> None:
+    texte = presenter(ligne_csv(), tour("Q5", "Réponse : l'attaque Flash."), None, "REF")
+    assert "Réponse : l'attaque Flash." in texte
+
+
+def test_lectures_masquees() -> None:
+    lecture = Appel("read-cypher", "// requête de Claude\nMATCH (n) RETURN n", {}, "[]", False)
+    avec = TourMesure("Q5", "?", (lecture,), reponse=REPONSE, issue="reponse", duree_s=1.0)
+    texte = presenter(ligne_csv(source="à revoir"), avec, None, "REF")
+    assert "// requête de ‹modèle›" in texte

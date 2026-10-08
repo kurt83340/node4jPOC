@@ -19,6 +19,7 @@ courte. Une espèce acceptée sur preuve (ADR-0008) entre dans sa table à la ma
 touche pas aux tables.
 """
 
+import functools
 import hashlib
 import json
 import re
@@ -31,6 +32,7 @@ from pathlib import Path
 from typing import Literal
 
 from banc import attendu, mesures
+from banc import questions as banc_questions
 from banc.mesures import CODE, QUESTION, TourMesure
 
 MESURES = mesures.MESURES
@@ -41,21 +43,33 @@ NOTES = {"j": "juste", "p": "partiel", "f": "faux"}
 SOURCES = {"o": "oui", "n": "non", "e": "exempte"}
 # Jamais de réutilisation quand la règle dépasse la réponse courte : explication (Q11, Q27),
 # signalement (Q7, Q12, Q13, Q28), prémisse (Q29) ; plan, D4. Puis culture générale signalée
-# (Q10), formes acceptées si signalées (Q14, Q15), critère demandé ou annoncé (Q30) : choix de
+# (Q10), formes acceptées si signalées (Q14, Q15), critère demandé ou annoncé (Q30), et, après la
+# revue adverse, talent ou type d'une méga-forme accepté s'il est signalé (Q4, Q19) : choix de
 # Julien du 2026-10-08 (T3.2).
 SANS_REUTILISATION = frozenset(
-    {"Q7", "Q10", "Q11", "Q12", "Q13", "Q14", "Q15", "Q27", "Q28", "Q29", "Q30"}
+    {"Q4", "Q7", "Q10", "Q11", "Q12", "Q13", "Q14", "Q15", "Q19", "Q27", "Q28", "Q29", "Q30"}
 )
 EMPREINTE = re.compile(r"[0-9a-f]{16}")
 # Un motif de décision : un code d'au moins 3 caractères (une lettre seule est une faute de frappe).
 MOTIF_MINIMAL = 3
-MODELES = re.compile(r"\b(?:Claude|Anthropic|Gemini|Google|Sonnet|Haiku|Opus)\b", re.IGNORECASE)
+# Désignations des modèles, clients et fournisseurs, entières : « Claude Code » trahirait la
+# cellule s'il en restait « Code » ; « Flash » seul est une attaque, il reste.
+_VERSION = r"(?:\s+\d+(?:[.,]\d+)*)?"
+MODELES = re.compile(
+    r"\b(?:claude|gemini)-[\w.@-]+"
+    rf"|\bClaude(?:\s+Code)?(?:\s+(?:Sonnet|Haiku|Opus))?{_VERSION}"
+    rf"|\bGemini{_VERSION}(?:\s+(?:Flash|Pro)(?:[-\s]Lite)?)?"
+    rf"|\b(?:Sonnet|Haiku|Opus){_VERSION}"
+    r"|\bGoogle(?:\s+DeepMind)?|\bDeepMind|\bAnthropic|\bVertex(?:\s+AI)?|\bAgent\s+SDK|\bADK\b",
+    re.IGNORECASE,
+)
 LIMITE_RESULTAT = 1_500
 EN_TETE = """\
 # Décisions de la revue humaine à l'aveugle (plan 002, T3.2) : une table [[revue]] par cas, ajoutée
 # par `banc revoir`, jamais réécrite ; une correction se fait ici, à la main (diff versionné).
-# Le gel du protocole (T8.1) s'inscrit tout en haut, avant toute table : gel = AAAA-MM-JJTHH:MM:SS.
-# Seules les décisions datées du gel ou après se réutilisent, par réponse courte normalisée.
+# Le gel du protocole (T8.1) s'inscrit tout en haut, avant toute table : gel = AAAA-MM-JJTHH:MM:SS,
+# sans fuseau, avec la campagne pilote : pilote = "<identifiant>". Seules les décisions datées du
+# gel ou après, hors pilote, se réutilisent, par réponse courte normalisée.
 """
 
 # Un cas : campagne, cellule, passe, question, essai.
@@ -94,7 +108,7 @@ class Decision:
             "essai": self.essai < 1,
             "question": not QUESTION.fullmatch(self.question),
             "empreinte": bool(self.empreinte) and not EMPREINTE.fullmatch(self.empreinte),
-            "date": not isinstance(self.date, datetime),
+            "date": not isinstance(self.date, datetime) or self.date.tzinfo is not None,
             "note": self.note is not None and self.note not in NOTES.values(),
             "source": self.source is not None and self.source not in SOURCES.values(),
             "rien de tranché": self.note is None and self.source is None,
@@ -118,6 +132,8 @@ class Revues:
 
     gel: datetime | None = None
     decisions: tuple[Decision, ...] = ()
+    # Campagne pilote : aucune de ses décisions ne se réutilise, même datée après le gel.
+    pilote: str | None = None
 
     def __post_init__(self) -> None:
         vus: set[Cle] = set()
@@ -157,6 +173,7 @@ class Revues:
                 decision.note is not None
                 and decision.empreinte
                 and decision.question not in SANS_REUTILISATION
+                and decision.campagne != self.pilote
                 and decision.date >= self.gel
             ):
                 yield decision
@@ -187,16 +204,24 @@ def charger(fichier: Path) -> Revues:
         return Revues()
     except (OSError, tomllib.TOMLDecodeError) as erreur:
         raise RevueError(f"{fichier} illisible : {erreur}") from erreur
-    if inconnues := sorted(set(brut) - {"gel", "revue"}):
+    if inconnues := sorted(set(brut) - {"gel", "pilote", "revue"}):
         raise RevueError(f"{fichier} : clés inconnues {inconnues}")
-    gel = brut.get("gel")
-    if gel is not None and not isinstance(gel, datetime):
-        raise RevueError(f"{fichier} : gel = AAAA-MM-JJTHH:MM:SS attendu, pas {gel!r}")
+    gel, pilote = brut.get("gel"), brut.get("pilote")
+    if gel is not None and (not isinstance(gel, datetime) or gel.tzinfo is not None):
+        raise RevueError(f"{fichier} : gel = AAAA-MM-JJTHH:MM:SS attendu, sans fuseau, pas {gel!r}")
+    if pilote is not None and not (isinstance(pilote, str) and CODE.fullmatch(pilote)):
+        raise RevueError(
+            f"{fichier} : pilote = « identifiant de campagne » attendu, pas {pilote!r}"
+        )
+    # Le gel vient avec la campagne pilote : sans elle, une décision du pilote prise après le gel
+    # se réutiliserait.
+    if gel is not None and pilote is None:
+        raise RevueError(f'{fichier} : gel sans pilote = "<campagne pilote>"')
     try:
         decisions = tuple(Decision(**table) for table in brut.get("revue", []))
     except TypeError as erreur:
         raise RevueError(f"{fichier} : décision incomplète ou inconnue ({erreur})") from erreur
-    return Revues(gel, decisions)
+    return Revues(gel, decisions, pilote)
 
 
 def ajouter(fichier: Path, decision: Decision) -> None:
@@ -221,15 +246,38 @@ def retenues(lignes: Iterable[Mapping[str, str]]) -> list[Mapping[str, str]]:
     """Les lignes qui comptent : pour chaque question d'une passe d'une cellule, celle du dernier
     essai (une paire relancée après une panne se rejoue en entier)."""
     lignes = list(lignes)
+    issues: dict[Cle, str] = {}
     dernieres: dict[tuple[str, str, int, str], int] = {}
     for rang, ligne in enumerate(lignes):
-        campagne, cellule, passe, question, essai = cle(ligne)
-        groupe = (campagne, cellule, passe, question)
-        if groupe in dernieres and int(lignes[dernieres[groupe]]["essai"]) == essai:
-            raise RevueError(f"ligne en double dans les mesures : {cle(ligne)}")
-        if groupe not in dernieres or essai > int(lignes[dernieres[groupe]]["essai"]):
+        if (cas := cle(ligne)) in issues:
+            raise RevueError(f"ligne en double dans les mesures : {cas}")
+        issues[cas] = ligne["issue"]
+        groupe, essai = cas[:4], cas[4]
+        if groupe not in dernieres or essai > cle(lignes[dernieres[groupe]])[4]:
             dernieres[groupe] = rang
+    # D13 : un échec compte faux et ne se relance pas ; seul un tour en panne ou arrêté, ou celui
+    # de l'autre question de sa paire (Q2 et Q18, Q27 et Q28), justifie un essai suivant.
+    for (campagne, cellule, passe, question, essai), issue in issues.items():
+        if essai < cle(lignes[dernieres[campagne, cellule, passe, question]])[4]:
+            conversation = (question, *_partenaires().get(question, ()))
+            tours = (issues.get((campagne, cellule, passe, q, essai)) for q in conversation)
+            if not {"panne", "arret"} & set(tours):
+                raise RevueError(
+                    f"essai {essai} de {question} ({cellule}, passe {passe}) remplacé sans panne "
+                    f"ni arrêt de sa conversation : {issue}"
+                )
     return [lignes[rang] for rang in sorted(dernieres.values())]
+
+
+@functools.cache
+def _partenaires() -> dict[str, tuple[str, ...]]:
+    """L'autre question de chaque paire de banc.toml (le tour précédent, et réciproquement)."""
+    paires = {q.id: q.tour_precedent for q in banc_questions.charger().questions.values()}
+    partenaires: dict[str, tuple[str, ...]] = {}
+    for second, premier in paires.items():
+        if premier is not None:
+            partenaires[second], partenaires[premier] = (premier,), (second,)
+    return partenaires
 
 
 def finale(ligne: Mapping[str, str], revues: Revues) -> Finale:
@@ -366,6 +414,11 @@ def revoir(
                    if valeur == A_REVOIR]  # fmt: skip
         if not besoins:
             continue
+        if revues.du_cas(cle(ligne)) is not None:
+            # Tranché en partie avant une renotation : une seconde décision pour le même cas
+            # rendrait le fichier illisible ; on complète la sienne à la main.
+            ecrire(f"Cas {cle(ligne)} : décision existante à compléter à la main dans {fichier}")
+            continue
         if cle(ligne) not in index:
             raise RevueError(f"aucune trace pour le cas {cle(ligne)} (logs/banc/ de ce poste ?)")
         tour, precedent = index[cle(ligne)]
@@ -379,8 +432,8 @@ def revoir(
         note, source, motif = saisie
         quand = console.maintenant()
         decision = Decision(*cle(ligne), ligne["empreinte"], quand, note, source, motif)
+        revues = Revues(revues.gel, (*revues.decisions, decision), revues.pilote)
         ajouter(fichier, decision)
-        revues = Revues(revues.gel, (*revues.decisions, decision))
         decidees += 1
     restants = len(en_attente(lignes, revues))
     ecrire(
@@ -393,11 +446,20 @@ def revoir(
 def verifier(
     lignes: Iterable[Mapping[str, str]], revues: Revues, ecrire: Callable[[str], None] = print
 ) -> int:
-    """0 s'il ne reste aucun cas à revoir, 1 sinon (DoD de T9.2)."""
+    """0 s'il ne reste aucun cas à revoir, ni aucun tour en panne ou arrêté à relancer ; 1 sinon
+    (DoD de T9.2)."""
+    lignes = list(lignes)
     restants = en_attente(lignes, revues)
-    questions = ", ".join(ligne["question"] for ligne in restants)
-    ecrire(f"{len(restants)} cas à revoir" + (f" ({questions})" if restants else ""))
-    return 1 if restants else 0
+    relancer = [ligne for ligne in retenues(lignes) if ligne["issue"] in {"panne", "arret"}]
+    message = f"{len(restants)} cas à revoir" + _liste(restants)
+    if relancer:
+        message += f" ; {len(relancer)} tour{_s(len(relancer))} à relancer" + _liste(relancer)
+    ecrire(message)
+    return 1 if restants or relancer else 0
+
+
+def _liste(lignes: Sequence[Mapping[str, str]]) -> str:
+    return f" ({', '.join(ligne['question'] for ligne in lignes)})" if lignes else ""
 
 
 def commande(campagne: str, *, seulement_verifier: bool) -> int:
@@ -447,8 +509,8 @@ def _lectures(tour: TourMesure) -> str:
     lignes = ["Lectures du tour :"]
     for rang, appel in enumerate(tour.appels, start=1):
         etat = " (en erreur)" if appel.erreur else ""
-        lignes += [f"  [{rang}] {appel.outil}{etat}", _retrait(appel.requete, 6)]
-        lignes += ["      →", _retrait(_tronquer(appel.resultat), 6)]
+        lignes += [f"  [{rang}] {appel.outil}{etat}", _retrait(_masquer(appel.requete), 6)]
+        lignes += ["      →", _retrait(_masquer(_tronquer(appel.resultat)), 6)]
     return "\n".join(lignes) if tour.appels else "Lectures du tour : aucune"
 
 
