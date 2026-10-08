@@ -50,6 +50,9 @@
 - ⚠️ `questions/banc.toml`, `questions/README.md` — `banc/tests/test_banc_toml.py` les tient cohérents entre eux et
   avec `questions/attendu/` (texte posé, catégorie, tour précédent, équipe de Q2, scores de Q8 cités par le README) :
   changer l'un, c'est mettre l'autre à jour dans le même commit.
+- ⚠️ `banc/src/banc/` — texte français : une élision (d', l', qu'…) colle l'apostrophe au nom qui suit (« d'Évoli ») ;
+  la détacher avant de chercher des noms, mais garder l'apostrophe d'un nom PokéAPI (« Écras’Face »). Vu le
+  2026-10-08 dans `banc/tests/test_contamination.py` : sans cela, « d'Évoli » échappait au contrôle des noms propres.
 - ⚠️ `infra/reveil-aura/reveil.py` — la Query API d'Aura répond 202 même quand la requête échoue ; seul un
   refus d'authentification donne 401. Lire `errors` dans le corps, jamais le seul code HTTP
   ([doc Query API](https://neo4j.com/docs/query-api/current/query/), lue le 2026-09-30).
