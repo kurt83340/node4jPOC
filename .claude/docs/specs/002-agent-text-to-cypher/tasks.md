@@ -8,7 +8,7 @@
 > il « perd le fil » (échecs ×4 constatés en télémétrie, Morph 2026) → découper la phase.
 
 **Date :** 2026-10-01
-**Status :** [~] 9/33 tasks → MAJ au fil de l'eau
+**Status :** [~] 10/33 tasks → MAJ au fil de l'eau
 
 > Phases 0 à 6 : sans la base (prévues pendant la période creuse de NEO-13, close le 2026-10-07). Phases 7 à 11 : sur la base.
 > Les tests n'appellent aucun outil réel : PATH réduit aux faux outils, HOME temporaire.
@@ -39,7 +39,7 @@
 
 - [x] **T2.1** : lecture des réponses : sections « Réponse » et « Sources », normalisation (casse, accents, apostrophes), extraction des 6 noms de Q2, validés (caractères permis) puis échappés en liste littérale — fait le 2026-10-08 : `banc.lecture` (la dernière section l'emporte, aucun en-tête lu dans un bloc de code ; élisions détachées par le découpage en mots) ; espèces reconnues par la liste tirée de la base (`questions/especes.cypher`, `attendu/especes.txt`, 1 025 noms rejoués par `--verifier`, choix de Julien) ; Q2 : espèces citées, référence écartée au-delà de 6, validées puis échappées, passées à `questions.sh --controle`, qui revérifie la forme ; `pytest-cov` 7.1.0 figé ; 82 tests, 27 fautes injectées, toutes détectées
   - DoD : `command_passes: uv run --directory banc pytest tests/test_lecture.py -q`
-- [ ] **T2.2** : règles de notation : modes (valeur, ensemble, liste ordonnée, nombre), distracteurs, longues listes, tables de l'ADR-0008 (rappel, précision, seuils), source citée (requête exécutée dans le tour dont le résultat contient la réponse ; description renvoyée dans le tour ; exceptions de Q10 et Q30), introspections comptées
+- [x] **T2.2** : règles de notation : modes (valeur, ensemble, liste ordonnée, nombre), distracteurs, longues listes, tables de l'ADR-0008 (rappel, précision, seuils), source citée (requête exécutée dans le tour dont le résultat contient la réponse ; description renvoyée dans le tour ; exceptions de Q10 et Q30), introspections comptées — fait le 2026-10-08 : `banc.notation` et `banc.trace` (contrat minimal d'un tour, choix de Julien ; T3.1 l'entoure) ; au pluriel, partiel avec une espèce juste (choix de Julien) ; revue adverse à contexte frais : 12 constats, dont des « juste » à tort (Q8, Q9, Q27, Q28, formes, source citée), tous corrigés, et Q27 et Q28 passées en revue systématique (choix de Julien) ; 119 tests, couverture 99,7 % ; 33 puis 59 fautes injectées, toutes détectées
   - DoD : `command_passes: uv run --directory banc pytest tests/test_notation.py -q --cov=banc.notation --cov-fail-under=80`
 
 ## Phase 3 — Mesures et revue (NEO-17)
