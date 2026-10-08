@@ -6,6 +6,7 @@ faux gcloud et neo4j-mcp, qui notent dans un journal ce qu'ils reçoivent.
 """
 
 import json
+import select
 import shutil
 import subprocess
 import sys
@@ -102,6 +103,27 @@ sys.stdout.write((journal / "neo4j-mcp-reponse.txt").read_text())
 sys.stderr.write("connexion à " + env["NEO4J_MCP_URI"] + "\\n")
 sys.stderr.write("mot de passe : " + env["NEO4J_MCP_PASSWORD"] + "\\n")
 """
+# Le vrai perl masque le canal MCP ; ce relais note d'abord ses arguments, visibles de ps.
+RELAIS_PERL = """
+import json, os, shutil, sys
+from pathlib import Path
+journal = Path(__file__).resolve().parent.parent / "journal"
+(journal / "perl.json").write_text(json.dumps({"argv": sys.argv[1:]}))
+os.execv(PERL, ["perl", *sys.argv[1:]])
+"""
+# Serveur qui répond à chaque requête dès réception, comme neo4j-mcp face à un client.
+FAUX_DIALOGUE = """
+import sys
+while ligne := sys.stdin.readline():
+    sys.stdout.write(ligne.replace("requete", "reponse"))
+    sys.stdout.flush()
+"""
+# Résultat de read-cypher qui porte l'identifiant (CALL db.info()) : une ligne, un message MCP.
+RESULTAT_MCP = (
+    '{"jsonrpc":"2.0","id":2,"result":{"content":[{"type":"text","text":'
+    f'"[{{\\"name\\": \\"{INSTANCE}\\", \\"adresse\\": \\"{INSTANCE}.databases.neo4j.io\\"}}]"'
+    "}]}}\n"
+)
 
 
 @dataclass
@@ -187,6 +209,9 @@ def bac(tmp_path: Path) -> Bac:
     (tmp_path / "outils" / "bash").symlink_to(bash)
     installer(tmp_path / "outils", "gcloud", FAUX_GCLOUD)
     installer(tmp_path / "outils", "neo4j-mcp", FAUX_SERVEUR)
+    perl = shutil.which("perl")
+    assert perl is not None
+    installer(tmp_path / "outils", "perl", f"PERL = {perl!r}\n{RELAIS_PERL}")
     (tmp_path / "journal" / "neo4j-mcp-reponse.txt").write_text(REPONSE_MCP)
     nouveau = Bac(tmp_path, liste_blanche(tmp_path))
     nouveau.repondre()
@@ -258,6 +283,48 @@ def test_stderr_filtre(bac: Bac) -> None:
     assert "ligne masquée : elle contenait le mot de passe" in erreurs
 
 
+def test_stdout_masque_l_instance(bac: Bac) -> None:
+    # L'identifiant n'atteint ni l'agent, ni le fournisseur du LLM, ni la trace (T3.1, choix de
+    # Julien) ; le reste du canal passe octet pour octet, ligne par ligne.
+    (bac.racine / "journal" / "neo4j-mcp-reponse.txt").write_text(REPONSE_MCP + RESULTAT_MCP)
+    lancement = bac.lancer()
+    assert lancement.sortie == REPONSE_MCP + RESULTAT_MCP.replace(INSTANCE, "‹instance›")
+    perl = lancement.note("perl")
+    assert perl is not None
+    assert all(INSTANCE not in argument for argument in perl["argv"])
+
+
+def test_stdout_rendu_ligne_a_ligne(bac: Bac) -> None:
+    # Un client MCP attend chaque réponse avant d'envoyer la requête suivante : le masque rend
+    # chaque ligne aussitôt, sans attendre que son tampon se remplisse.
+    installer(bac.racine / "outils", "neo4j-mcp", FAUX_DIALOGUE)
+    processus = subprocess.Popen(
+        [str(LANCEUR)],
+        cwd=bac.racine / "travail",
+        env=bac.env,
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+        text=True,
+    )
+    assert processus.stdin is not None and processus.stdout is not None
+    try:
+        processus.stdin.write('{"requete": 1}\n')
+        processus.stdin.flush()
+        pret, _, _ = select.select([processus.stdout], [], [], 10)
+        assert pret, "réponse retenue dans un tampon"
+        assert processus.stdout.readline() == '{"reponse": 1}\n'
+    finally:
+        processus.kill()
+        processus.wait()
+
+
+def test_stdout_sans_fin_de_ligne(bac: Bac) -> None:
+    # Le filtre n'ajoute rien : un dernier message sans fin de ligne reste tel quel.
+    (bac.racine / "journal" / "neo4j-mcp-reponse.txt").write_text(REPONSE_MCP.rstrip("\n"))
+    assert bac.lancer().sortie == REPONSE_MCP.rstrip("\n")
+
+
 def test_exec_remplace_le_lanceur(bac: Bac) -> None:
     # Même processus : un signal ou l'arrêt du groupe de processus atteint le serveur.
     lancement = bac.lancer()
@@ -277,11 +344,13 @@ def test_secret_inutilisable(bac: Bac, secret: str, code: int) -> None:
     assert (lancement.code, lancement.sortie, lancement.note("neo4j-mcp")) == (2, "", None)
 
 
-def test_serveur_introuvable(bac: Bac) -> None:
-    (bac.racine / "outils" / "neo4j-mcp").unlink()
+@pytest.mark.parametrize("outil", ["neo4j-mcp", "perl"])
+def test_outil_introuvable(bac: Bac, outil: str) -> None:
+    # Sans perl, le canal MCP ne serait pas masqué : rien ne se lance.
+    (bac.racine / "outils" / outil).unlink()
     lancement = bac.lancer()
-    assert (lancement.code, lancement.sortie) == (2, "")
-    assert "neo4j-mcp introuvable" in lancement.erreurs
+    assert (lancement.code, lancement.sortie, lancement.note("neo4j-mcp")) == (2, "", None)
+    assert f"{outil} introuvable" in lancement.erreurs
 
 
 def test_arguments_refuses(bac: Bac) -> None:
