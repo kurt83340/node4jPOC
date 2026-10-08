@@ -8,7 +8,7 @@
 > il « perd le fil » (échecs ×4 constatés en télémétrie, Morph 2026) → découper la phase.
 
 **Date :** 2026-10-01
-**Status :** [~] 10/33 tasks → MAJ au fil de l'eau
+**Status :** [~] 11/33 tasks → MAJ au fil de l'eau
 
 > Phases 0 à 6 : sans la base (prévues pendant la période creuse de NEO-13, close le 2026-10-07). Phases 7 à 11 : sur la base.
 > Les tests n'appellent aucun outil réel : PATH réduit aux faux outils, HOME temporaire.
@@ -44,7 +44,7 @@
 
 ## Phase 3 — Mesures et revue (NEO-17)
 
-- [ ] **T3.1** : traces et mesures : une trace JSONL par conversation (identifiant masqué), une ligne CSV sans prose (cause d'un échec, introspections), coût par modèle avec cache, réflexion et petit modèle de Claude Code
+- [x] **T3.1** : traces et mesures : une trace JSONL par conversation (identifiant masqué), une ligne CSV sans prose (cause d'un échec, introspections), coût par modèle avec cache, réflexion et petit modèle de Claude Code — fait le 2026-10-08 : `banc.mesures` (trace écrite au fil de l'eau, un événement par ligne, relue en tours de `banc.trace`, inchangé ; une ligne CSV par tour et par essai, pannes comprises, sans prose vérifiée ; tokens du modèle de la cellule, `cout_usd` total et `cout_annexe_usd`, choix de Julien ; tokens de l'API Anthropic, d'ADK et de Claude Code, part 1 h du cache comprise) ; identifiant masqué par le lanceur sur le stdout de `neo4j-mcp` (perl, choix de Julien) ; 84 tests, couverture 100 % ; 84 fautes injectées, toutes détectées
   - DoD : `command_passes: uv run --directory banc pytest tests/test_mesures.py -q`
 - [ ] **T3.2** : revue humaine à l'aveugle (`banc revoir`) : décisions datées à partir du gel, aucune héritée du pilote ; réutilisées par réponse courte normalisée pour les seules questions à valeur (jamais Q7, Q11, Q12, Q13, Q27, Q28, Q29), dans `banc/mesures/revues.toml`
   - DoD : `command_passes: uv run --directory banc pytest tests/test_revue.py -q`
@@ -112,7 +112,7 @@
 
 - [ ] **T11.1** : rapport de la technique 2 : score par cellule et par catégorie, écart entre passes, causes d'échec, introspections, temps, coût, sources citées, FR/EN (seuils fixés d'avance, limite à un modèle), effort de mise en place
   - DoD : `file_exists: banc/resultats/technique-2.md`
-- [ ] **T11.2** : doc : code-map (relecture des règles du lanceur, du harnais, de `--schema` et de `transactions.sh`), stack (bibliothèques, LLM, coûts), ARCHITECTURE, RUNBOOK (lancer une campagne, basculer en anglais, revenir), ACCESS (Model Garden), README (jalon 2)
+- [ ] **T11.2** : doc : code-map (relecture des règles du lanceur, du harnais, de `--schema` et de `transactions.sh`), stack (bibliothèques, LLM, coûts, perl du lanceur), ARCHITECTURE, RUNBOOK (lancer une campagne, basculer en anglais, revenir), ACCESS (Model Garden), README (jalon 2)
   - DoD : `command_passes: python3 .claude/skills/doc-health/scripts/context-budget.py`
 - [ ] **T11.3** : `/feature-done 002-agent-text-to-cypher` : dernière PR, fusion, puis tag `jalon-2` sur `main`
   - DoD : `command_passes: git rev-parse jalon-2`, et `manual: ROADMAP et CHANGELOG à jour`

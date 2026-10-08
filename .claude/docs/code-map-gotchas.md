@@ -87,6 +87,13 @@
   permise et la télémétrie active ; ses options passent avant l'environnement ; un `NEO4J_MCP_*` vide retombe sur
   l'ancien nom ; un échec de connexion au démarrage sort avec le code 0 (lire le statut MCP). stdout est le canal
   MCP : rien n'y passe avant l'`exec` ([plan 002, D1](specs/002-agent-text-to-cypher/plan.md), vu le 2026-10-07).
+- ⚠️ `scripts/mcp-neo4j.sh` — son stdout masqué est le canal MCP, un message JSON par ligne : le filtre rend chaque
+  ligne aussitôt (`$| = 1` de perl), sinon le client attend sa réponse sans fin ; il ne peut pas non plus retirer
+  une ligne (même blocage) ; l'identifiant lui arrive par l'environnement, jamais en argument (`ps`) (vu le 2026-10-08).
+- ⚠️ `banc/src/banc/mesures.py` — `ModelUsage` de Claude Code (SDK 0.2.164) et l'usage d'ADK (2.11.0) ne séparent
+  pas l'écriture du cache à 5 min et à 1 h, facturée 1,6 fois plus cher à 1 h : sa part vient des messages de
+  l'assistant ou de `ContextCacheConfig`. `output_tokens` d'Anthropic comprend la réflexion,
+  `candidates_token_count` d'ADK non (vu le 2026-10-08).
 - ⚠️ `banc/tests/test_lanceur.py` — un faux outil écrit en Python ajoute `LC_CTYPE` à son `os.environ` quand aucune
   locale n'est fixée (PEP 538) : lire l'environnement reçu à l'exec dans `/proc/self/environ` (vu le 2026-10-07).
 - ⚠️ `banc/src/banc/isolement.py` — Claude Code choisit son accès dans un ordre fixe : fournisseur cloud
