@@ -1,5 +1,6 @@
 """Rejeu des questions (scripts/questions.sh, spec 002 T1.3) : $proposee toujours passé,
---dossier et --exemples. Contrôle sur la vraie base en T7.2 et T7.3.
+--dossier et --exemples ; liste des espèces rejouée avec les questions, et contrôle de Q2 sur
+l'équipe d'un agent (T2.1, plan D4 et D6). Contrôle sur la vraie base en T7.2 et T7.3.
 
 Aucun outil réel : le PATH ne contient que bash, quelques commandes de base et de faux gcloud et
 cypher-shell. Le faux cypher-shell note chaque appel ; il répond comme la base de référence (les
@@ -17,10 +18,15 @@ from typing import Any
 
 import pytest
 
+from banc import attendu
+from banc.lecture import liste_cypher
+
 RACINE = Path(__file__).resolve().parents[2]
 SCRIPT = RACINE / "scripts" / "questions.sh"
 QUESTIONS = RACINE / "questions"
 PROPOSEE = "{proposee: ['Magnéton', 'Dracolosse', 'Flagadoss', 'Noadkoko', 'Staross', 'Parasect']}"
+# Une équipe d'agent : des noms à espace, tiret, point, deux-points, chiffre et symbole.
+EQUIPE = "['M. Mime', 'Porygon-Z', 'Type:0', 'Nidoran♀', 'Ho-Oh', 'Kaimorse']"
 SECRET = (
     "NEO4J_URI=neo4j+s://instance.databases.neo4j.io\nNEO4J_USERNAME=instance\n"
     "NEO4J_PASSWORD=mot-de-passe-factice\nNEO4J_DATABASE=instance\n"
@@ -130,9 +136,9 @@ def exemples_de_la_fiche() -> list[str]:
 def test_proposee_passee_a_chaque_requete(bac: Bac) -> None:
     lancement = bac.lancer("--verifier")
     assert lancement.code == 0, lancement.erreurs
-    assert "CONFORME : 27 questions." in lancement.sortie
+    assert "CONFORME : 28 requêtes." in lancement.sortie
     requetes = lancement.requetes()
-    assert len(requetes) == 27
+    assert len(requetes) == 28
     for appel in requetes:
         argv = appel["argv"]
         assert argv[argv.index("-P") + 1] == PROPOSEE
@@ -154,7 +160,7 @@ def test_dossier(bac: Bac, tmp_path: Path) -> None:
         shutil.copy(QUESTIONS / nom, dossier / nom)
     lancement = bac.lancer("--dossier", str(dossier), "--verifier")
     assert lancement.code == 0, lancement.erreurs
-    assert "CONFORME : 2 questions." in lancement.sortie
+    assert "CONFORME : 2 requêtes." in lancement.sortie
     fichiers = [a["argv"][a["argv"].index("--file") + 1] for a in lancement.requetes()]
     assert [Path(f).parent for f in fichiers] == [dossier, dossier]
 
@@ -229,3 +235,97 @@ def test_exemples_du_dossier(bac: Bac, tmp_path: Path) -> None:
         "MATCH (n:Species) RETURN n.name AS name LIMIT 1",
         dracofeu,
     ]
+
+
+# --- Liste des espèces et contrôle de Q2 (T2.1, plan D4 et D6) --------------------------------
+
+
+def fichiers_lus(lancement: Lancement) -> list[str]:
+    return [Path(a["argv"][a["argv"].index("--file") + 1]).name for a in lancement.requetes()]
+
+
+def test_verifier_rejoue_la_liste_des_especes(bac: Bac) -> None:
+    # La liste qui sert à reconnaître les espèces se rejoue avec les 27 requêtes : un changement des
+    # données ne la laisse pas se périmer en silence.
+    lancement = bac.lancer("--verifier")
+    assert lancement.code == 0, lancement.erreurs
+    assert fichiers_lus(lancement)[-1] == "especes.cypher"
+    assert "✓ especes" in lancement.sortie
+
+
+def test_liste_des_especes_differente_est_un_ecart(bac: Bac) -> None:
+    bac.regles(("RETURN p.nom AS pokemon", 'pokemon\n"Bulbizarre"', 0))
+    lancement = bac.lancer("--verifier")
+    assert lancement.code == 1
+    assert "✗ especes : réponse différente de attendu/especes.txt" in lancement.sortie
+
+
+def test_controle_passe_l_equipe_a_q02(bac: Bac) -> None:
+    lancement = bac.lancer("--controle", EQUIPE)
+    assert lancement.code == 0, lancement.erreurs
+    [appel] = lancement.requetes()
+    argv = appel["argv"]
+    assert fichiers_lus(lancement) == ["q02.cypher"]
+    assert argv[argv.index("-P") + 1] == f"{{proposee: {EQUIPE}}}"
+    assert argv[argv.index("--access-mode") + 1] == "read"
+    # stdout ne porte que la réponse, relisible comme les réponses de référence.
+    controle = attendu.analyser(lancement.sortie)[-1]
+    assert controle.colonnes == ("especesReconnues", "typesNonCouverts", "equipeValide")
+
+
+def test_controle_accepte_la_liste_du_harnais(bac: Bac) -> None:
+    # Les deux barrières s'accordent : ce que banc.lecture produit, questions.sh l'accepte tel quel.
+    liste = liste_cypher(("M. Mime", "Porygon-Z", "Type:0", "Nidoran♀", "Ho-Oh", "Épine-de-Fer"))
+    lancement = bac.lancer("--controle", liste)
+    assert lancement.code == 0, lancement.erreurs
+    [appel] = lancement.requetes()
+    assert appel["argv"][appel["argv"].index("-P") + 1] == f"{{proposee: {liste}}}"
+
+
+def test_controle_avec_dossier(bac: Bac, tmp_path: Path) -> None:
+    # Sur la base anglaise, la traduction de q02.cypher fait le contrôle (plan, D6).
+    dossier = tmp_path / "traduites"
+    dossier.mkdir()
+    shutil.copy(QUESTIONS / "q02.cypher", dossier / "q02.cypher")
+    lancement = bac.lancer("--dossier", str(dossier), "--controle", EQUIPE)
+    assert lancement.code == 0, lancement.erreurs
+    [appel] = lancement.requetes()
+    assert Path(appel["argv"][appel["argv"].index("--file") + 1]).parent == dossier
+
+
+@pytest.mark.parametrize(
+    "equipe",
+    [
+        pytest.param("['A', 'B', 'C', 'D', 'E']", id="cinq-noms"),
+        pytest.param("['A', 'B', 'C', 'D', 'E', 'F', 'G']", id="sept-noms"),
+        pytest.param("['A', 'B', 'C', 'D', 'E', 'F'] + ['G']", id="expression"),
+        pytest.param("['A', 'B', 'C', 'D', 'E', 'F'}, x: {y: 'z']", id="sortie-de-liste"),
+        pytest.param("['A', 'B', 'C', 'D', 'E', 'O'Brien']", id="apostrophe"),
+        pytest.param("['A', 'B', 'C', 'D', 'E', 'F\\']", id="antislash"),
+        pytest.param("['A', 'B', 'C', 'D', 'E', '']", id="nom-vide"),
+        pytest.param('["A", "B", "C", "D", "E", "F"]', id="guillemets"),
+        pytest.param("['A', 'B', 'C', 'D', 'E', 'F\nG']", id="saut-de-ligne"),
+        pytest.param("['A','B','C','D','E','F']", id="separateur"),
+        pytest.param("", id="vide"),
+    ],
+)
+def test_controle_refuse_une_equipe_mal_formee(bac: Bac, equipe: str) -> None:
+    # Jamais un texte libre dans -P (plan, D6) : refus avant tout appel, test de connexion compris.
+    lancement = bac.lancer("--controle", equipe)
+    assert lancement.code == 2
+    assert "--controle" in lancement.erreurs
+    assert lancement.appels == []
+
+
+@pytest.mark.parametrize(
+    "arguments",
+    [
+        pytest.param(["--controle"], id="sans-equipe"),
+        pytest.param(["--verifier", "--controle", EQUIPE], id="deux-modes"),
+        pytest.param(["--controle", EQUIPE, "q02"], id="question-en-plus"),
+    ],
+)
+def test_controle_arguments_invalides(bac: Bac, arguments: list[str]) -> None:
+    lancement = bac.lancer(*arguments)
+    assert lancement.code == 2
+    assert lancement.appels == []
