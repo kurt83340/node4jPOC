@@ -31,6 +31,7 @@ from banc.prix import ACCES, Tarif, Usage, tarif
 from banc.trace import Appel, Tour
 
 TRACES = Path(__file__).resolve().parents[3] / "logs" / "banc"
+MESURES = Path(__file__).resolve().parents[2] / "mesures"
 FORMAT = 1
 TYPES = frozenset({"conversation", "question", "llm", "appel", "resultat", "reprise", "fin"})
 # Issue d'un tour et causes permises (D13) : un échec de l'agent compte faux ; une panne se relance
@@ -477,6 +478,26 @@ def ecrire(fichier: Path, lignes: Iterable[Mapping[str, str]]) -> None:
         if nouveau:
             redacteur.writeheader()
         redacteur.writerows(lignes)
+
+
+def fichier_mesures(campagne: str, dossier: Path = MESURES) -> Path:
+    """CSV d'une campagne : <dossier>/<campagne>.csv (dossier : MESURES, versionné)."""
+    if not CODE.fullmatch(campagne):
+        raise MesureError(f"campagne {campagne!r} : un code attendu (minuscules, chiffres, tirets)")
+    return dossier / f"{campagne}.csv"
+
+
+def lire_lignes(fichier: Path) -> list[dict[str, str]]:
+    """Relit le CSV d'une campagne ; un fichier d'un autre format est refusé."""
+    try:
+        with fichier.open(encoding="utf-8", newline="") as flux:
+            lecteur = csv.DictReader(flux)
+            if tuple(lecteur.fieldnames or ()) != COLONNES:
+                colonnes = list(lecteur.fieldnames or ())
+                raise MesureError(f"{fichier} : colonnes {colonnes}, attendu {list(COLONNES)}")
+            return [dict(valeurs) for valeurs in lecteur]
+    except OSError as erreur:
+        raise MesureError(f"{fichier} illisible : {erreur.strerror}") from erreur
 
 
 def commit_pokeapi(dossier: Path = attendu.DOSSIER) -> str:

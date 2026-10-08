@@ -25,9 +25,11 @@ from banc.mesures import (
     couts,
     ecrire,
     empreinte,
+    fichier_mesures,
     fichier_trace,
     ligne,
     lire,
+    lire_lignes,
     reflexion_anthropic,
     usage_adk,
     usage_anthropic,
@@ -592,12 +594,29 @@ def test_csv_ecrit_puis_complete(trace: Path, tmp_path: Path) -> None:
     # « à revoir » : une valeur d'ensemble fermé, pas de la prose, malgré son espace.
     premiere = ligne(ENTETE, q2, Notation("à revoir", ("hors-table",), "à revoir"), TARIFS)
     seconde = ligne(ENTETE, q18, None, TARIFS)
-    fichier = tmp_path / "mesures" / "essai.csv"
+    fichier = fichier_mesures("essai", tmp_path / "mesures")
     ecrire(fichier, [premiere])
     ecrire(fichier, [seconde])
+    assert lire_lignes(fichier) == [premiere, seconde]
     with fichier.open(newline="") as flux:
         assert list(csv.DictReader(flux)) == [premiere, seconde]
     assert fichier.read_text().count("campagne,") == 1
+
+
+def test_fichier_des_mesures(tmp_path: Path) -> None:
+    assert fichier_mesures("pilote", tmp_path) == tmp_path / "pilote.csv"
+    with pytest.raises(MesureError, match="campagne"):
+        fichier_mesures("../hors", tmp_path)
+
+
+def test_csv_relu_refuse(tmp_path: Path) -> None:
+    # Absent, ou d'un autre format : la revue et le rapport ne lisent qu'un CSV de banc.mesures.
+    with pytest.raises(MesureError, match="illisible"):
+        lire_lignes(tmp_path / "absent.csv")
+    fichier = tmp_path / "autre.csv"
+    fichier.write_text("campagne,note\nc1,juste\n")
+    with pytest.raises(MesureError, match="colonnes"):
+        lire_lignes(fichier)
 
 
 def test_csv_d_un_autre_format_refuse(trace: Path, tmp_path: Path) -> None:
