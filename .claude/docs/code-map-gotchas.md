@@ -90,14 +90,22 @@
 - ⚠️ `scripts/mcp-neo4j.sh` — son stdout masqué est le canal MCP, un message JSON par ligne : le filtre rend chaque
   ligne aussitôt (`$| = 1` de perl), sinon le client attend sa réponse sans fin ; il ne peut pas non plus retirer
   une ligne (même blocage) ; l'identifiant lui arrive par l'environnement, jamais en argument (`ps`) (vu le 2026-10-08).
-- ⚠️ `banc/mesures/revues.toml` — `gel` s'écrit en date-heure (`gel = 2026-10-20T10:00:00`), tout en haut, avant
-  toute table : une date seule est refusée exprès, car une décision du pilote prise le jour du gel serait
-  réutilisée. Une correction de décision se fait dans le fichier, jamais en ajoutant une seconde décision au même
-  cas (refusée) ([plan 002, D4](specs/002-agent-text-to-cypher/plan.md), vu le 2026-10-08).
+- ⚠️ `banc/mesures/revues.toml` — `gel` s'écrit en date-heure sans fuseau (`gel = 2026-10-20T10:00:00`), tout en
+  haut, avant toute table, avec la campagne pilote, exigée (`pilote = "pilote"`) : une date seule ou un gel sans
+  pilote laisseraient réutiliser une décision du pilote. Une décision se corrige ou se complète dans le fichier,
+  jamais par une seconde décision au même cas (refusée) ([plan 002, D4](specs/002-agent-text-to-cypher/plan.md),
+  vu le 2026-10-08).
+- ⚠️ `banc/tests/` — gitleaks (pre-commit) prend un SHA de 40 caractères hexadécimaux affecté à un nom qui contient
+  « api » (`commit_pokeapi="…"`) pour une clé d'API (generic-api-key) : lire le commit par
+  `banc.mesures.commit_pokeapi()` plutôt que l'écrire (commit refusé le 2026-10-08).
+- ⚠️ `banc/src/banc/isolement.py` — ADK (`mcp` 2.3.0, `client/stdio.py`) lance le serveur MCP dans sa propre session
+  et, sans `env` explicite, ne lui passe que HOME, LOGNAME, PATH, SHELL, TERM et USER : donner la liste blanche à
+  ses paramètres de lancement, et arrêter le lanceur par son propre groupe (relevé le 2026-10-08, pour T4.2).
 - ⚠️ `banc/src/banc/mesures.py` — `ModelUsage` de Claude Code (SDK 0.2.164) et l'usage d'ADK (2.11.0) ne séparent
   pas l'écriture du cache à 5 min et à 1 h, facturée 1,6 fois plus cher à 1 h : sa part vient des messages de
   l'assistant ou de `ContextCacheConfig`. `output_tokens` d'Anthropic comprend la réflexion,
-  `candidates_token_count` d'ADK non (vu le 2026-10-08).
+  `candidates_token_count` d'ADK non. `ModelUsage` cumule en outre toute la session : le tour se tire de deux
+  relevés par `usage_du_tour`, sinon Q18 compte Q2 (vu le 2026-10-08).
 - ⚠️ `banc/tests/test_lanceur.py` — un faux outil écrit en Python ajoute `LC_CTYPE` à son `os.environ` quand aucune
   locale n'est fixée (PEP 538) : lire l'environnement reçu à l'exec dans `/proc/self/environ` (vu le 2026-10-07).
 - ⚠️ `banc/src/banc/isolement.py` — Claude Code choisit son accès dans un ordre fixe : fournisseur cloud

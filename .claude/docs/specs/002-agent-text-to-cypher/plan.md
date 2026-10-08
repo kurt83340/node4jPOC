@@ -151,6 +151,13 @@ Mode « faux serveur » (avant le 2026-10-04) : serveur MCP, validation des noms
 - **Réutilisation** : la note seule, jamais la source (elle dépend de la trace), pour une même question et une même réponse courte normalisée (empreinte de T3.1), à partir des décisions datées du gel ou après : `gel = AAAA-MM-JJTHH:MM:SS` en tête du fichier, posé en T8.1, une date seule refusée (une décision du pilote prise le jour du gel passerait). Jamais pour Q7, Q11, Q12, Q13, Q27, Q28, Q29, ni, choix de Julien, pour Q10 (culture générale signalée), Q14 et Q15 (formes acceptées si signalées) et Q30 (critère demandé ou annoncé) : leur note dépend de ce que l'agent dit hors de la réponse courte. Deux notes réutilisables contraires pour une même réponse courte sont refusées.
 - **Après la revue** : `finale` donne la note et la source de chaque ligne (pré-note, décision du cas ou décision réutilisée, avec son motif), pour le rapport (T11.1) ; `--verifier` sort 0 s'il ne reste aucun cas, 1 sinon (T9.2). Une espèce acceptée sur preuve entre dans sa table à la main, datée (ADR-0008) : la revue ne touche pas aux tables.
 - **Vérifié** : 75 tests ; couverture de `banc.revue` 100 % ; 70 fautes injectées (revue, relecture du CSV, point d'entrée), toutes détectées.
+- **Après la revue adverse de la phase 3** (agent `reviewer`, contexte frais, 2026-10-08 ; 13 constats, 5 importants et 8 mineurs, reproduits, tous traités) :
+  - Q4 et Q19 rejoignent les questions sans réutilisation (talent ou type d'une méga-forme, accepté s'il est signalé ; choix de Julien) : 13 questions en tout ;
+  - `pilote = "<campagne>"` exigé avec le gel : ses décisions ne se réutilisent jamais, même datées après lui ; date-heure à fuseau refusée (sinon une comparaison impossible faisait sortir en code 1, celui des cas restants) ;
+  - un cas déjà tranché en partie (sa source, avant une renotation) se complète à la main, sans seconde décision ; une décision se valide avant d'être écrite ;
+  - un essai n'en remplace un autre qu'après une panne ou un arrêt de sa conversation (la paire pour Q18 et Q28), jamais après un échec ; doublons refusés à tout rang ; `--verifier` compte aussi les tours à relancer ;
+  - désignations entières masquées (« Claude Code » laissait « Code », « Gemini 3.8 Flash », Vertex AI, ADK…), lectures comprises ; « Flash » seul, une attaque, reste ;
+  - vérifié : 102 tests, couverture 100 % ; 82 fautes injectées, dont l'annulation de chaque correctif, toutes détectées une fois resserrés trois tests qui passaient pour une autre raison (gel invalide refusé faute de pilote).
 
 **Pourquoi :** rejouable et identique pour toutes les techniques ; juge LLM écarté par l'ADR-0008.
 
@@ -211,6 +218,12 @@ Mode « faux serveur » (avant le 2026-10-04) : serveur MCP, validation des noms
 - **Coût par modèle** (choix de Julien) : les colonnes de tokens portent sur le modèle de la cellule ; `cout_usd` sur tous les modèles appelés, `cout_annexe_usd` sur les autres (le petit modèle de Claude Code) ; détail par modèle dans la trace. Un modèle sans tarif arrête la mesure. Écarté : un second CSV, par modèle.
 - **Tokens** (source des versions figées) : l'API Anthropic détaille l'écriture en cache par durée (`cache_creation`) et la réflexion (`output_tokens_details`, comprise dans `output_tokens`) ; `ModelUsage` de Claude Code et l'usage d'ADK ne séparent pas 5 min et 1 h : la part à 1 h viendra des messages de l'assistant (T4.1) et de `ContextCacheConfig` (T4.2).
 - **Vérifié** : 84 tests, couverture 100 % ; 84 fautes injectées dans `banc.mesures` et le lanceur, toutes détectées ; une survivante en cours de route (une question reposée après la dernière, que le test laissait à un autre contrôle), corrigée.
+- **Après la revue adverse de la phase 3** (2026-10-08) :
+  - `model_usage` de Claude Code cumule toute la session (« read the latest result rather than summing across results », binaire 2.1.292) : le tour se tire de deux relevés par `usage_du_tour`, sinon Q18 compterait Q2 ;
+  - l'en-tête déclare les modèles annexes (`annexes`) : un modèle non déclaré, ou une réponse sans tokens du modèle de la cellule, arrête la mesure (sinon 0 token et tout le coût en annexe, sans erreur) ;
+  - seuls `read-cypher` et `get-schema`, par leur nom nu, entrent dans la trace (le préfixe d'ADK passait) ; appels et résultats appariés tour par tour ; la relecture suit l'ordre des questions de l'en-tête, comme l'écriture ;
+  - une dernière ligne coupée (harnais tué pendant l'écriture) est ignorée ; `ecrire` vérifie aussi la prose ;
+  - vérifié : 101 tests, couverture 100 % ; 94 fautes injectées (mesures et lanceur), dont l'annulation de chaque correctif, toutes détectées une fois resserré un test qui passait pour une autre raison.
 
 ### D11 — Effort de mise en place
 
@@ -225,6 +238,12 @@ Mode « faux serveur » (avant le 2026-10-04) : serveur MCP, validation des noms
 **Choix :** une panne d'infrastructure (serveur MCP absent, 429 ou 5xx de Vertex ou de l'API Anthropic) relance la conversation, ou la paire ; un échec de l'agent (180 s, 10 tours, budget dépassé) compte **faux**, avec sa cause. Les reprises internes des clients sont journalisées ; un délai dépassé à cause d'elles compte comme panne (comportement de reprise relevé en T0.2). À l'abandon, le harnais tue le groupe de processus, et `scripts/transactions.sh` arrête la lecture restée active sur Aura (`neo4j/mcp` n'impose aucun délai, #293).
 **Pourquoi :** sinon, une requête coûteuse, comme un produit cartésien, sortirait du score au lieu de compter, et continuerait de tourner sur l'instance ; à l'inverse, une lenteur du fournisseur ne doit pas compter contre l'agent. Un plafond de dépense atteint (crédits épuisés, limite du workspace) n'est ni une panne ni un échec : la campagne s'arrête, et la conversation interrompue se rejoue après recharge.
 **Reprises internes relevées (T0.2, source des versions figées)** : Claude Code reprend jusqu'à 10 fois (`CLAUDE_CODE_MAX_RETRIES`, 10 min au plus par appel) : sur un 429 persistant, il dépasse les 180 s (vu le 2026-10-07), la cellule plafonnera donc cette variable (T4.1). Le client Anthropic d'ADK : 2 reprises (0,5 à 8 s) sur 408, 409, 429 et 5xx. Gemini dans ADK : aucune reprise par défaut (`retry_options` vide), sinon 5 essais (1 à 60 s) sur 408, 429, 500, 502, 503 et 504.
+
+**Relevé de la revue adverse de la phase 3, à régler en phase 4 (2026-10-08)** :
+
+- T4.1 (Claude Code) : `usage_du_tour` à chaque `ResultMessage`, cumulé sur la session ; part du cache à 1 h tirée des messages de l'assistant, dédoublonnés par `message_id` ; à 180 s, `interrupt()` avant d'arrêter le groupe, pour recevoir l'usage du tour (sinon un échec coûte 0 $) ; appels de Haiku et `api_retry` entre deux tours, que `Journal` refuse hors d'un tour.
+- T4.2 (ADK) : `mcp` 2.3.0 (`client/stdio.py`) lance le serveur dans sa propre session (`start_new_session=True`), hors du groupe de la cellule ; sans `env` explicite, il ne lui passe que HOME, LOGNAME, PATH, SHELL, TERM et USER, donc pas `CLOUDSDK_CONFIG` : lui donner la liste blanche, et l'arrêter par son propre groupe ; ne pas additionner des événements partiels en streaming ; à vérifier : `tool_use_prompt_token_count` et le coût de stockage d'un `ContextCacheConfig` pour Gemini.
+- T4.3 : `Journal.fin` à l'échéance, avant l'arrêt et `scripts/transactions.sh`, sinon le nettoyage entre dans la durée ; Q18 (Q28) quand Q2 (Q27) échoue : question ouverte (tasks, Blockers).
 
 ### LLM choisi, raison et coût estimé
 
