@@ -129,6 +129,8 @@ Mode « faux serveur » (avant le 2026-10-04) : serveur MCP, validation des noms
 - **Source citée** : au moins une requête de « Sources » a été exécutée pendant le tour (aux espaces près) et son résultat contient les valeurs de la réponse ; une description citée doit avoir été renvoyée par un `read-cypher` du tour. Pas de source exigée pour Q10 (« pas dans les données », fondé sur un résultat vide) ni pour Q30 quand l'agent demande un critère.
 - Les appels d'introspection du schéma sont comptés, pas pénalisés.
 
+**Fixé en T1.1 (2026-10-08, relu par Julien)** : `questions/banc.toml` donne à chaque question son mode (valeur, ensemble, liste ordonnée, longue liste, sémantique, contrôle, revue) ; un nombre attendu se compare comme un nombre. Un distracteur est une valeur dont la présence dans la réponse courte impose la revue : erreur probable (la capacité Z de Q1, la famille de Q8, l'autre Pokémon de Q18 et Q21, une attaque Électrik gardée à Q28) ou variante que le README accepte si elle est signalée (formes de Q12, Q14 et Q15, talents et formes de Q7, Lance-Flammes de Q13) ; tous relevés dans les CSV du commit figé. Écartés exprès, plus coûteux en revue qu'utiles : Normal à Q25 (l'Eau gagne sous toutes les lectures), Poison à Q11, « spéciale » à Q24, « Pokémon Lézard » à Q23. Longues listes : liste complète, ou compte exact avec un extrait sans intrus (README). Q27 et Q28 : une réponse incomplète passe à revoir, car une autre attaque expliquée peut être juste (Nœud Herbe fait ×4 contre Onix, plus que Surf). Q8 : la tolérance admet Braségali et Typhlosion en 5e place.
+
 **Pourquoi :** rejouable et identique pour toutes les techniques ; juge LLM écarté par l'ADR-0008.
 
 ### D5 — Fiche et consigne communes, génériques, testées contre la contamination

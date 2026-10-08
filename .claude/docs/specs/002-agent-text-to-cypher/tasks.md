@@ -8,7 +8,7 @@
 > il « perd le fil » (échecs ×4 constatés en télémétrie, Morph 2026) → découper la phase.
 
 **Date :** 2026-10-01
-**Status :** [~] 4/33 tasks → MAJ au fil de l'eau
+**Status :** [~] 6/33 tasks → MAJ au fil de l'eau
 
 > Phases 0 à 6 : sans la base (prévues pendant la période creuse de NEO-13, close le 2026-10-07). Phases 7 à 11 : sur la base.
 > Les tests n'appellent aucun outil réel : PATH réduit aux faux outils, HOME temporaire.
@@ -28,7 +28,7 @@
 
 ## Phase 1 — Banc lisible par le harnais (NEO-16)
 
-- [ ] **T1.1** : `questions/banc.toml` : les 30 questions (texte exact, catégorie, mode de notation, tour précédent, valeurs attendues, distracteurs, règle des longues listes pour Q7 et Q14), en TDD
+- [x] **T1.1** : `questions/banc.toml` : les 30 questions (texte exact, catégorie, mode de notation, tour précédent, valeurs attendues, distracteurs, règle des longues listes pour Q7 et Q14), en TDD — fait le 2026-10-08 : distracteurs tirés des CSV du commit figé, relus et validés par Julien ; règle des longues listes et tolérance de Q8 (Typhlosion) ajoutées au README ; `banc.questions` refuse tout champ hors de son mode, `banc.attendu` relit `attendu/` ; 102 tests de cohérence, 15 fautes injectées, toutes détectées
   - DoD : `command_passes: uv run --directory banc pytest tests/test_banc_toml.py -q` (cohérence avec les tableaux du README et avec `questions/attendu/`)
 - [ ] **T1.2** : `questions/consigne.md` et `questions/fiche-schema.md` : modèle, règles et cas limites (liste du jalon 2 de la ROADMAP, plus le niveau minimal d'`APPREND` et « pas de relation d'efficacité = ×1 »), illustrés par d'autres cas que ceux du banc ; valeurs possibles, index plein texte, 6 à 8 exemples hors banc
   - DoD : `command_passes: uv run --directory banc pytest tests/test_contamination.py -q` (fichiers entiers ; liste blanche ; aucune valeur citée dans `questions/attendu/` hors liste blanche ; exemples comparés aux 27 requêtes, littéraux masqués), puis `manual: Julien relit la fiche et la consigne`
