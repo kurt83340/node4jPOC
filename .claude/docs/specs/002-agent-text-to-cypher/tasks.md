@@ -8,7 +8,7 @@
 > il « perd le fil » (échecs ×4 constatés en télémétrie, Morph 2026) → découper la phase.
 
 **Date :** 2026-10-01
-**Status :** [~] 10/33 tasks → MAJ au fil de l'eau
+**Status :** [~] 12/33 tasks → MAJ au fil de l'eau
 
 > Phases 0 à 6 : sans la base (prévues pendant la période creuse de NEO-13, close le 2026-10-07). Phases 7 à 11 : sur la base.
 > Les tests n'appellent aucun outil réel : PATH réduit aux faux outils, HOME temporaire.
@@ -44,18 +44,18 @@
 
 ## Phase 3 — Mesures et revue (NEO-17)
 
-- [ ] **T3.1** : traces et mesures : une trace JSONL par conversation (identifiant masqué), une ligne CSV sans prose (cause d'un échec, introspections), coût par modèle avec cache, réflexion et petit modèle de Claude Code
+- [x] **T3.1** : traces et mesures : une trace JSONL par conversation (identifiant masqué), une ligne CSV sans prose (cause d'un échec, introspections), coût par modèle avec cache, réflexion et petit modèle de Claude Code — fait le 2026-10-08 : `banc.mesures` (trace écrite au fil de l'eau, un événement par ligne, relue en tours de `banc.trace`, inchangé ; une ligne CSV par tour et par essai, pannes comprises, sans prose vérifiée ; tokens du modèle de la cellule, `cout_usd` total et `cout_annexe_usd`, choix de Julien ; tokens de l'API Anthropic, d'ADK et de Claude Code, part 1 h du cache comprise) ; identifiant masqué par le lanceur sur le stdout de `neo4j-mcp` (perl, choix de Julien) ; 84 tests, couverture 100 % ; 84 fautes injectées, toutes détectées
   - DoD : `command_passes: uv run --directory banc pytest tests/test_mesures.py -q`
-- [ ] **T3.2** : revue humaine à l'aveugle (`banc revoir`) : décisions datées à partir du gel, aucune héritée du pilote ; réutilisées par réponse courte normalisée pour les seules questions à valeur (jamais Q7, Q11, Q12, Q13, Q27, Q28, Q29), dans `banc/mesures/revues.toml`
+- [x] **T3.2** : revue humaine à l'aveugle (`banc revoir`) : décisions datées à partir du gel, aucune héritée du pilote ; réutilisées par réponse courte normalisée pour les seules questions à valeur (jamais Q7, Q11, Q12, Q13, Q27, Q28, Q29), dans `banc/mesures/revues.toml` — fait le 2026-10-08 : `banc.revue` (cas du dernier essai, présentés sans rien qui trahisse la cellule ; décisions ajoutées à `revues.toml`, codes et date-heure, motif facultatif, choix de Julien ; note seule réutilisée, à partir du gel posé en T8.1 ; jamais non plus pour Q10, Q14, Q15 et Q30, choix de Julien ; `--verifier`) ; 75 tests, couverture 100 % ; 70 fautes injectées, toutes détectées ; revue adverse de la phase 3 : 13 constats, tous traités (plan, D4 et D10), dont Q4 et Q19 sans réutilisation (choix de Julien) ; 101 et 102 tests, 94 et 82 fautes injectées, toutes détectées
   - DoD : `command_passes: uv run --directory banc pytest tests/test_revue.py -q`
 
 ## Phase 4 — Cellules (NEO-18)
 
-- [ ] **T4.1** : cellule Agent SDK : `env -i` et liste blanche (HOME temporaire, `CLOUDSDK_CONFIG`, PATH, `ANTHROPIC_API_KEY` sans variable Vertex, effort `high`, petit modèle figé), `CLAUDE_CONFIG_DIR` temporaire, `setting_sources=[]`, `tools=[]`, `read-cypher` seul ; `connect()` puis `get_mcp_status()` jusqu'à « connected » avant le chrono ; budget par conversation
+- [ ] **T4.1** : cellule Agent SDK : `env -i` et liste blanche (HOME temporaire, `CLOUDSDK_CONFIG`, PATH, `ANTHROPIC_API_KEY` sans variable Vertex, effort `high`, petit modèle figé), `CLAUDE_CONFIG_DIR` temporaire, `setting_sources=[]`, `tools=[]`, `read-cypher` seul ; `connect()` puis `get_mcp_status()` jusqu'à « connected » avant le chrono ; budget par conversation ; à prévoir : relevé de la revue adverse de la phase 3 (plan, D13)
   - DoD : `command_passes: uv run --directory banc pytest tests/test_cellule_sdk.py -q` (faux `cli_path` : aucune variable hors liste blanche, aucun fichier de réglages lu, chrono lancé après la connexion)
-- [ ] **T4.2** : cellules ADK (Claude par `AnthropicLlm` et l'API Anthropic, Gemini par Vertex `eu`) : `McpToolset` en stdio sur le lanceur, `get_tools()` avant le chrono, `tool_filter`, délai de 30 s, effort et `thinking_level` fixés, budget par conversation
+- [ ] **T4.2** : cellules ADK (Claude par `AnthropicLlm` et l'API Anthropic, Gemini par Vertex `eu`) : `McpToolset` en stdio sur le lanceur, `get_tools()` avant le chrono, `tool_filter`, délai de 30 s, effort et `thinking_level` fixés, budget par conversation ; à prévoir : relevé de la revue adverse de la phase 3 (plan, D13)
   - DoD : `command_passes: uv run --directory banc pytest tests/test_cellule_adk.py -q` (faux serveur MCP, faux LLM)
-- [ ] **T4.3** : orchestration : même session au second tour ; plafonds (10 tours, 180 s, budget) ; panne relancée (la paire pour Q18 et Q28), échec de l'agent noté faux avec sa cause, délai dû aux reprises internes compté comme panne ; groupe de processus tué, `scripts/transactions.sh` appelé ; cellules alternées question par question ; `--reprendre` ; règle de couplage de `transactions.sh` dans la code-map
+- [ ] **T4.3** : orchestration : même session au second tour ; plafonds (10 tours, 180 s, budget) ; panne relancée (la paire pour Q18 et Q28), échec de l'agent noté faux avec sa cause, délai dû aux reprises internes compté comme panne ; groupe de processus tué, `scripts/transactions.sh` appelé ; cellules alternées question par question ; `--reprendre` ; règle de couplage de `transactions.sh` dans la code-map ; à prévoir : relevé de la revue adverse de la phase 3 (plan, D13)
   - DoD : `command_passes: uv run --directory banc pytest tests/test_orchestration.py -q && bash -n scripts/transactions.sh`
 
 ## Phase 5 — Répétition générale (NEO-18)
@@ -112,7 +112,7 @@
 
 - [ ] **T11.1** : rapport de la technique 2 : score par cellule et par catégorie, écart entre passes, causes d'échec, introspections, temps, coût, sources citées, FR/EN (seuils fixés d'avance, limite à un modèle), effort de mise en place
   - DoD : `file_exists: banc/resultats/technique-2.md`
-- [ ] **T11.2** : doc : code-map (relecture des règles du lanceur, du harnais, de `--schema` et de `transactions.sh`), stack (bibliothèques, LLM, coûts), ARCHITECTURE, RUNBOOK (lancer une campagne, basculer en anglais, revenir), ACCESS (Model Garden), README (jalon 2)
+- [ ] **T11.2** : doc : code-map (relecture des règles du lanceur, du harnais, de `--schema` et de `transactions.sh`), stack (bibliothèques, LLM, coûts, perl du lanceur), ARCHITECTURE, RUNBOOK (lancer une campagne, basculer en anglais, revenir), ACCESS (Model Garden), README (jalon 2)
   - DoD : `command_passes: python3 .claude/skills/doc-health/scripts/context-budget.py`
 - [ ] **T11.3** : `/feature-done 002-agent-text-to-cypher` : dernière PR, fusion, puis tag `jalon-2` sur `main`
   - DoD : `command_passes: git rev-parse jalon-2`, et `manual: ROADMAP et CHANGELOG à jour`
@@ -136,4 +136,5 @@ La feature est livrée quand :
 - Quotas Claude à 0 sur `jleroy-labo` : hausse demandée le 2026-10-07 et refusée automatiquement ; Claude injoignable par Vertex, parking et décision de Julien (prix et reprises internes relevés). Tranché le 2026-10-08 : API Anthropic ([ADR-0011](../../adr/0011-infra-claude-par-api-anthropic.md)).
 - Compatibilité de Python 3.14 avec ADK et l'Agent SDK : vérifiée le 2026-10-07 (T0.1).
 - `TERMINATE TRANSACTIONS` permis sur Aura Free ? (T7.4)
+- Q18 (ou Q28) quand Q2 (ou Q27) échoue : la session est arrêtée, le second tour n'est jamais posé. Tranché le 2026-10-09 (Julien) : fausse d'office, ligne « echec » à 0 s, cause à créer ; à coder en T4.3 (plan, D13).
 - Noms de propriétés orphelins après la bascule (`db.propertyKeys()`) : à vérifier au jalon 4, avant qu'Aura Agent ne lise le schéma.

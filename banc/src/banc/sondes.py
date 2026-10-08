@@ -24,6 +24,7 @@ from google.adk.sessions import InMemorySessionService
 from google.genai import types
 
 from banc.isolement import EFFORT, PROJET, REGION
+from banc.mesures import usage_adk, usage_claude_code
 from banc.prix import Usage
 
 QUESTION = "Réponds seulement : OK"
@@ -55,31 +56,6 @@ def verifier_cle(init: Mapping[str, Any]) -> None:
         raise CleNonUtilisee(
             f"Claude Code ne paie pas par la clé de l'API : apiKeySource={source!r}"
         )
-
-
-def usage_claude_code(model_usage: Mapping[str, Mapping[str, Any]]) -> dict[str, Usage]:
-    """Tokens par modèle d'un ResultMessage ; cache écrit compté à 5 min (durée par défaut)."""
-    return {
-        modele: Usage(
-            entree=compte.get("inputTokens", 0),
-            sortie=compte.get("outputTokens", 0),
-            cache_ecriture_5m=compte.get("cacheCreationInputTokens", 0),
-            cache_lecture=compte.get("cacheReadInputTokens", 0),
-        )
-        for modele, compte in model_usage.items()
-    }
-
-
-def usage_adk(meta: types.GenerateContentResponseUsageMetadata) -> Usage:
-    """Tokens d'une réponse d'ADK : l'entrée comprend le cache, la sortie exclut la réflexion."""
-    lu = meta.cached_content_token_count or 0
-    ecrit: int = getattr(meta, "cache_creation_input_tokens", None) or 0
-    return Usage(
-        entree=(meta.prompt_token_count or 0) - lu - ecrit,
-        sortie=(meta.candidates_token_count or 0) + (meta.thoughts_token_count or 0),
-        cache_ecriture_5m=ecrit,
-        cache_lecture=lu,
-    )
 
 
 async def claude_code(modele: str) -> Releve:

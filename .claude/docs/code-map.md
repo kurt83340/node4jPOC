@@ -50,7 +50,8 @@ Le détail fichier-par-fichier se découvre à la demande (`grep`, lecture) — 
   passée au harnais par l'environnement ; `banc/` ne lit jamais Secret Manager.
 - ✅ Les agents ne joignent la base que par `scripts/mcp-neo4j.sh`, chemin absolu (plan 002, D1) : `neo4j-mcp`
   y reçoit les `NEO4J_MCP_*` (lecture seule, sans télémétrie), sans option, ni `NEO4J_*` hérité, ni accès à Claude
-  (`ANTHROPIC_*`) ; stderr par `filtrer_flux` (`scripts/commun.sh:128`). ❌ Aucune config MCP sur le disque :
+  (`ANTHROPIC_*`) ; stderr par `filtrer_flux` (`scripts/commun.sh:128`), stdout (canal MCP) par un masque de
+  l'identifiant : `banc/` ne le voit jamais. ❌ Aucune config MCP sur le disque :
   `banc/` la passe en mémoire.
 - ✅ Agents isolés par la liste blanche de `banc/src/banc/isolement.py` (plan 002, D3) : la clé Anthropic aux seules
   cellules Claude, jamais avec une variable Vertex (`CLAUDE_CODE_USE_VERTEX` passerait avant elle) ; la cellule

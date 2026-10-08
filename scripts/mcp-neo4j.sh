@@ -3,9 +3,9 @@
 # d'Aura, règle le serveur en lecture seule et sans télémétrie, puis se remplace par lui (exec).
 #
 # Un client MCP (Claude Code, ADK) le lance par son chemin absolu, depuis un dossier vide hors du
-# dépôt, dans l'environnement réduit de D3 : il n'emploie que bash, gcloud et neo4j-mcp, pris dans
-# le PATH. stdin et stdout sont le canal MCP : rien n'y est lu ni écrit avant l'exec. Le stderr du
-# serveur passe par filtrer_flux (ADR-0007).
+# dépôt, dans l'environnement réduit de D3 : il n'emploie que bash, gcloud, perl et neo4j-mcp, pris
+# dans le PATH. stdin et stdout sont le canal MCP : rien n'y est lu ni écrit avant l'exec. Le stderr
+# du serveur passe par filtrer_flux (ADR-0007), son stdout par un masque de l'identifiant (T3.1).
 #
 # Usage : /chemin/absolu/scripts/mcp-neo4j.sh, sans argument.
 # Variables : NEO4J_SECRET (défaut neo4j-aura-poc), GCP_PROJET (défaut jleroy-labo).
@@ -32,7 +32,7 @@ unset "${!NEO4J_@}"
 unset "${!ANTHROPIC_@}" CLAUDE_CODE_OAUTH_TOKEN
 
 # Rien sur stdout, et gcloud sans stdin : il lirait les premiers messages du client.
-trouver_outils gcloud neo4j-mcp >&2
+trouver_outils gcloud neo4j-mcp perl >&2
 lire_identifiants </dev/null >&2
 
 # Noms du tag v1.6.0 (plan, D1). Booléens en toutes lettres : une valeur invalide prendrait le défaut
@@ -43,8 +43,17 @@ export NEO4J_MCP_URI="$NEO4J_URI" NEO4J_MCP_USERNAME="$NEO4J_USERNAME" \
 # Anciens noms hors de l'environnement du serveur, gardés par le shell pour filtrer_flux.
 export -n NEO4J_URI NEO4J_USERNAME NEO4J_PASSWORD NEO4J_DATABASE
 
-# Le filtre écrit sur le stderr d'origine et ne garde aucune copie du canal MCP.
+# Le filtre écrit sur le stderr d'origine et ne garde aucune copie du canal MCP. Le stdout du serveur,
+# canal MCP à un message JSON par ligne, passe par perl, qui remplace l'identifiant par ‹instance› :
+# un résultat de read-cypher peut le porter (CALL db.info()), et il n'atteint ainsi ni l'agent, ni le
+# fournisseur du LLM, ni la trace du banc (T3.1). perl le reçoit par l'environnement, jamais en
+# argument (ps). Le mot de passe ne sort pas d'une lecture ; un filtre ne pourrait d'ailleurs pas
+# retirer une ligne du canal sans bloquer le client.
+# shellcheck disable=SC2016 # programme perl : ses $ ne sont pas du shell
 exec neo4j-mcp 2> >(
   exec >&2
   filtrer_flux
+) > >(
+  export MASQUE_INSTANCE="$NEO4J_USERNAME"
+  exec perl -pe 'BEGIN { $| = 1; $i = $ENV{MASQUE_INSTANCE} } s/\Q$i\E/‹instance›/g if length $i'
 )

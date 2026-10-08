@@ -28,6 +28,16 @@ tests/
 - Pas d'appel réseau réel en CI (mocks HTTP)
 - Suite verte avant push
 
+## Tests d'exclusion (refus, erreur ou « à revoir » attendus)
+
+Leçon du 2026-10-08, constatée trois fois ([lecons.md](../docs/lecons.md)) : un tel test passe souvent pour une autre raison
+que la règle qu'il vise, et survit alors à sa suppression.
+
+- Son entrée est acceptée par toutes les autres règles : seule la règle visée la refuse.
+- Le message attendu (`match=`) est propre à la règle visée, jamais un fragment que celui d'une règle voisine contient.
+- Une borne se teste pile dessus (`<` contre `<=`).
+- Vérification par mutation : désactiver la seule règle visée doit faire échouer son test.
+
 ## Lancer
 
 ```bash
