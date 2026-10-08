@@ -138,10 +138,14 @@ Mode « faux serveur » (avant le 2026-10-04) : serveur MCP, validation des noms
 **Choix :** `questions/fiche-schema.md` (modèle, règles, valeurs possibles, cas limites, index plein texte, 6 à 8 exemples hors banc) et `questions/consigne.md` (rôle, réponse tirée du graphe, format de fin), ajoutées telles quelles au prompt système. Test sur les deux fichiers entiers : aucun nom propre hors d'une liste blanche (les 18 types, les catégories d'attaque, les méthodes) ; aucune valeur citée dans `questions/attendu/` hors de cette liste, ce qui écarte les exemples naturels de la ROADMAP (la catégorie de Q23, l'apostrophe de Q1) au profit d'autres cas ; aucun exemple dont la structure, littéraux masqués, recoupe l'une des 27 requêtes. Chaque liste de valeurs est vérifiée par une requête (T7.3).
 **Pourquoi :** `get-schema` ne transmet ni règles ni valeurs ; une fiche ou une consigne qui soufflerait les réponses fausserait toute la mesure.
 
+**Fixé en T1.2 (2026-10-08)** : la consigne ne donne ni « corrige une prémisse fausse » ni « dis si la question est vague », qui souffleraient Q29 et Q30. La fiche ne nomme que 6 des 12 méthodes d'apprentissage : les autres (« Pichu Électacle », « Stadium: Pikachu Surfeur », « Boîte Zygarde ») citent des entités du banc. Elle évite les tableaux Markdown, que Prettier aligne d'espaces payés en tokens à chaque conversation. Test (`tests/test_contamination.py`) : tout mot à majuscule en liste blanche explicite (types, catégories, méthodes, schéma, outils, entités des exemples, mots de tête de phrase) ; aucune valeur de `attendu/`, aucun nom des questions, du README ni de `banc.toml` ; un exemple « recoupe » une requête de référence si, littéraux et variables masqués, il lui ressemble à 0,85 ou plus, ou en contient d'un bloc 80 % : seuils mesurés sur les 31 requêtes de référence, où deux requêtes de même gabarit vont de 0,88 à 1 et deux requêtes courtes sans rapport atteignent 0,80.
+
 ### D6 — Q2 : l'équipe dans le message, le contrôle paramétré
 
 **Choix :** Q2 est posée avec « Mon équipe : … » (l'équipe de référence). `q02.cypher` lit `$proposee` ; `questions.sh` le passe toujours, avec l'équipe actuelle par défaut, car Cypher n'a pas de paramètre optionnel. Les 6 noms extraits de la réponse sont validés (caractères permis) puis échappés dans une liste littérale ; leur existence se lit dans le contrôle lui-même (espèces reconnues). En mode faux serveur, validation et contrôle sont simulés. Sur la base anglaise, la version traduite de `q02.cypher` est utilisée.
 **Pourquoi :** sans l'équipe, la question n'a pas de réponse ; placée dans la consigne, elle empêcherait Q18 de mesurer la mémoire ; un texte libre ne doit jamais devenir du Cypher.
+
+**Fait en T1.3 (2026-10-08)** : `questions.sh` passe `$proposee` à chaque requête, une équipe valide par défaut. Reste à ouvrir, avec la lecture des réponses (T2.1), la voie qui lui passe les 6 noms extraits, validés puis échappés.
 
 ### D7 — Un pilote, puis 3 passes comptées ; protocole gelé entre les deux
 
@@ -161,10 +165,14 @@ Mode « faux serveur » (avant le 2026-10-04) : serveur MCP, validation des noms
 **Pourquoi :** une seule instance Free ; une copie entrerait en collision sur `Pokemon`, `Type` et `Description` ; ni paiement ni second secret.
 **Repli :** `charger.sh --purge`, puis `--tout`. **Limite :** la conclusion ne vaut que pour Gemini 3.8 Flash.
 
+**Contrat de `--dossier` (T1.3, 2026-10-08)** : `questions.sh --dossier D` lit `D/qNN.cypher` et, pour `--exemples`, `D/exemples/*.cypher`, dont `D/exemples/dracofeu.cypher` ; `banc traduire --vers D` (T6.2) écrit sous cette forme.
+
 ### D9 — Index plein texte dans la chaîne de chargement
 
 **Choix :** un index plein texte sur `nom` des 5 labels, analyseur `standard-folding` si `db.index.fulltext.listAvailableAnalyzers()` le propose, dans `cypher/00-contraintes.cypher` ; le 34e contrôle de `verifier.sh` vérifie sa présence ; la recherche `dracofeu~` passe dans `questions.sh --exemples`, pour qu'une base sans index rende un écart (1) et non une erreur (2). La fiche l'enseigne avec une autre faute.
 **Pourquoi :** seul le chargement écrit (code-map) ; `get-schema` ne montre pas les index.
+
+**Nom fixé en T1.2 (2026-10-08)** : `noms_plein_texte`, cité par la fiche et par `questions.sh` (`dracofeu~`). La fiche annonce une recherche sans casse ni accents : à corriger en T7.2 si `standard-folding` manque.
 
 ### D10 — Mesures versionnées sans prose ; coût calculé
 

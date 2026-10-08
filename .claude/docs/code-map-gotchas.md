@@ -43,6 +43,13 @@
 - ⚠️ `questions/` — les filets des questions sémantiques s'écrivent `(?iU)` puis `\\b` : sans `U`, le `\b` de
   Java ne connaît pas les lettres accentuées (« lavé » passerait pour « lave »). Après écriture, vérifier qu'aucun
   outil n'a changé les barres obliques (aucun caractère de contrôle). Rien de recopié des descriptions (ADR-0001).
+- ⚠️ `questions/fiche-schema.md`, `questions/consigne.md` — vont tels quels dans le prompt de chaque conversation :
+  chaque bloc de code `cypher` est un exemple, exécuté par `scripts/questions.sh --exemples` (T7.3) et comparé aux
+  27 requêtes de référence ; une majuscule nouvelle (nom, mot en tête de phrase) s'ajoute, relue, à la liste blanche
+  de `banc/tests/test_contamination.py`. Pas de tableau Markdown : Prettier l'aligne d'espaces, payés en tokens.
+- ⚠️ `questions/banc.toml`, `questions/README.md` — `banc/tests/test_banc_toml.py` les tient cohérents entre eux et
+  avec `questions/attendu/` (texte posé, catégorie, tour précédent, équipe de Q2, scores de Q8 cités par le README) :
+  changer l'un, c'est mettre l'autre à jour dans le même commit.
 - ⚠️ `infra/reveil-aura/reveil.py` — la Query API d'Aura répond 202 même quand la requête échoue ; seul un
   refus d'authentification donne 401. Lire `errors` dans le corps, jamais le seul code HTTP
   ([doc Query API](https://neo4j.com/docs/query-api/current/query/), lue le 2026-09-30).
