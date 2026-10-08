@@ -1,22 +1,22 @@
-# HANDOFF — 2026-10-08 11h45
+# HANDOFF — 2026-10-08 17h23
 
 > Court, narratif, versionné. Patterns techniques → auto-memory. Reprise précise → /resume.
 
-**Branche** : `feature/002-phase-2` (tirée de `main` après la PR n°7 ; porte ce handoff)
-**Spec en cours** : [002-agent-text-to-cypher](specs/002-agent-text-to-cypher/spec.md) (8/33 tasks : phases 0 et 1, T7.1)
-**Goal session** : phase 1 (T1.1 à T1.3), PR de fin de phase, NEO-16
+**Branche** : `feature/002-phase-3` (tirée de `main` après la PR n°8 ; porte ce handoff)
+**Spec en cours** : [002-agent-text-to-cypher](specs/002-agent-text-to-cypher/spec.md) (10/33 tasks : phases 0 à 2, T7.1)
+**Goal session** : phase 2 (T2.1, T2.2) en TDD, PR de fin de phase, NEO-17
 
 ## Status
 
-- ✅ `banc/` : 257 tests, ruff et mypy strict propres ; shellcheck propre ; aucun appel LLM, rien sur Aura
-- ✅ Phase 1 fusionnée (PR n°7, merge commit `738970c`) : `questions/banc.toml` (distracteurs validés par Julien), consigne et fiche relues et validées, `questions.sh` (`$proposee`, `--dossier`, `--exemples`)
-- ✅ Jira : NEO-16 « Terminé » ; NEO-2 rafraîchi (Claude par l'API, vérifications de la phase 0, crédits prépayés)
-- ⏳ Sur la base plus tard : index `noms_plein_texte` et `$proposee` (T7.2), exemples de la fiche (T7.3)
+- ✅ `banc/` : 501 tests, ruff et mypy strict propres ; shellcheck propre ; couverture de `banc.notation` 99,7 % ; aucun appel LLM
+- ✅ Phase 2 fusionnée (PR n°8, merge commit `98480dc`) : `banc.lecture`, `banc.notation`, `banc.trace` (contrat minimal d'un tour), liste des 1 025 espèces tirée de la base (`--verifier` 28/28), `questions.sh --controle` ; NEO-17 « En cours » (couvre aussi la phase 3)
+- ✅ Revue adverse à contexte frais : 12 constats (dont des « juste » à tort), tous corrigés ; Q27 et Q28 passées en revue systématique (choix de Julien, plan D4)
 
 ## Échecs tentés (à ne pas refaire)
 
-- Seuil de ressemblance des exemples fixé à 0,7 sans mesure : faux, des requêtes courtes sans rapport atteignent 0,80 → mesurer sur les références d'abord ([plan, D5](specs/002-agent-text-to-cypher/plan.md))
-- Tokeniseur qui garde l'apostrophe dans le mot : « d'Évoli » échappait au contrôle → détacher l'élision ([gotchas](code-map-gotchas.md))
+- Tolérance de Q8 vérifiée position par position : des glissements cumulés sortaient justes → échanges entre espèces proches seulement ([plan, D4](specs/002-agent-text-to-cypher/plan.md))
+- Juger une explication par la présence d'un mot (« Électrik » pour le signalement de Q28) → revue humaine
+- Tests d'exclusion passés pour une autre raison que la règle visée → les mutations les ont trouvés ([leçon](lecons.md))
 
 ## Blocked on
 
@@ -24,17 +24,17 @@
 
 ## Next (par ordre)
 
-1. **Phase 2 (NEO-17, à passer « En cours »)** : T2.1 lecture des réponses en TDD (sections « Réponse » et « Sources », normalisation, élisions, 6 noms de Q2 validés puis échappés, voie vers `questions.sh`) ; T2.2 notation selon les modes de `banc.toml` (couverture ≥ 80 %)
+1. **Phase 3 (NEO-17)** : T3.1 trace JSONL autour de `banc/trace.py` (sans en changer le sens), masquage, CSV sans prose (note, motifs, source, introspections), coût par modèle ; T3.2 revue à l'aveugle (« à revoir », sources « à revoir », Q10 et Q27 à Q30) ; à la clôture de NEO-17, remonter dans NEO-2 la revue relevée d'une trentaine de cas
 2. Avant toute campagne payante (au plus tard T5.1) : coupure automatique de l'ADR-0010, branche à part
 3. T4.1 : fixer `permissionMode`, couper la socket `/tmp/cc-socks/` si possible, plafonner `CLAUDE_CODE_MAX_RETRIES` (plan, D3 et D13)
-4. Mineurs : code-map à 3,3k tokens (cible < 3k, T11.2) ; règle deny ([leçon](lecons.md)) ; pre-commit (shellcheck, Prettier, pytest) ; flag des équipes en portée user (mémoire globale)
+4. Mineurs : code-map à 3,3k tokens (cible < 3k, T11.2) ; 2 leçons 🆕 à décider (règle deny ; tests d'exclusion → rule testing ?) ; pre-commit (shellcheck, Prettier, pytest) ; flag des équipes en portée user
 
 ## Continuation State (machine-readable — grammaire fixe `Clé: valeur`, 1 ligne chacune)
 
 Spec: 002-agent-text-to-cypher
-Task: T2.1
+Task: T3.1
 Fichiers en cours: aucun
 Bloqué sur: rien
-Commande de reprise: git switch feature/002-phase-2 && git pull
+Commande de reprise: git switch feature/002-phase-3 && git pull
 
 → **Journal des sessions** (append-only) : [HANDOFF-journal.md](HANDOFF-journal.md) — non auto-chargé.
