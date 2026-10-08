@@ -131,6 +131,8 @@ Mode « faux serveur » (avant le 2026-10-04) : serveur MCP, validation des noms
 
 **Fixé en T1.1 (2026-10-08, relu par Julien)** : `questions/banc.toml` donne à chaque question son mode (valeur, ensemble, liste ordonnée, longue liste, sémantique, contrôle, revue) ; un nombre attendu se compare comme un nombre. Un distracteur est une valeur dont la présence dans la réponse courte impose la revue : erreur probable (la capacité Z de Q1, la famille de Q8, l'autre Pokémon de Q18 et Q21, une attaque Électrik gardée à Q28) ou variante que le README accepte si elle est signalée (formes de Q12, Q14 et Q15, talents et formes de Q7, Lance-Flammes de Q13) ; tous relevés dans les CSV du commit figé. Écartés exprès, plus coûteux en revue qu'utiles : Normal à Q25 (l'Eau gagne sous toutes les lectures), Poison à Q11, « spéciale » à Q24, « Pokémon Lézard » à Q23. Longues listes : liste complète, ou compte exact avec un extrait sans intrus (README). Q27 et Q28 : une réponse incomplète passe à revoir, car une autre attaque expliquée peut être juste (Nœud Herbe fait ×4 contre Onix, plus que Surf). Q8 : la tolérance admet Braségali et Typhlosion en 5e place.
 
+**Fixé en T2.1 (2026-10-08, choix de Julien)** : une espèce citée se reconnaît par la liste des 1 025 noms tirée de la base (`questions/especes.cypher`, réponse dans `attendu/especes.txt`, rejouée par `questions.sh --verifier`), par la plus longue correspondance en mots entiers. Un intrus de longue liste, une espèce hors table ou hors du classement de Q8 se voient donc. Écartée : s'en tenir aux distracteurs et aux tables, où une espèce inconnue restait invisible, d'où des « juste » à tort (précision surestimée), sauf à revoir toutes les réponses justes de ces questions. Faux positifs relevés : « Draco » dans 12 attaques Draco-…, « Ronflex » dans « Gare au Ronflex », « Épine-de-Fer » dans le talent « Épine de Fer » ; ils mènent à « à revoir », jamais à « juste ».
+
 **Pourquoi :** rejouable et identique pour toutes les techniques ; juge LLM écarté par l'ADR-0008.
 
 ### D5 — Fiche et consigne communes, génériques, testées contre la contamination
@@ -146,6 +148,8 @@ Mode « faux serveur » (avant le 2026-10-04) : serveur MCP, validation des noms
 **Pourquoi :** sans l'équipe, la question n'a pas de réponse ; placée dans la consigne, elle empêcherait Q18 de mesurer la mémoire ; un texte libre ne doit jamais devenir du Cypher.
 
 **Fait en T1.3 (2026-10-08)** : `questions.sh` passe `$proposee` à chaque requête, une équipe valide par défaut. Reste à ouvrir, avec la lecture des réponses (T2.1), la voie qui lui passe les 6 noms extraits, validés puis échappés.
+
+**Fait en T2.1 (2026-10-08)** : les 6 noms sont les espèces citées dans « Réponse », remises à leur orthographe exacte par la liste des espèces (D4) ; s'il y en a plus de 6, l'équipe de référence citée dans l'explication est écartée ; sans exactement 6 noms, « à revoir », rien n'est envoyé. Validés (caractères des 1 025 noms réels : lettres, chiffres, espace, point, deux-points, tiret, ♀, ♂) puis échappés par `banc.lecture.liste_cypher`, ils passent à `questions.sh --controle`, qui revérifie la forme avant tout appel (6 chaînes sans apostrophe, antislash ni caractère de contrôle) ; stdout n'y porte que la réponse, relue par `banc.attendu`.
 
 ### D7 — Un pilote, puis 3 passes comptées ; protocole gelé entre les deux
 
@@ -165,7 +169,7 @@ Mode « faux serveur » (avant le 2026-10-04) : serveur MCP, validation des noms
 **Pourquoi :** une seule instance Free ; une copie entrerait en collision sur `Pokemon`, `Type` et `Description` ; ni paiement ni second secret.
 **Repli :** `charger.sh --purge`, puis `--tout`. **Limite :** la conclusion ne vaut que pour Gemini 3.8 Flash.
 
-**Contrat de `--dossier` (T1.3, 2026-10-08)** : `questions.sh --dossier D` lit `D/qNN.cypher` et, pour `--exemples`, `D/exemples/*.cypher`, dont `D/exemples/dracofeu.cypher` ; `banc traduire --vers D` (T6.2) écrit sous cette forme.
+**Contrat de `--dossier` (T1.3, 2026-10-08)** : `questions.sh --dossier D` lit `D/qNN.cypher` (et `D/especes.cypher` s'il existe, depuis T2.1) et, pour `--exemples`, `D/exemples/*.cypher`, dont `D/exemples/dracofeu.cypher` ; `banc traduire --vers D` (T6.2) écrit sous cette forme.
 
 ### D9 — Index plein texte dans la chaîne de chargement
 

@@ -53,6 +53,15 @@
 - ⚠️ `banc/src/banc/` — texte français : une élision (d', l', qu'…) colle l'apostrophe au nom qui suit (« d'Évoli ») ;
   la détacher avant de chercher des noms, mais garder l'apostrophe d'un nom PokéAPI (« Écras’Face »). Vu le
   2026-10-08 dans `banc/tests/test_contamination.py` : sans cela, « d'Évoli » échappait au contrôle des noms propres.
+- ⚠️ `questions/attendu/especes.txt` — la liste des espèces n'est pas une réponse : `banc/tests/test_contamination.py` ne
+  lit que `attendu/q*.txt`. Renommée en `q…`, elle interdirait à la fiche les 1 025 noms, ses exemples compris.
+- ⚠️ `scripts/questions.sh` — avec `--controle`, stdout ne porte que la réponse, que le harnais relit : tout autre
+  message passe sur stderr (`ping_aura >&2`). `FORME_EQUIPE` est une ERE entre guillemets doubles de bash : `\\[`
+  y devient `\[` ; testée en locale C (celle des tests) et UTF-8 (vu le 2026-10-08).
+- ⚠️ `banc/src/banc/lecture.py` — la liste des espèces voit « Draco » dans 12 attaques Draco-…, « Ronflex » dans
+  « Gare au Ronflex », « Épine-de-Fer » dans le talent « Épine de Fer » : « à revoir », jamais « juste ». `♀` et
+  `♂` restent dans le mot, sinon Nidoran♀ et Nidoran♂ se confondent. L'espace fine U+202F d'une regex s'écrit
+  par sa séquence d'échappement, sinon Write la rend invisible (vu encore le 2026-10-08, piège global).
 - ⚠️ `infra/reveil-aura/reveil.py` — la Query API d'Aura répond 202 même quand la requête échoue ; seul un
   refus d'authentification donne 401. Lire `errors` dans le corps, jamais le seul code HTTP
   ([doc Query API](https://neo4j.com/docs/query-api/current/query/), lue le 2026-09-30).

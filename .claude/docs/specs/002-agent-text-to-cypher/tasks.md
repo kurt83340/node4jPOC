@@ -8,7 +8,7 @@
 > il « perd le fil » (échecs ×4 constatés en télémétrie, Morph 2026) → découper la phase.
 
 **Date :** 2026-10-01
-**Status :** [~] 8/33 tasks → MAJ au fil de l'eau
+**Status :** [~] 9/33 tasks → MAJ au fil de l'eau
 
 > Phases 0 à 6 : sans la base (prévues pendant la période creuse de NEO-13, close le 2026-10-07). Phases 7 à 11 : sur la base.
 > Les tests n'appellent aucun outil réel : PATH réduit aux faux outils, HOME temporaire.
@@ -37,7 +37,7 @@
 
 ## Phase 2 — Notation, en TDD (NEO-17)
 
-- [ ] **T2.1** : lecture des réponses : sections « Réponse » et « Sources », normalisation (casse, accents, apostrophes), extraction des 6 noms de Q2, validés (caractères permis) puis échappés en liste littérale
+- [x] **T2.1** : lecture des réponses : sections « Réponse » et « Sources », normalisation (casse, accents, apostrophes), extraction des 6 noms de Q2, validés (caractères permis) puis échappés en liste littérale — fait le 2026-10-08 : `banc.lecture` (la dernière section l'emporte, aucun en-tête lu dans un bloc de code ; élisions détachées par le découpage en mots) ; espèces reconnues par la liste tirée de la base (`questions/especes.cypher`, `attendu/especes.txt`, 1 025 noms rejoués par `--verifier`, choix de Julien) ; Q2 : espèces citées, référence écartée au-delà de 6, validées puis échappées, passées à `questions.sh --controle`, qui revérifie la forme ; `pytest-cov` 7.1.0 figé ; 82 tests, 27 fautes injectées, toutes détectées
   - DoD : `command_passes: uv run --directory banc pytest tests/test_lecture.py -q`
 - [ ] **T2.2** : règles de notation : modes (valeur, ensemble, liste ordonnée, nombre), distracteurs, longues listes, tables de l'ADR-0008 (rappel, précision, seuils), source citée (requête exécutée dans le tour dont le résultat contient la réponse ; description renvoyée dans le tour ; exceptions de Q10 et Q30), introspections comptées
   - DoD : `command_passes: uv run --directory banc pytest tests/test_notation.py -q --cov=banc.notation --cov-fail-under=80`
@@ -67,7 +67,7 @@
 
 - [ ] **T6.1** : `cypher/anglais/correspondance.toml` (table unique, liste relue des identifiants communs aux deux langues) ; carte `correspondance.cypher` produite par `banc` et versionnée ; `renommer.cypher` (relations recréées par lots, contraintes et index de la langue visée) ; `charger.sh --schema fr|en` et `--explain`, sans Python au chargement, qui refuse `--tout` sur une base anglaise ; règle de couplage de `--schema` dans la code-map
   - DoD : `command_passes: bash -n scripts/charger.sh && uv run --directory banc pytest tests/test_correspondance.py -q` (carte à jour avec la table)
-- [ ] **T6.2** : traducteur du Cypher, en TDD, et `banc traduire --vers <dossier>` : les 27 requêtes (dont la q02), les exemples de la fiche (dont `dracofeu~`) et une requête de balayage avec sa réponse attendue ; identifiants traduits ; littéraux, alias et expressions régulières inchangés
+- [ ] **T6.2** : traducteur du Cypher, en TDD, et `banc traduire --vers <dossier>` : les 27 requêtes (dont la q02) et `especes.cypher`, les exemples de la fiche (dont `dracofeu~`) et une requête de balayage avec sa réponse attendue ; identifiants traduits ; littéraux, alias et expressions régulières inchangés
   - DoD : `command_passes: uv run --directory banc pytest tests/test_traduction.py -q` (contrôle contre une liste française tirée d'ARCHITECTURE § 5, indépendante de la table, identifiants communs écartés)
 - [ ] **T6.3** : `questions/fiche-schema.en.md` produite par la table (et produite de nouveau après le gel du protocole)
   - DoD : `command_passes: uv run --directory banc pytest tests/test_fiche_anglaise.py -q` (aucun identifiant de la liste française indépendante, hors identifiants communs)
