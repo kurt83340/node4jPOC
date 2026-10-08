@@ -1,0 +1,275 @@
+# Banc d'essai (spec 002, T1.1) : les 30 questions de référence, lisibles par le harnais
+# (banc/src/banc/questions.py). Le README des questions et questions/attendu/ font foi :
+# banc/tests/test_banc_toml.py vérifie que ce fichier les suit.
+#
+# Une table [QN] par question :
+# - texte : posé tel quel à l'agent ; Q2 est précédée de son préambule, sur la ligne d'avant (plan, D6) ;
+# - categorie : section du README ([categories]) ; tour_precedent : Q18 et Q28 se posent dans la
+#   conversation de Q2 et de Q27 ;
+# - notation : le mode de pré-notation de la réponse courte (section « Réponse », plan D4) :
+#   - valeur : la valeur attendue citée, juste ; sinon, faux ;
+#   - ensemble : toutes citées, juste ; une partie, partiel ; aucune, faux. Un groupe un_parmi compte
+#     pour une valeur : il suffit d'en citer une ;
+#   - liste-ordonnee : toutes, dans l'ordre ; deux espèces dont les scores diffèrent de moins de la
+#     tolérance peuvent échanger leur place (Q8) ;
+#   - longue-liste : règle des longues listes, ci-dessous ; l'ensemble vient de attendu/ ;
+#   - semantique : tables de l'ADR-0008, tirées de attendu/ ; au pluriel, rappel et précision ;
+#     avec_types : les types sont demandés aussi (Q9) ;
+#   - controle : la requête de contrôle q02.cypher, sur les 6 noms proposés (plan, D6) ;
+#   - revue : revue humaine à l'aveugle, toujours (Q10, Q29, Q30 : une règle, pas de requête) ;
+# - un nombre attendu se compare comme un nombre : 100 n'est pas 1000 ;
+# - distracteurs : une valeur citée parmi eux fait passer la réponse « à revoir » (plan, D4) : réponse
+#   comparative ou inversée, variante acceptée sous condition (forme ou talent signalés), erreur typique ;
+# - revoir_si_incomplete : une réponse incomplète passe « à revoir » plutôt que partielle ou fausse,
+#   car une autre réponse, expliquée, peut être juste (Q27, Q28).
+#
+# Règle des longues listes (Q7, Q14), écrite avant le pilote (plan, D4) : la réponse courte peut donner
+# la liste complète, ou le compte avec un extrait.
+# - juste : toutes les espèces de l'ensemble et aucune autre ; ou le compte exact avec au moins une
+#   espèce, toutes dans l'ensemble ;
+# - partiel : des espèces toutes dans l'ensemble, sans la liste complète ni le compte exact ;
+# - à revoir : un distracteur, une espèce hors de l'ensemble, ou le compte exact sans aucune espèce ;
+# - faux : sinon.
+#
+# Valeurs relevées dans attendu/ et dans les CSV du commit PokéAPI figé (2026-10-08).
+
+[categories]
+faits = "Faits simples (étalon)"
+parcours = "Parcours et multi-sauts"
+agregats = "Agrégations, négations, superlatifs"
+semantique = "Sémantique (descriptions)"
+raisonnement = "Raisonnement et mémoire (agents)"
+robustesse = "Robustesse, honnêteté, algorithme de graphe"
+
+[Q1]
+texte = "Quelles attaques font le plus mal à Dracaufeu ?"
+categorie = "parcours"
+notation = "ensemble"
+# Le type Roche (×4), puis les plus puissantes qu'au moins un Pokémon apprend (150) ; Laser Météore,
+# Lame de Roc et Orage Adamantin sont bienvenus, pas exigés.
+attendus = ["Roche", "Fracass’Tête", "Roc-Boulet"]
+# Capacité Z (190), jamais apprise, exclue par la règle : en tête si l'agent oublie le filtre.
+distracteurs = ["Hurlement des Roches-Lames"]
+
+[Q2]
+texte = "Propose une équipe de 6 qui couvre les faiblesses de la mienne."
+categorie = "raisonnement"
+notation = "controle"
+preambule = "Mon équipe : Florizarre, Dracaufeu, Tortank, Pikachu, Ronflex, Lokhlass."
+
+[Q3]
+texte = "Quel Pokémon vit près des volcans ?"
+categorie = "semantique"
+notation = "semantique"
+pluriel = false
+
+[Q4]
+texte = "Quels sont les types et les talents de Lucario, dont son talent caché ?"
+categorie = "faits"
+notation = "ensemble"
+attendus = ["Combat", "Acier", "Attention", "Impassible", "Cœur Noble"]
+# Farceur : talent caché de Riolu, sa pré-évolution ; Adaptabilité : talent de Méga-Lucario, accepté
+# si la forme est signalée.
+distracteurs = ["Farceur", "Adaptabilité"]
+
+[Q5]
+texte = "Quelles sont toutes les évolutions possibles d'Évoli ?"
+categorie = "parcours"
+notation = "ensemble"
+attendus = ["Aquali", "Voltali", "Pyroli", "Mentali", "Noctali", "Phyllali", "Givrali", "Nymphali"]
+
+[Q6]
+texte = "Quels sont les types de Méga-Dracaufeu X, et en quoi diffèrent-ils de ceux de Dracaufeu ?"
+categorie = "parcours"
+notation = "ensemble"
+# Feu et Dragon, contre Feu et Vol.
+attendus = ["Feu", "Dragon", "Vol"]
+
+[Q7]
+texte = "Quels Pokémon peuvent apprendre Séisme et ne craignent pas du tout les attaques Électrik ?"
+categorie = "parcours"
+notation = "longue-liste"
+compte = 71
+# Immunité par un talent (Élekable : Motorisé ; Galvagon : Absorbe-Volt) ou par une forme de type Sol
+# (Cheniselle Sable, Tutafeh de Galar) : acceptée si elle est signalée comme telle.
+distracteurs = ["Élekable", "Galvagon", "Cheniselle", "Tutafeh"]
+
+[Q8]
+texte = "En dehors de sa propre famille d'évolution, quels Pokémon ont le répertoire d'attaques le plus proche de celui de Dracaufeu ?"
+categorie = "robustesse"
+notation = "liste-ordonnee"
+attendus = ["Drattak", "Dracolosse", "Reshiram", "Libégon", "Groudon"]
+tolerance = 0.01
+# Famille non exclue : Salamèche (0,80) et Reptincel (0,79) passeraient en tête.
+distracteurs = ["Salamèche", "Reptincel"]
+
+# Jaccard au millième, comme q08.cypher. Braségali et Typhlosion, à moins de 0,01 de Groudon, peuvent
+# prendre la 5e place (README : tolérance sur l'ordre).
+[Q8.scores]
+Drattak = 0.541
+Dracolosse = 0.517
+Reshiram = 0.490
+"Libégon" = 0.485
+Groudon = 0.484
+"Braségali" = 0.480
+Typhlosion = 0.476
+
+[Q9]
+texte = "Quels Pokémon vivent dans les profondeurs de l'océan, et de quels types sont-ils ?"
+categorie = "semantique"
+notation = "semantique"
+pluriel = true
+avec_types = true
+
+[Q10]
+texte = "Quel est le Pokémon préféré de Sacha ?"
+categorie = "robustesse"
+notation = "revue"
+
+[Q11]
+texte = "Pourquoi Carapuce encaisse-t-il mieux les attaques Feu que Bulbizarre ?"
+categorie = "raisonnement"
+notation = "ensemble"
+# L'explication par les types : Eau (×0,5) contre Plante (×2) ; les multiplicateurs ne sont pas exigés.
+attendus = ["Eau", "Plante"]
+
+[Q12]
+texte = "Quel Pokémon a le plus de PV ?"
+categorie = "agregats"
+notation = "valeur"
+attendus = ["Leuphorie"]
+# Éthernatos Infinimax, 255 PV aussi : accepté s'il est signalé comme une forme.
+distracteurs = ["Éthernatos"]
+
+[Q13]
+texte = "Quelle attaque de type Feu est apprise par le plus de Pokémon ?"
+categorie = "agregats"
+notation = "valeur"
+attendus = ["Zénith"]
+# Accepté si l'agent précise qu'il ne compte que les attaques offensives.
+distracteurs = ["Lance-Flammes"]
+
+[Q14]
+texte = "Quels Pokémon de type Feu ne peuvent apprendre aucune attaque de type Eau ?"
+categorie = "agregats"
+notation = "longue-liste"
+compte = 55
+# Primo-Groudon, forme Sol et Feu sans attaque Eau : acceptée si elle est signalée comme une forme.
+distracteurs = ["Groudon"]
+
+[Q15]
+texte = "Donne toute la famille d'évolution de Pikachu."
+categorie = "parcours"
+notation = "ensemble"
+attendus = ["Pichu", "Pikachu", "Raichu"]
+# Formes (Raichu d'Alola, Méga-Raichu X et Y, Pikachu Gigamax, Pikachu à casquette…) : acceptées si
+# elles sont signalées comme telles.
+distracteurs = ["Alola", "Méga", "Gigamax", "Casquette"]
+
+[Q16]
+texte = "Quel Pokémon est capable de faire le tour de la planète en moins d'une journée ?"
+categorie = "semantique"
+notation = "semantique"
+pluriel = false
+
+[Q17]
+texte = "Parmi les Pokémon de type Eau, lesquels sont décrits comme dangereux pour les humains ?"
+categorie = "semantique"
+notation = "semantique"
+pluriel = true
+
+[Q18]
+texte = "Et dans mon équipe, lequel est le plus vulnérable aux attaques Roche ?"
+categorie = "raisonnement"
+notation = "valeur"
+tour_precedent = "Q2"
+attendus = ["Dracaufeu"]
+# Le suivant (×2) : une réponse comparative ou inversée le cite.
+distracteurs = ["Lokhlass"]
+
+[Q19]
+texte = "Quels sont les types de Dracofeu ?"
+categorie = "robustesse"
+notation = "ensemble"
+attendus = ["Feu", "Vol"]
+# Noms voisins de type Dragon (Dracolosse, Draco, Drackhaus), ou Méga-Dracaufeu X.
+distracteurs = ["Dragon"]
+
+[Q20]
+texte = "Si les attaques de type Roche disparaissaient, quels Pokémon perdraient le plus d'attaques ?"
+categorie = "agregats"
+notation = "ensemble"
+# Ex æquo à 15 ; Gigansel, Onix et Steelix (14) sont bienvenus, pas exigés.
+attendus = ["Tarinor", "Tarinorme"]
+
+[Q21]
+texte = "Qui est le plus rapide entre Dracaufeu et Tortank ?"
+categorie = "faits"
+notation = "valeur"
+attendus = ["Dracaufeu"]
+# Comparaison : une réponse inversée cite les deux.
+distracteurs = ["Tortank"]
+
+[Q22]
+texte = "Contre quel type les attaques Normal n'ont-elles aucun effet ?"
+categorie = "faits"
+notation = "valeur"
+attendus = ["Spectre"]
+# ×0,5 : peu efficaces, pas sans effet.
+distracteurs = ["Roche", "Acier"]
+
+[Q23]
+texte = "Quelle est la catégorie de Dracaufeu ?"
+categorie = "faits"
+notation = "valeur"
+attendus = ["Pokémon Flamme"]
+
+[Q24]
+texte = "Quels sont le type, la puissance et la catégorie de l'attaque Séisme ?"
+categorie = "faits"
+notation = "ensemble"
+attendus = ["Sol", 100, "physique"]
+
+[Q25]
+texte = "Quel type compte le plus de Pokémon ?"
+categorie = "agregats"
+notation = "valeur"
+attendus = ["Eau"]
+
+[Q26]
+texte = "Quels Pokémon passent la majeure partie de leur temps à dormir ?"
+categorie = "semantique"
+notation = "semantique"
+pluriel = true
+
+[Q27]
+texte = "Mon Pikachu doit battre un Tortank : quelle attaque lui conseilles-tu, et pourquoi ?"
+categorie = "raisonnement"
+notation = "ensemble"
+# Une attaque Électrik puissante que Pikachu apprend, et la raison : Tortank est de type Eau (×2).
+un_parmi = ["Électacle", "Élecanon", "Fatal-Foudre", "Tonnerre", "Éclair Fou"]
+attendus = ["Eau"]
+# Une autre attaque (Coup d'Jus, Nœud Herbe…), ou une explication sans le type : à revoir.
+revoir_si_incomplete = true
+
+[Q28]
+texte = "Et si l'adversaire remplace Tortank par Onix ?"
+categorie = "raisonnement"
+notation = "ensemble"
+tour_precedent = "Q27"
+# Le signalement (l'Électrik est sans effet) et Surf (Eau, ×4).
+attendus = ["Surf", "Électrik"]
+# Une attaque Électrik gardée : le piège. Une autre attaque ×4 ou ×2 (Nœud Herbe, Mitra-Poing…),
+# acceptée avec son explication : à revoir.
+distracteurs = ["Électacle", "Élecanon", "Fatal-Foudre", "Tonnerre", "Éclair Fou"]
+revoir_si_incomplete = true
+
+[Q29]
+texte = "Pourquoi Pikachu est-il de type Feu ?"
+categorie = "robustesse"
+notation = "revue"
+
+[Q30]
+texte = "Quelle est la meilleure attaque ?"
+categorie = "robustesse"
+notation = "revue"
