@@ -82,7 +82,7 @@
 
   La requête de référence trouve les candidats par un filet de mots-clés en mots entiers, puis applique une table de classement explicite (espèce, ensemble, raison) : un nouveau candidat sort « à classer », une espèce classée qui n'est plus trouvée sort « plus trouvée ». Elle ne recopie aucun texte de description ([ADR-0001](../.claude/docs/adr/0001-mvp-jeu-de-donnees-pokeapi.md)).
 
-  - **Notation** : au singulier (Q3, Q16), juste si la réponse cite au moins une espèce obligatoire ou acceptable et aucune hors ensemble, partiel si elle en mêle, faux sinon. Au pluriel (Q9, Q17, Q26), rappel (part des espèces obligatoires trouvées) et précision (part des espèces citées qui sont justes) : juste si la précision vaut 100 % et le rappel au moins 50 %. Q9 demande aussi les types (exacts, forme par défaut) ; Q17 filtre sur le type Eau (exact).
+  - **Notation** : au singulier (Q3, Q16), juste si la réponse cite au moins une espèce obligatoire ou acceptable et aucune hors ensemble, partiel si elle en mêle, faux sinon. Au pluriel (Q9, Q17, Q26), rappel (part des espèces obligatoires trouvées) et précision (part des espèces citées qui sont justes) : juste si la précision vaut 100 % et le rappel au moins 50 % ; sinon partielle si elle cite au moins une espèce obligatoire ou acceptable, fausse sinon (choix de Julien, 2026-10-08). Q9 demande aussi les types (exacts, forme par défaut) ; Q17 filtre sur le type Eau (exact).
   - **Correction sur preuve** : une espèce hors ensemble, citée avec la description qui la justifie, est examinée avec la grille ; si elle la satisfait, la réponse compte juste et l'espèce entre dans la table, datée.
 
 - **Q7** : ensemble exact sur les types. Les immunités dues à un talent (Paratonnerre, Absorbe-Volt, Motorisé) sont acceptées en plus si l'agent les signale comme telles.
@@ -91,6 +91,7 @@
 - **Q12** : Leuphorie ; Éthernatos Infinimax est accepté s'il est signalé comme une forme.
 - **Q13** : Zénith, toutes catégories d'attaques confondues ; Lance-Flammes est accepté si l'agent précise qu'il ne compte que les attaques offensives.
 - **Q27** : toute attaque Électrik puissante, avec l'explication (×2 contre l'Eau) ; la précision compte dans l'explication (Élecanon, en tête par la puissance, n'a que 50 %). **Q28** : l'agent doit signaler que l'Électrik est sans effet contre Onix ; Surf est attendu, une autre attaque ×4 ou ×2 est acceptée avec son explication.
+- **Q27, Q28** (questions à explication) : revue humaine, toujours. Leur cœur est l'explication, qu'aucune règle de mots ne juge sûrement : un mot attendu présent ne prouve ni le signalement ni l'absence d'une autre attaque conseillée (revue adverse, choix de Julien, 2026-10-08).
 - **Q10, Q29, Q30** (questions comportementales) : pas de requête Cypher, une règle. Q10 : « ce n'est pas dans les données » (la culture générale n'est acceptée que si l'agent précise qu'elle ne vient pas du graphe ; sans source, la réponse compte comme fausse). Q29 : corriger la prémisse. Q30 : demander un critère ou annoncer celui qu'on retient.
 
 ## Critères du tableau comparatif

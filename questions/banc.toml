@@ -16,12 +16,14 @@
 #   - semantique : tables de l'ADR-0008, tirées de attendu/ ; au pluriel, rappel et précision ;
 #     avec_types : les types sont demandés aussi (Q9) ;
 #   - controle : la requête de contrôle q02.cypher, sur les 6 noms proposés (plan, D6) ;
-#   - revue : revue humaine à l'aveugle, toujours (Q10, Q29, Q30 : une règle, pas de requête) ;
+#   - revue : revue humaine à l'aveugle, toujours : Q10, Q29, Q30 (une règle, pas de requête) ; Q27,
+#     Q28 (l'explication, qu'aucune règle de mots ne juge sûrement ; choix de Julien, 2026-10-08) ;
 # - un nombre attendu se compare comme un nombre : 100 n'est pas 1000 ;
 # - distracteurs : une valeur citée parmi eux fait passer la réponse « à revoir » (plan, D4) : réponse
 #   comparative ou inversée, variante acceptée sous condition (forme ou talent signalés), erreur typique ;
 # - revoir_si_incomplete : une réponse incomplète passe « à revoir » plutôt que partielle ou fausse,
-#   car une autre réponse, expliquée, peut être juste (Q27, Q28).
+#   car une autre réponse, expliquée, peut être juste. Plus utilisé depuis que Q27 et Q28 sont en
+#   revue (2026-10-08), comme un_parmi : gardés pour une question future.
 #
 # Règle des longues listes (Q7, Q14), écrite avant le pilote (plan, D4) : la réponse courte peut donner
 # la liste complète, ou le compte avec un extrait.
@@ -245,24 +247,19 @@ pluriel = true
 [Q27]
 texte = "Mon Pikachu doit battre un Tortank : quelle attaque lui conseilles-tu, et pourquoi ?"
 categorie = "raisonnement"
-notation = "ensemble"
-# Une attaque Électrik puissante que Pikachu apprend, et la raison : Tortank est de type Eau (×2).
-un_parmi = ["Électacle", "Élecanon", "Fatal-Foudre", "Tonnerre", "Éclair Fou"]
-attendus = ["Eau"]
-# Une autre attaque (Coup d'Jus, Nœud Herbe…), ou une explication sans le type : à revoir.
-revoir_si_incomplete = true
+notation = "revue"
+# Pour la revue (README) : une attaque Électrik puissante que Pikachu apprend (Électacle, Élecanon,
+# Fatal-Foudre, Tonnerre, Éclair Fou) et la raison : Tortank est de type Eau (×2) ; la précision compte
+# (Élecanon n'a que 50 %). Une autre attaque, expliquée, peut être juste (Coup d'Jus, Nœud Herbe…).
 
 [Q28]
 texte = "Et si l'adversaire remplace Tortank par Onix ?"
 categorie = "raisonnement"
-notation = "ensemble"
+notation = "revue"
 tour_precedent = "Q27"
-# Le signalement (l'Électrik est sans effet) et Surf (Eau, ×4).
-attendus = ["Surf", "Électrik"]
-# Une attaque Électrik gardée : le piège. Une autre attaque ×4 ou ×2 (Nœud Herbe, Mitra-Poing…),
-# acceptée avec son explication : à revoir.
-distracteurs = ["Électacle", "Élecanon", "Fatal-Foudre", "Tonnerre", "Éclair Fou"]
-revoir_si_incomplete = true
+# Pour la revue (README) : le signalement (l'Électrik est sans effet contre Onix, Roche et Sol) et Surf
+# (Eau, ×4) ; une autre attaque ×4 ou ×2 (Nœud Herbe, Mitra-Poing…) est acceptée avec son explication ;
+# garder une attaque Électrik est le piège.
 
 [Q29]
 texte = "Pourquoi Pikachu est-il de type Feu ?"

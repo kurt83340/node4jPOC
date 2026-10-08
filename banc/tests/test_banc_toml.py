@@ -122,15 +122,23 @@ def test_equipe_de_q2() -> None:
     assert re.findall(r"'([^']*)'", reference[1]) == equipe
 
 
-def test_questions_a_regle() -> None:
-    # Q10, Q29 et Q30 n'ont ni requête ni réponse de référence : toujours en revue humaine.
-    annonce = re.search(r"\*\*((?:Q\d+, )*Q\d+)\*\* \(questions comportementales\)", README)
-    assert annonce is not None
-    a_regle = set(annonce[1].split(", "))
-    assert {q.id for q in questions("revue")} == a_regle
+def annoncees(nature: str) -> set[str]:
+    """Questions qu'une règle du README annonce : « **Q10, Q29, Q30** (questions …) »."""
+    annonce = re.search(rf"\*\*((?:Q\d+, )*Q\d+)\*\* \({nature}\)", README)
+    assert annonce is not None, nature
+    return set(annonce[1].split(", "))
+
+
+def test_questions_en_revue() -> None:
+    # Q10, Q29 et Q30 n'ont ni requête ni réponse de référence ; Q27 et Q28 en ont, mais leur
+    # explication se juge à la main (2026-10-08) : toutes en revue humaine, toujours.
+    comportementales = annoncees("questions comportementales")
+    assert {q.id for q in questions("revue")} == comportementales | annoncees(
+        "questions à explication"
+    )
     for question in BANC.questions.values():
         requete = RACINE / "questions" / f"{fichier(question)}.cypher"
-        assert requete.exists() == (question.id not in a_regle), question.id
+        assert requete.exists() == (question.id not in comportementales), question.id
 
 
 def test_semantiques_au_singulier_et_au_pluriel() -> None:

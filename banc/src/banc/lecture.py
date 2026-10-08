@@ -12,13 +12,19 @@ import re
 import unicodedata
 from collections.abc import Collection, Iterable, Sequence
 from dataclasses import dataclass
+from itertools import pairwise
 
 from banc import attendu
 
 # Une ligne d'en-tête : marque de liste, titre ou gras facultatifs, le mot de la section,
 # deux-points ; ou bien le seul mot de la section, en titre ou en gras, sur sa ligne.
-# « Réponse rapide : » n'en est pas un.
-_SECTION = r"(?P<nom>r[ée]ponse(?:\s+courte)?|sources?)"
+# « Réponse rapide : » n'en est pas un. Les sources prennent un mot de plus (« Sources utilisées »,
+# « Requêtes exécutées », « Source(s) ») : les variantes des agents, relevées en revue adverse.
+_SECTION = (
+    r"(?P<nom>r[ée]ponses?(?:\s+(?:courte|finale))?"
+    r"|sources?(?:\s*\(s\))?(?:\s+[^\W\d_]+)?|requ[êe]tes?(?:\s+[^\W\d_]+)?)"
+)
+REPONSE = re.compile(r"r[ée]ponse", re.IGNORECASE)
 _EMPHASE = r"(?:\*\*|__|\*|_)?"
 EN_TETE = re.compile(
     rf"^\s*(?:[-*+]\s+|\d+[.)]\s+)?(?:#{{1,6}}\s+)?{_EMPHASE}\s*{_SECTION}\s*{_EMPHASE}\s*:"
@@ -28,20 +34,43 @@ EN_TETE = re.compile(
 EN_TETE_SEUL = re.compile(
     rf"^\s*(?=#|\*\*|__)(?:#{{1,6}}\s+)?{_EMPHASE}{_SECTION}{_EMPHASE}\s*:?\s*$", re.IGNORECASE
 )
-CLOTURE = re.compile(r"^\s*```")
+# Une clôture de bloc seule sur sa ligne (```cypher) : « ```RETURN 1``` » n'ouvre aucun bloc.
+CLOTURE = re.compile(r"^\s*```\s*[\w+-]*\s*$")
 # Un mot : lettres et chiffres ; ♀ et ♂ y restent, sinon Nidoran♀ et Nidoran♂ se confondraient.
 MOT = re.compile(r"(?:[^\W_]|[♀♂])+")
+# Ce qui peut séparer les mots d'un même nom d'espèce : M. Mime, Ho-Oh, Type:0, Mime Jr.
+LIAISON = re.compile(r"[ .:'’-]{1,3}")
+TIRETS = "-‐‑"
 # Un nombre isolé, avec ses milliers séparés par une espace (1 025) et sa décimale (0,541 ou 0.541).
 NOMBRE = re.compile(
     r"(?<![\w.,])(?P<entier>\d{1,3}(?:[ \u00a0\u202f]\d{3})+|\d+)(?:[.,](?P<decimale>\d+))?(?!\w)"
 )
-BLOC = re.compile(r"^[ \t]*```[^\n]*\n(?P<code>.*?)^[ \t]*```[ \t]*$", re.MULTILINE | re.DOTALL)
+BLOC = re.compile(
+    r"^[ \t]*```[ \t]*[\w+-]*[ \t]*\n(?P<code>.*?)^[ \t]*```[ \t]*$", re.MULTILINE | re.DOTALL
+)
 CODE_EN_LIGNE = re.compile(r"`([^`\n]+)`")
-CLAUSE = re.compile(r"^\s*(?:OPTIONAL\s+MATCH|MATCH|CALL|WITH|UNWIND|RETURN)\b", re.IGNORECASE)
+_CLAUSES = r"(?:OPTIONAL\s+MATCH|MATCH|CALL|WITH|UNWIND|RETURN)\b"
+CLAUSE = re.compile(rf"^\s*{_CLAUSES}", re.IGNORECASE)
+# Du code en ligne qui ressemble à du Cypher (une clause, ou ses signes) : retiré de la réponse.
+# Un nom mis en forme de code (`Dracaufeu`) reste un nom.
+CYPHERESQUE = re.compile(rf"^\s*{_CLAUSES}|[(){{}}\[\]=$]", re.IGNORECASE)
 MARQUE_DE_LISTE = re.compile(r"^\s*(?:[-*+]|\d+[.)])\s+")
+ETIQUETTE = re.compile(
+    r"^\s*(?:\*\*)?requ[êe]tes?(?:\s+[^\W\d_]+)?\s*(?:\*\*)?\s*:\s*(?:\*\*)?\s*", re.IGNORECASE
+)
 FIN_D_INSTRUCTION = re.compile(r";\s*(?:\n|$)")
-CHAINE = re.compile(r"'(?:[^'\\]|\\.)*'|\"(?:[^\"\\]|\\.)*\"")
-CITATION = re.compile(r"«([^»]*)»|“([^”]*)”|\"([^\"\n]*)\"")
+# Deux requêtes d'un même bloc séparées par une ligne vide, sans « ; ».
+LIGNE_VIDE_PUIS_CLAUSE = re.compile(rf"\n\s*\n(?=\s*{_CLAUSES})", re.IGNORECASE)
+# Morceaux d'une requête, pour la comparer aux espaces près : commentaire, chaîne, blancs, le reste.
+MORCEAU_CYPHER = re.compile(
+    r"//[^\n]*|'(?:[^'\\]|\\.)*'|\"(?:[^\"\\]|\\.)*\"|\s+|[^\s'\"/]+|[\s\S]"
+)
+# Une citation : entre guillemets, en bloc de citation (« > ») ou en italique.
+CITATION = re.compile(
+    r"«([^»]*)»|“([^”]*)”|\"([^\"\n]*)\"|^[ \t]*>[ \t]?(.+)$"
+    r"|(?<![*\w])\*(?!\*)([^*\n]+)\*(?!\*)|(?<![_\w])_([^_\n]+)_(?!\w)",
+    re.MULTILINE,
+)
 ELLIPSE = re.compile(r"\[\s*(?:…|\.\.\.)\s*\]|…|\.\.\.")
 # Une description citée : au moins 4 mots. « Pokémon Flamme » ou « Feu » citent une valeur, pas un
 # texte.
@@ -59,6 +88,15 @@ class LectureError(Exception):
 
 
 @dataclass(frozen=True)
+class Jeton:
+    """Un mot normalisé, et sa place dans le texte (NFC), en caractères, fin exclue."""
+
+    mot: str
+    debut: int
+    fin: int
+
+
+@dataclass(frozen=True)
 class Sections:
     """Les deux sections de fin d'une réponse ; None si l'agent ne l'a pas écrite (ou vide)."""
 
@@ -67,13 +105,15 @@ class Sections:
 
 
 def sections(texte: str) -> Sections:
-    """Sections « Réponse » et « Sources » : la dernière de chaque sorte, jusqu'à l'en-tête suivant.
+    """Sections « Réponse » et « Sources », chacune jusqu'à l'en-tête suivant.
 
-    La consigne demande de terminer par elles : un brouillon plus haut ne compte pas. Un en-tête
-    dans un bloc de code (commentaire Cypher) est ignoré ; l'ordre des deux sections est libre.
+    La consigne demande de terminer par elles : la dernière « Réponse » compte, un brouillon plus
+    haut non. « Sources » réunit les sections de sources qui la suivent (« Sources : », puis
+    « Requête : »…), ou, à défaut, celles qui la précèdent depuis la « Réponse » d'avant. Un
+    en-tête dans un bloc de code est ignoré.
     """
     lignes = texte.splitlines()
-    en_tetes: list[tuple[int, str, str]] = []
+    en_tetes: list[tuple[int, bool, str]] = []
     dans_un_bloc = False
     for numero, ligne in enumerate(lignes):
         if CLOTURE.match(ligne):
@@ -83,27 +123,52 @@ def sections(texte: str) -> Sections:
             continue
         trouve = EN_TETE.match(ligne) or EN_TETE_SEUL.match(ligne)
         if trouve is not None:
-            nom = "reponse" if trouve["nom"].lower().startswith("r") else "sources"
             reste = trouve.groupdict().get("reste") or ""
-            en_tetes.append((numero, nom, reste))
-    textes: dict[str, str | None] = {"reponse": None, "sources": None}
-    for rang, (numero, nom, reste) in enumerate(en_tetes):
+            en_tetes.append((numero, REPONSE.match(trouve["nom"]) is not None, reste))
+    textes = []
+    for rang, (numero, _, reste) in enumerate(en_tetes):
         fin = en_tetes[rang + 1][0] if rang + 1 < len(en_tetes) else len(lignes)
-        texte_section = "\n".join([reste, *lignes[numero + 1 : fin]]).strip()
-        textes[nom] = texte_section or None
-    return Sections(textes["reponse"], textes["sources"])
+        textes.append("\n".join([reste, *lignes[numero + 1 : fin]]).strip())
+    reponses = [rang for rang, (_, est_reponse, _) in enumerate(en_tetes) if est_reponse]
+    if not reponses:
+        return Sections(None, _joindre(textes))
+    derniere = reponses[-1]
+    apres = textes[derniere + 1 :]
+    avant = textes[reponses[-2] + 1 if len(reponses) > 1 else 0 : derniere]
+    return Sections(textes[derniere] or None, _joindre(apres) or _joindre(avant))
 
 
-def mots(texte: str) -> tuple[str, ...]:
-    """Mots d'un texte, pour comparer des noms : casse et accents ignorés, œ lu oe.
+def _joindre(textes: Sequence[str]) -> str | None:
+    return "\n\n".join(texte for texte in textes if texte) or None
+
+
+def prose(texte: str) -> str:
+    """Le texte sans son code, en NFC : blocs retirés, code en ligne retiré s'il ressemble à du
+    Cypher. Une valeur tirée d'une requête recopiée dans la réponse ne compte pas comme dite."""
+    sans_blocs = BLOC.sub("\n", texte)
+    sans_code = CODE_EN_LIGNE.sub(lambda m: " " if CYPHERESQUE.search(m[1]) else m[1], sans_blocs)
+    return unicodedata.normalize("NFC", sans_code)
+
+
+def jetons(texte: str) -> list[Jeton]:
+    """Mots d'un texte (mis en NFC), chacun normalisé et situé : casse et accents ignorés, œ lu oe.
 
     Apostrophes, tirets et ponctuation séparent les mots : une élision se détache du nom qu'elle
     précède (« d'Évoli » : d, evoli) et un nom à apostrophe se lit pareil des deux côtés
     (« Fracass’Tête » comme « Fracass'Tête » : fracass, tete).
     """
-    plie = texte.casefold().replace("œ", "oe").replace("æ", "ae")
-    decompose = unicodedata.normalize("NFKD", plie)
-    return tuple(MOT.findall("".join(c for c in decompose if not unicodedata.combining(c))))
+    brut = unicodedata.normalize("NFC", texte)
+    return [Jeton(_normaliser(m.group()), m.start(), m.end()) for m in MOT.finditer(brut)]
+
+
+def _normaliser(mot: str) -> str:
+    plie = mot.casefold().replace("œ", "oe").replace("æ", "ae")
+    return "".join(c for c in unicodedata.normalize("NFKD", plie) if not unicodedata.combining(c))
+
+
+def mots(texte: str) -> tuple[str, ...]:
+    """Mots normalisés d'un texte (voir jetons), pour comparer des noms."""
+    return tuple(jeton.mot for jeton in jetons(texte))
 
 
 def contient(texte: Sequence[str], nom: Sequence[str]) -> bool:
@@ -127,11 +192,13 @@ def nombres(texte: str) -> list[float]:
 
 @dataclass(frozen=True)
 class Citation:
-    """Une espèce citée : son nom exact, et sa place dans le texte (indices de mots, fin exclue)."""
+    """Une espèce citée : son nom exact, sa place dans le texte (NFC, en caractères, fin exclue),
+    et si elle est nommée comme une forme (Méga-Dracaufeu, Raichu d'Alola, Motisma Lavage)."""
 
     nom: str
     debut: int
     fin: int
+    forme: bool = False
 
 
 class Especes:
@@ -156,63 +223,94 @@ class Especes:
         [tableau] = attendu.lire("especes")
         return cls(str(ligne["pokemon"]) for ligne in tableau.lignes)
 
-    def citations(self, texte: Sequence[str]) -> list[Citation]:
-        """Espèces citées dans un texte (ses mots), de gauche à droite : Porygon-Z avant Porygon."""
+    def citations(self, texte: str) -> list[Citation]:
+        """Espèces citées dans un texte, de gauche à droite, par la plus longue correspondance :
+        Porygon-Z avant Porygon. Un nom collé par un tiret au mot suivant n'est pas une citation
+        (Draco-Météore est une attaque)."""
+        brut = unicodedata.normalize("NFC", texte)
+        liste = jetons(brut)
         trouvees = []
         position = 0
-        while position < len(texte):
-            for taille in range(min(self._plus_long, len(texte) - position), 0, -1):
-                nom = self._formes.get(tuple(texte[position : position + taille]))
-                if nom is not None:
-                    trouvees.append(Citation(nom, position, position + taille))
-                    position += taille
-                    break
-            else:
+        while position < len(liste):
+            taille, nom = self._plus_longue(brut, liste, position)
+            if nom is None:
                 position += 1
+                continue
+            debut, fin = liste[position].debut, liste[position + taille - 1].fin
+            if not _collee(brut, fin):
+                trouvees.append(Citation(nom, debut, fin, _en_forme(brut, debut, fin)))
+            position += taille
         return trouvees
+
+    def _plus_longue(
+        self, brut: str, liste: Sequence[Jeton], position: int
+    ) -> tuple[int, str | None]:
+        for taille in range(min(self._plus_long, len(liste) - position), 0, -1):
+            morceau = liste[position : position + taille]
+            nom = self._formes.get(tuple(jeton.mot for jeton in morceau))
+            liee = all(
+                LIAISON.fullmatch(brut[gauche.fin : droite.debut])
+                for gauche, droite in pairwise(morceau)
+            )
+            if nom is not None and liee:
+                return taille, nom
+        return 1, None
 
     def citees(self, texte: str) -> list[str]:
         """Noms exacts des espèces citées, une fois chacune, dans l'ordre de première mention."""
-        return list(dict.fromkeys(citation.nom for citation in self.citations(mots(texte))))
+        return list(dict.fromkeys(citation.nom for citation in self.citations(texte)))
+
+
+def _collee(brut: str, fin: int) -> bool:
+    """Le nom est-il collé par un tiret au mot qui le suit (Draco-Météore) ?"""
+    return brut[fin : fin + 1] in TIRETS and brut[fin + 1 : fin + 2].isalpha()
+
+
+def _en_forme(brut: str, debut: int, fin: int) -> bool:
+    """Le nom est-il celui d'une forme : précédé d'un mot collé par un tiret (Méga-Dracaufeu,
+    Primo-Groudon), ou suivi d'un mot à majuscule (Motisma Lavage), au besoin après d', de ou du
+    (Raichu d'Alola) ?"""
+    if debut >= 2 and brut[debut - 1] in TIRETS and brut[debut - 2].isalpha():
+        return True
+    suite = re.match(r"[ \t]+(?:(?:d['’]|de[ \t]|du[ \t])[ \t]*)?(\w)", brut[fin:])
+    return suite is not None and suite[1].isupper()
 
 
 def requetes_citees(sources: str) -> list[str]:
-    """Requêtes de la section « Sources » : blocs de code (une requête par instruction) et code en
-    ligne qui commence par une clause ; à défaut, les paragraphes qui commencent par une clause."""
+    """Requêtes de la section « Sources » : blocs de code (une requête par instruction ; des
+    morceaux séparés par une ligne vide comptent aussi), code en ligne qui commence par une clause,
+    et paragraphes qui commencent par une clause, au besoin après « Requête : »."""
     requetes = []
     for bloc in BLOC.finditer(sources):
-        requetes += [r.strip() for r in FIN_D_INSTRUCTION.split(bloc["code"]) if r.strip()]
-    hors_blocs = BLOC.sub("", sources)
+        for instruction in FIN_D_INSTRUCTION.split(bloc["code"]):
+            morceaux = [m.strip() for m in LIGNE_VIDE_PUIS_CLAUSE.split(instruction) if m.strip()]
+            requetes += [instruction.strip()] * bool(instruction.strip())
+            requetes += morceaux if len(morceaux) > 1 else []
+    hors_blocs = BLOC.sub("\n", sources)
     requetes += [code.strip() for code in CODE_EN_LIGNE.findall(hors_blocs) if CLAUSE.match(code)]
-    if requetes:
-        return requetes
-    for paragraphe in re.split(r"\n\s*\n", hors_blocs):
-        texte = MARQUE_DE_LISTE.sub("", paragraphe.strip(), count=1)
+    for paragraphe in re.split(r"\n\s*\n", CODE_EN_LIGNE.sub(" ", hors_blocs)):
+        texte = ETIQUETTE.sub("", MARQUE_DE_LISTE.sub("", paragraphe.strip(), count=1), count=1)
         if CLAUSE.match(texte):
             requetes.append(texte.strip().removesuffix(";").strip())
     return requetes
 
 
 def meme_requete(citee: str, executee: str) -> bool:
-    """Même requête aux espaces près : hors des chaînes, ni les blancs ni un « ; » final ne
-    comptent."""
+    """Même requête aux espaces près : hors des chaînes, ni les blancs, ni les commentaires //, ni
+    un « ; » final ne comptent."""
     return _sans_blancs(citee) == _sans_blancs(executee)
 
 
 def _sans_blancs(requete: str) -> str:
-    morceaux = []
-    position = 0
-    for chaine in CHAINE.finditer(requete):
-        morceaux += [re.sub(r"\s+", "", requete[position : chaine.start()]), chaine.group()]
-        position = chaine.end()
-    morceaux.append(re.sub(r"\s+", "", requete[position:]))
-    return "".join(morceaux).removesuffix(";")
+    morceaux = (m.group() for m in MORCEAU_CYPHER.finditer(requete))
+    gardes = (m for m in morceaux if not m.startswith("//") and not m.isspace())
+    return "".join(gardes).removesuffix(";")
 
 
 def descriptions_citees(sources: str) -> list[str]:
-    """Passages cités entre guillemets (« », “ ”, " "), hors code, coupés à leurs points de
-    suspension : chaque morceau d'au moins 4 mots doit avoir été renvoyé par une requête du tour
-    (plan, D4)."""
+    """Passages cités entre guillemets (« », “ ”, " "), en bloc de citation (« > ») ou en
+    italique, hors code, coupés à leurs points de suspension : chaque morceau d'au moins 4 mots
+    doit avoir été renvoyé par une requête du tour (plan, D4)."""
     texte = CODE_EN_LIGNE.sub("", BLOC.sub("", sources))
     morceaux: list[str] = []
     for citation in CITATION.finditer(texte):
@@ -226,15 +324,23 @@ def descriptions_citees(sources: str) -> list[str]:
 
 
 def equipe(reponse: str, especes: Especes, reference: Collection[str]) -> tuple[str, ...] | None:
-    """Les 6 espèces proposées à Q2, à leur orthographe exacte ; None si on ne peut les isoler.
+    """Les 6 espèces proposées à Q2, à leur orthographe exacte ; None si on ne peut les isoler sans
+    doute : la réponse passe alors « à revoir », et rien n'est envoyé à la base (plan, D6).
 
     Les espèces de l'équipe de référence, citées dans une explication, sont écartées quand il y en a
-    plus de 6 ; sans exactement 6 espèces, la réponse passe « à revoir » (plan, D6).
+    plus de 6. Doutes : pas exactement 6 espèces, un membre de la référence parmi elles (cité
+    dans l'explication à la place d'un nom non reconnu ?), ou l'une nommée comme une forme
+    (le contrôle lirait sa forme par défaut).
     """
-    citees = especes.citees(reponse)
-    if len(citees) != TAILLE_EQUIPE:
-        citees = [nom for nom in citees if nom not in reference]
-    return tuple(citees) if len(citees) == TAILLE_EQUIPE else None
+    citations = especes.citations(reponse)
+    noms = list(dict.fromkeys(citation.nom for citation in citations))
+    if len(noms) != TAILLE_EQUIPE:
+        noms = [nom for nom in noms if nom not in reference]
+    if len(noms) != TAILLE_EQUIPE or any(nom in reference for nom in noms):
+        return None
+    if any(citation.forme for citation in citations if citation.nom in noms):
+        return None
+    return tuple(noms)
 
 
 def nom_permis(nom: str) -> bool:

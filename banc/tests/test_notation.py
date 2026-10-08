@@ -5,6 +5,7 @@ Aucun appel réel : des tours fabriqués (banc.trace) et un faux contrôle de Q2
 """
 
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -13,6 +14,7 @@ import pytest
 from banc import attendu
 from banc.lecture import liste_cypher
 from banc.notation import (
+    TYPES,
     Controle,
     NotationError,
     Referentiel,
@@ -108,10 +110,23 @@ def test_distracteur_dans_un_nom_de_forme() -> None:
     assert noter_texte("Q15", "Pichu, Pikachu, Raichu (et Raichu d'Alola)") == "à revoir"
 
 
+# un_parmi et revoir_si_incomplete ne servent plus depuis que Q27 et Q28 sont en revue
+# (2026-10-08) : gardés pour une question future, testés sur une question construite.
+CONSEIL = Question(
+    "Q1",
+    "Quelle attaque conseilles-tu ?",
+    "raisonnement",
+    "ensemble",
+    attendus=("Eau",),
+    un_parmi=("Tonnerre", "Électacle"),
+    revoir_si_incomplete=True,
+)
+
+
 def test_un_parmi() -> None:
-    # Q27 : une attaque Électrik du groupe suffit, avec la raison (Tortank est de type Eau).
-    assert noter_texte("Q27", "Tonnerre : Tortank est de type Eau.") == "juste"
-    assert noter_texte("Q27", "Fatal-Foudre, puis Électacle ; type Eau.") == "juste"
+    # Une valeur du groupe suffit, avec la raison.
+    for court in ("Tonnerre : Tortank est de type Eau.", "Électacle, puis Tonnerre ; type Eau."):
+        assert noter(CONSEIL, Tour("Q1", ecrire(court)), REF).note == "juste"
 
 
 @pytest.mark.parametrize(
@@ -123,15 +138,16 @@ def test_un_parmi() -> None:
     ],
 )
 def test_revoir_si_incomplete(court: str) -> None:
-    # Q27 : une autre attaque, expliquée, peut être juste : à revoir plutôt que partielle ou fausse.
-    notation = noter(Q["Q27"], Tour("Q27", ecrire(court)), REF)
+    # Une autre réponse, expliquée, peut être juste : à revoir plutôt que partielle ou fausse.
+    notation = noter(CONSEIL, Tour("Q1", ecrire(court)), REF)
     assert notation.note == "à revoir"
     assert "incomplete" in notation.motifs
 
 
-def test_piege_de_q28() -> None:
-    assert noter_texte("Q28", "Surf : l'Électrik est sans effet sur Onix.") == "juste"
-    assert noter_texte("Q28", "Surf, ou Tonnerre malgré l'Électrik sans effet.") == "à revoir"
+def test_code_recopie_dans_la_reponse() -> None:
+    # La requête recopiée dans « Réponse » ne cite pas Tortank, distracteur de Q21 (revue adverse).
+    court = "Dracaufeu.\n```cypher\nMATCH (p) WHERE p.nom IN ['Dracaufeu', 'Tortank'] RETURN p\n```"
+    assert noter_texte("Q21", court) == "juste"
 
 
 # --- Liste ordonnée (Q8) -------------------------------------------------------------------------
@@ -164,8 +180,52 @@ def test_liste_ordonnee_hors_tolerance() -> None:
     assert noter_texte("Q8", "Drattak, Dracolosse, Reshiram") == "partiel"
     # « À moins de 0,01 » (README) : Braségali (0,480) à la place de Reshiram (0,490), pile 0,01.
     assert noter_texte("Q8", "Drattak, Dracolosse, Braségali, Libégon, Groudon") == "partiel"
-    assert noter_texte("Q8", "Drattak, Dracolosse, Reshiram, Libégon, Ptéra") == "partiel"
-    assert noter_texte("Q8", "Ptéra, Steelix") == "faux"
+
+
+@pytest.mark.parametrize(
+    "ordre",
+    [
+        pytest.param("Libégon, Groudon, Braségali", id="brasegali-au-lieu-de-reshiram"),
+        pytest.param("Libégon, Groudon, Typhlosion", id="typhlosion-au-lieu-de-reshiram"),
+    ],
+)
+def test_liste_ordonnee_sans_glissements_cumules(ordre: str) -> None:
+    # Reshiram oublié, la liste remonte d'un cran : chaque pas est sous la tolérance, mais Reshiram
+    # (0,490) n'est pas à moins de 0,01 de celle qui le remplace (revue adverse).
+    assert noter_texte("Q8", f"Drattak, Dracolosse, {ordre}") == "partiel"
+
+
+def test_liste_ordonnee_echange_a_distance() -> None:
+    # Reshiram en 5e : chaque inversion se fait entre espèces proches (0,005 et 0,006).
+    assert noter_texte("Q8", "Drattak, Dracolosse, Libégon, Groudon, Reshiram") == "juste"
+
+
+@pytest.mark.parametrize(
+    "court",
+    [
+        pytest.param("Drattak, Dracolosse, Reshiram, Libégon, Ptéra", id="espece-sans-score"),
+        pytest.param("Ptéra, Steelix", id="aucune-attendue"),
+        pytest.param("Drattak (Gare au Ronflex), Dracolosse, Reshiram, Libégon", id="faux-positif"),
+    ],
+)
+def test_liste_ordonnee_hors_classement(court: str) -> None:
+    # Une espèce de tête sans score : vraie erreur ou faux positif de la liste, la revue en juge.
+    notation = noter(Q["Q8"], Tour("Q8", ecrire(court)), REF)
+    assert (notation.note, notation.motifs) == ("à revoir", ("hors-classement",))
+
+
+def test_liste_ordonnee_forme() -> None:
+    notation = noter(
+        Q["Q8"], Tour("Q8", ecrire("Drattak, Dracolosse, Reshiram, Libégon, Primo-Groudon")), REF
+    )
+    assert (notation.note, notation.motifs) == ("à revoir", ("forme",))
+
+
+def test_liste_ordonnee_et_attaques_draco() -> None:
+    court = (
+        "Drattak (Draco-Météore et Lance-Flammes en commun), Dracolosse, Reshiram, Libégon, Groudon"
+    )
+    assert noter_texte("Q8", court) == "juste"
 
 
 def test_liste_ordonnee_famille_non_exclue() -> None:
@@ -204,6 +264,14 @@ def test_longue_liste_vide() -> None:
     assert noter_texte("Q14", "Aucun Pokémon de type Feu.") == "faux"
 
 
+def test_longue_liste_forme() -> None:
+    # Ossatueur est dans l'ensemble, Ossatueur d'Alola (Feu et Spectre) n'est pas immunisé.
+    notation = noter(
+        Q["Q7"], Tour("Q7", ecrire("71 espèces, dont Onix et Ossatueur d'Alola.")), REF
+    )
+    assert (notation.note, notation.motifs) == ("à revoir", ("forme",))
+
+
 def test_longue_liste_complete_sans_compte() -> None:
     # Q14 : la liste complète suffit, même avec un compte faux.
     assert noter_texte("Q14", "56 espèces : " + ", ".join(sorted(REF.listes["Q14"]))) == "juste"
@@ -230,6 +298,11 @@ def test_espece_hors_table_a_revoir() -> None:
     # Correction sur preuve (ADR-0008) : une espèce hors table peut être juste ; la revue en juge.
     notation = noter(Q["Q3"], Tour("Q3", ecrire("Magmar et Dracaufeu.")), REF)
     assert (notation.note, notation.motifs) == ("à revoir", ("hors-table",))
+
+
+def test_semantique_forme() -> None:
+    notation = noter(Q["Q3"], Tour("Q3", ecrire("Primo-Groudon.")), REF)
+    assert (notation.note, notation.motifs) == ("à revoir", ("forme",))
 
 
 def test_singulier_q16() -> None:
@@ -275,6 +348,31 @@ def test_types_de_q9() -> None:
     groupee = reponse.replace("Stari (Eau), Serpang (Eau)", "Stari, Serpang (Eau)")
     notation = noter(Q["Q9"], Tour("Q9", ecrire(groupee)), REF)
     assert (notation.note, notation.motifs) == ("à revoir", ("types",))
+
+
+@pytest.mark.parametrize(
+    "fautive",
+    [
+        pytest.param("Stari (Eau, Psy)", id="type-en-trop"),
+        pytest.param("Stari, qui vit sous l'eau", id="eau-d-une-raison"),
+    ],
+)
+def test_types_de_q9_exacts(fautive: str) -> None:
+    # « Exacts » (README) : un type en trop, ou « l'eau » d'une raison prise pour le type Eau.
+    reponse = "Lugia (Psy, Vol), Kyogre (Eau), Serpang (Eau), Luminéon (Eau), Aquali (Eau), "
+    reponse += "Crustabri (Eau, Glace), Hyporoi (Eau, Dragon), Mamanbo (Eau), Rosabyss (Eau), "
+    notation = noter(Q["Q9"], Tour("Q9", ecrire(reponse + fautive)), REF)
+    assert (notation.note, notation.motifs) == ("à revoir", ("types",))
+    juste = noter(Q["Q9"], Tour("Q9", ecrire(reponse + "Stari (Eau), au fond de l'eau")), REF)
+    assert juste.note == "juste"
+
+
+def test_types_de_la_fiche() -> None:
+    # Les 18 types que la notation reconnaît sont ceux de la fiche de schéma (Type.nom).
+    fiche = (Path(__file__).resolve().parents[2] / "questions" / "fiche-schema.md").read_text()
+    ligne = re.search(r"^- `Type\.nom` : (.+)\.$", fiche, re.MULTILINE)
+    assert ligne is not None
+    assert tuple(ligne[1].split(", ")) == TYPES
 
 
 def test_types_de_q9_manquants() -> None:
@@ -338,10 +436,18 @@ def test_q2_sans_controle() -> None:
 
 
 @pytest.mark.parametrize(
-    ("ident", "source"), [("Q10", "exempte"), ("Q29", "à revoir"), ("Q30", "à revoir")]
+    ("ident", "source"),
+    [
+        ("Q10", "exempte"),
+        ("Q27", "à revoir"),
+        ("Q28", "à revoir"),
+        ("Q29", "à revoir"),
+        ("Q30", "à revoir"),
+    ],
 )
-def test_questions_a_regle(ident: str, source: str) -> None:
-    # Q10 : pas de source exigée (« pas dans les données ») ; Q29 et Q30 : jugées en revue (D4).
+def test_questions_en_revue(ident: str, source: str) -> None:
+    # Q10 : pas de source exigée (« pas dans les données ») ; les autres : jugées en revue (D4),
+    # Q27 et Q28 depuis le 2026-10-08.
     notation = noter(Q[ident], Tour(ident, ecrire("Pikachu est de type Électrik.")), REF)
     assert (notation.note, notation.motifs, notation.source) == ("à revoir", ("regle",), source)
 
@@ -437,8 +543,8 @@ def test_source_nombre() -> None:
 
 def test_source_nombre_ecrit_dans_un_texte() -> None:
     # Un nombre peut arriver dans une chaîne du résultat (q02 renvoie « Dracaufeu ×4.0 »).
-    requete = "MATCH (p:Pokemon {nom: 'Dracaufeu'}) RETURN p.nom + ' : ' + f.statVitesse AS ligne"
-    lignes = [{"ligne": "Dracaufeu : Vitesse 100"}]
+    requete = "MATCH (a:Attaque {nom: 'Séisme'}) RETURN a.nom + ' : ' + a.puissance AS ligne"
+    lignes = [{"ligne": "Séisme : Sol, puissance 90, physique"}]
     assert source("Q24", "Sol, 100, physique", bloc(requete), lecture(requete, lignes)) == "non"
     lignes = [{"ligne": "Séisme : Sol, puissance 100, physique"}]
     assert source("Q24", "Sol, 100, physique", bloc(requete), lecture(requete, lignes)) == "oui"
@@ -464,6 +570,15 @@ def test_source_resultat_non_json() -> None:
     assert source("Q21", "Dracaufeu", bloc(VITESSES), appel) == "oui"
 
 
+def test_source_objet_json() -> None:
+    # Un résultat qui serait un objet JSON, non une liste d'enregistrements, se lit aussi.
+    requete = "RETURN {pokemon: 'Dracaufeu'} AS plus_rapide"
+    assert (
+        source("Q21", "Dracaufeu", bloc(requete), lecture(requete, '{"pokemon": "Dracaufeu"}'))
+        == "oui"
+    )
+
+
 def test_source_noeud_serialise() -> None:
     # neo4j-mcp sérialise un nœud avec ses propriétés sous « Props ».
     noeud = [{"p": {"Id": 6, "Labels": ["Pokemon"], "Props": {"nom": "Dracaufeu"}}}]
@@ -481,13 +596,48 @@ def test_description_renvoyee() -> None:
 
 
 def test_description_inventee() -> None:
-    citee = bloc(DESCRIPTIONS) + "\n« Il adore se baigner dans la lave chaude » (Pokémon Rouge)"
-    assert source("Q3", "Magmar", citee, lecture(DESCRIPTIONS, DECRIT)) == "non"
+    # Seule, une description introuvable ne prouve rien ; à côté d'une requête porteuse, elle peut
+    # n'être qu'une citation de la question : à revoir (revue adverse).
+    inventee = "« Il adore se baigner dans la lave chaude » (Pokémon Rouge)"
+    assert source("Q3", "Magmar", inventee, lecture(DESCRIPTIONS, DECRIT)) == "non"
+    citee = bloc(DESCRIPTIONS) + "\n" + inventee
+    assert source("Q3", "Magmar", citee, lecture(DESCRIPTIONS, DECRIT)) == "à revoir"
 
 
-def test_reponse_fausse_avec_sa_requete() -> None:
-    # Sans valeur juste à retrouver, il suffit d'une requête citée réellement exécutée.
+def test_description_d_un_autre_enregistrement() -> None:
+    # Renvoyée, mais par l'enregistrement d'une autre espèce : elle ne porte pas la réponse.
+    lignes = [*DECRIT, {"p.nom": "Lugia", "d.texte": "Il vit dans les profondeurs de l'océan."}]
+    citee = "« Il vit dans les profondeurs de l'océan » (Pokémon Or)"
+    assert source("Q3", "Magmar", citee, lecture(DESCRIPTIONS, lignes)) == "non"
+
+
+def test_reponse_fausse_jugee_sur_ce_qu_elle_affirme() -> None:
+    # Sans valeur juste, les espèces avancées doivent être dans le résultat cité : une réponse
+    # fausse n'obtient pas « oui » plus facilement qu'une juste (revue adverse).
     assert source("Q21", "Tortank", bloc(VITESSES), lecture(VITESSES, LIGNES)) == "oui"
+    compte = "MATCH (p:Pokemon) RETURN count(p) AS total"
+    assert source("Q12", "Leveinard", bloc(compte), lecture(compte, [{"total": 1025}])) == "non"
+    assert source("Q12", "Leuphorie", bloc(compte), lecture(compte, [{"total": 1025}])) == "non"
+
+
+def test_source_rien_a_verifier() -> None:
+    # Ni valeur juste ni espèce : la requête exécutée ne prouve rien, la revue en juge.
+    requete = "MATCH (t:Type {nom: 'Normal'})-[r]->(x) RETURN type(r), x.nom"
+    appel = lecture(requete, [{"type(r)": "PEU_EFFICACE_SUR", "x.nom": "Roche"}])
+    assert source("Q22", "Roche", bloc(requete), appel) == "à revoir"
+
+
+def test_source_du_compte_seul() -> None:
+    # Q7 « 71 espèces » : le résultat cité doit porter ce compte.
+    compte = "MATCH (p:Pokemon) RETURN count(p) AS total"
+    assert source("Q7", "71 espèces.", bloc(compte), lecture(compte, [{"total": 1025}])) == "non"
+    assert source("Q7", "71 espèces.", bloc(compte), lecture(compte, [{"total": 71}])) == "oui"
+
+
+def test_source_sous_un_autre_en_tete() -> None:
+    texte = f"**Réponse :** Dracaufeu.\n\n**Requêtes exécutées :**\n{bloc(VITESSES)}"
+    notation = noter(Q["Q21"], Tour("Q21", texte, (lecture(VITESSES, LIGNES),)), REF)
+    assert (notation.note, notation.source) == ("juste", "oui")
 
 
 def test_source_de_q10_exemptee() -> None:
@@ -502,12 +652,13 @@ def test_introspections_comptees() -> None:
         lecture("CALL apoc.meta.schema() YIELD value RETURN value", "[]"),
         lecture("CALL db.labels()", "[]"),
         lecture("SHOW INDEXES", "erreur", erreur=True),
+        lecture("SHOW FULLTEXT INDEXES", "[]"),
         Appel("get-schema", "", {}, "{}", erreur=False),
         lecture(VITESSES, LIGNES),
         lecture("MATCH (n) RETURN labels(n) LIMIT 1", "[]"),
     )
-    assert introspections(Tour("Q21", ecrire("Dracaufeu"), appels)) == 4
-    assert noter(Q["Q21"], Tour("Q21", ecrire("Dracaufeu"), appels), REF).introspections == 4
+    assert introspections(Tour("Q21", ecrire("Dracaufeu"), appels)) == 5
+    assert noter(Q["Q21"], Tour("Q21", ecrire("Dracaufeu"), appels), REF).introspections == 5
 
 
 # --- Contrôle par scripts/questions.sh -----------------------------------------------------------

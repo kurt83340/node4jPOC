@@ -318,6 +318,25 @@ def test_controle_refuse_une_equipe_mal_formee(bac: Bac, equipe: str) -> None:
 
 
 @pytest.mark.parametrize(
+    "equipe",
+    [
+        pytest.param("['A', 'B', 'C', 'D', 'E', 'O'Brien']", id="apostrophe"),
+        pytest.param("['A', 'B', 'C', 'D', 'E', 'F\\']", id="antislash"),
+        pytest.param("['A', 'B', 'C', 'D', 'E', 'F\nG']", id="saut-de-ligne"),
+    ],
+)
+def test_controle_refuse_aussi_en_utf8(bac: Bac, equipe: str) -> None:
+    # Les classes de caractères de la regex dépendent de la locale : même refus en UTF-8.
+    bac.env["LC_ALL"] = "C.UTF-8"
+    lancement = bac.lancer("--controle", equipe)
+    assert lancement.code == 2
+    assert lancement.appels == []
+    # Et la même locale accepte une équipe bien formée (noms accentués, ♀).
+    valide = bac.lancer("--controle", EQUIPE)
+    assert valide.code == 0, valide.erreurs
+
+
+@pytest.mark.parametrize(
     "arguments",
     [
         pytest.param(["--controle"], id="sans-equipe"),

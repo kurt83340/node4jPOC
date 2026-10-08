@@ -14,6 +14,7 @@ import math
 import os
 import re
 import subprocess
+import unicodedata
 from collections.abc import Callable, Iterator, Mapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -31,6 +32,7 @@ from banc.lecture import (
     meme_requete,
     mots,
     nombres,
+    prose,
     requetes_citees,
     sections,
 )
@@ -49,7 +51,7 @@ OUTILS_D_INTROSPECTION = frozenset({"get-schema"})
 INTROSPECTION = re.compile(
     r"apoc\.meta\.|db\.(?:labels|relationshipTypes|propertyKeys)\s*\(|db\.schema\.|db\.indexes|"
     r"db\.constraints|dbms\.components|db\.index\.fulltext\.listAvailableAnalyzers|"
-    r"\bSHOW\s+(?:INDEX(?:ES)?|CONSTRAINTS?|PROCEDURES|FUNCTIONS|DATABASES?)\b",
+    r"\bSHOW\s+(?:\w+\s+){0,2}(?:INDEX(?:ES)?|CONSTRAINTS?|PROCEDURES|FUNCTIONS|DATABASES?)\b",
     re.IGNORECASE,
 )
 # Pas de source exigée pour Q10 : « pas dans les données » se fonde sur un résultat vide (D4).
@@ -57,6 +59,11 @@ SANS_SOURCE = frozenset({"Q10"})
 # ADR-0008, au pluriel : juste si la précision vaut 100 % et le rappel au moins 50 %.
 SEUIL_RAPPEL = 0.5
 TAILLE_EQUIPE = 6
+# Les 18 types (fiche de schéma, Type.nom), pour lire ceux que Q9 demande (README : « exacts »).
+TYPES = (
+    "Acier", "Combat", "Dragon", "Eau", "Électrik", "Fée", "Feu", "Glace", "Insecte",
+    "Normal", "Plante", "Poison", "Psy", "Roche", "Sol", "Spectre", "Ténèbres", "Vol",
+)  # fmt: skip
 COLONNES_DU_CONTROLE = ("especesReconnues", "typesNonCouverts", "equipeValide")
 ENSEMBLES = ("obligatoire", "acceptable", "écarté")
 
@@ -122,7 +129,8 @@ class Referentiel:
 
 @dataclass(frozen=True)
 class _Jugement:
-    """Ce que dit un mode : note, motifs, et les valeurs justes citées (pour la source citée)."""
+    """Ce que dit un mode : note, motifs, et les valeurs justes citées (pour la source citée) ;
+    sans elles, la source se vérifie sur les espèces que la réponse avance."""
 
     note: Note
     motifs: tuple[str, ...] = ()
@@ -145,13 +153,17 @@ def noter(
         return Notation("à revoir", ("regle",), source, compte)
     if lues.reponse is None:
         return Notation("à revoir", ("sans-reponse",), _source(lues, tour, ()), compte)
-    jugement = _juger(question, lues.reponse, referentiel, controle)
+    # Le code recopié dans la réponse ne compte pas comme dit (revue adverse du 2026-10-08).
+    texte = prose(lues.reponse)
+    jugement = _juger(question, texte, referentiel, controle)
     note, motifs = jugement.note, jugement.motifs
-    if _distracteur_cite(question, lues.reponse):
+    if _distracteur_cite(question, texte):
         note, motifs = "à revoir", (*motifs, "distracteur")
     if question.revoir_si_incomplete and note in {"partiel", "faux"}:
         note, motifs = "à revoir", (*motifs, "incomplete")
-    source = _source(lues, tour, jugement.valeurs)
+    # Sans valeur juste, la réponse se juge sur ce qu'elle affirme : toutes les espèces avancées.
+    avancees = tuple(referentiel.especes.citees(texte))
+    source = _source(lues, tour, jugement.valeurs or avancees)
     return Notation(note, motifs, source, compte, jugement.rappel, jugement.precision)
 
 
@@ -234,64 +246,88 @@ def _ensemble(question: Question, reponse: str) -> _Jugement:
     return _Jugement(note, valeurs=(*trouvees, *groupe))
 
 
-def _liste_ordonnee(question: Question, reponse: str, especes: Especes) -> _Jugement:
-    """Les espèces attendues en tête, dans l'ordre ; deux espèces dont les scores diffèrent de
-    moins de la tolérance peuvent échanger leur place (Q8 : Braségali ou Typhlosion en 5e)."""
+def _liste_ordonnee(question: Question, texte: str, especes: Especes) -> _Jugement:
+    """Les espèces attendues en tête, dans l'ordre, à des échanges près (Q8 : Braségali ou
+    Typhlosion en 5e). Une espèce de tête sans score, ou nommée comme une forme, passe
+    « à revoir » : un faux positif de la liste des espèces ne doit pas finir en note."""
+    citations = _citations(especes, question, texte)
+    citees = _noms(citations)
     attendues = [str(a) for a in question.attendus]
-    citees = _especes_citees(especes, question, reponse)
+    distracteurs = {str(d) for d in question.distracteurs}
     tete = citees[: len(attendues)]
-    juste = len(tete) == len(attendues) and all(
-        _a_sa_place(question, citee, attendue)
-        for citee, attendue in zip(tete, attendues, strict=True)
-    )
     trouvees = tuple(nom for nom in citees if nom in attendues)
-    if juste:
+    if any(citation.forme for citation in citations):
+        return _Jugement("à revoir", ("forme",), trouvees)
+    connues = {*attendues, *question.scores, *distracteurs}
+    if any(nom not in connues for nom in tete):
+        return _Jugement("à revoir", ("hors-classement",), trouvees)
+    if len(tete) == len(attendues) and _ordre_tolere(question, tete, attendues):
         return _Jugement("juste", valeurs=tuple(tete))
     return _Jugement("partiel" if trouvees else "faux", valeurs=trouvees)
 
 
-def _a_sa_place(question: Question, citee: str, attendue: str) -> bool:
-    if citee == attendue:
-        return True
+def _ordre_tolere(question: Question, tete: Sequence[str], attendues: Sequence[str]) -> bool:
+    """Deux espèces dont les scores diffèrent de moins de la tolérance peuvent échanger leur place
+    (README) : chaque espèce attendue absente doit l'être au profit d'une espèce proche d'elle, et
+    chaque inversion d'ordre se faire entre espèces proches ; jamais par glissements cumulés."""
     scores, tolerance = question.scores, question.tolerance or 0.0
-    if citee not in scores or attendue not in scores:
+    rang = {nom: i for i, nom in enumerate(attendues)}
+
+    def proches(a: str, b: str) -> bool:
+        return a in scores and b in scores and round(abs(scores[a] - scores[b]), 3) < tolerance
+
+    def place(nom: str) -> float:
+        return -scores[nom] if nom in scores else rang.get(nom, len(rang))
+
+    absentes = [nom for nom in attendues if nom not in tete]
+    remplacantes = [nom for nom in tete if nom not in attendues]
+    if not all(proches(a, r) for a in absentes for r in remplacantes):
         return False
-    return round(abs(scores[citee] - scores[attendue]), 3) < tolerance
+    return all(
+        proches(a, b) for i, a in enumerate(tete) for b in tete[i + 1 :] if place(b) < place(a)
+    )
 
 
-def _longue_liste(question: Question, reponse: str, referentiel: Referentiel) -> _Jugement:
-    """Règle des longues listes (Q7, Q14 ; README) : liste complète, ou compte exact et extrait."""
+def _longue_liste(question: Question, texte: str, referentiel: Referentiel) -> _Jugement:
+    """Règle des longues listes (Q7, Q14 ; README) : liste complète, ou compte exact et extrait.
+    Une espèce nommée comme une forme passe « à revoir » : Ossatueur d'Alola n'est pas Sol."""
     ensemble = referentiel.listes[question.id]
     distracteurs = {str(d) for d in question.distracteurs}
-    citees = _especes_citees(referentiel.especes, question, reponse)
+    citations = _citations(referentiel.especes, question, texte)
+    citees = _noms(citations)
     dans = tuple(nom for nom in citees if nom in ensemble)
+    if any(citation.forme for citation in citations):
+        return _Jugement("à revoir", ("forme",), dans)
     if any(nom not in ensemble and nom not in distracteurs for nom in citees):
         return _Jugement("à revoir", ("hors-ensemble",), dans)
     compte = question.compte
-    compte_exact = compte is not None and any(math.isclose(n, compte) for n in nombres(reponse))
-    if set(dans) == ensemble or (compte_exact and dans):
+    if compte is not None and any(math.isclose(n, compte) for n in nombres(texte)):
+        if dans:
+            return _Jugement("juste", valeurs=dans)
+        # Le compte seul : la source citée doit au moins le porter.
+        return _Jugement("à revoir", ("compte-seul",), (compte,))
+    if set(dans) == ensemble:
         return _Jugement("juste", valeurs=dans)
-    if compte_exact:
-        return _Jugement("à revoir", ("compte-seul",))
     return _Jugement("partiel" if dans else "faux", valeurs=dans)
 
 
-def _semantique(question: Question, reponse: str, referentiel: Referentiel) -> _Jugement:
+def _semantique(question: Question, texte: str, referentiel: Referentiel) -> _Jugement:
     """Tables de l'ADR-0008. Au singulier : au moins une espèce juste et aucune écartée, juste ;
     les deux, partiel. Au pluriel : précision 100 % et rappel ≥ 50 %, juste ; sinon partiel avec une
     espèce juste (choix de Julien du 2026-10-08). Faux sans espèce juste. Une espèce hors table
-    passe « à revoir » (correction sur preuve) ; Q9 veut aussi les types de chaque espèce."""
+    passe « à revoir » (correction sur preuve), comme une espèce nommée comme une forme ; Q9 veut
+    aussi les types de chaque espèce."""
     table = referentiel.tables[question.id]
-    texte = mots(reponse)
-    sujet = set(referentiel.especes.citees(question.texte))
-    citations = [c for c in referentiel.especes.citations(texte) if c.nom not in sujet]
-    citees = list(dict.fromkeys(citation.nom for citation in citations))
+    citations = _citations(referentiel.especes, question, texte)
+    citees = _noms(citations)
     justes = table.obligatoires | table.acceptables
     bonnes = tuple(nom for nom in citees if nom in justes)
     rappel = precision = None
     if question.pluriel:
         rappel = len(table.obligatoires.intersection(bonnes)) / len(table.obligatoires)
         precision = len(bonnes) / len(citees) if citees else 0.0
+    if any(citation.forme for citation in citations):
+        return _Jugement("à revoir", ("forme",), bonnes, rappel, precision)
     if any(nom not in justes and nom not in table.ecartes for nom in citees):
         return _Jugement("à revoir", ("hors-table",), bonnes, rappel, precision)
     note: Note
@@ -309,35 +345,51 @@ def _semantique(question: Question, reponse: str, referentiel: Referentiel) -> _
     if (
         question.avec_types
         and note != "faux"
-        and not _types_ecrits(table, citations, texte, bonnes)
+        and not _types_exacts(table, citations, texte, bonnes)
     ):
         return _Jugement("à revoir", ("types",), bonnes, rappel, precision)
     return _Jugement(note, (), bonnes, rappel, precision)
 
 
-def _types_ecrits(
-    table: Table, citations: Sequence[Citation], texte: Sequence[str], bonnes: Sequence[str]
+def _types_exacts(
+    table: Table, citations: Sequence[Citation], texte: str, bonnes: Sequence[str]
 ) -> bool:
-    """Chaque espèce juste a-t-elle ses types dans le passage qui suit chacune de ses mentions,
-    jusqu'à l'espèce suivante ? Seule l'absence compte : un « eau » de la raison n'est pas une
-    faute."""
+    """Q9 (README : types « exacts », forme par défaut) : les types écrits dans les passages qui
+    suivent les mentions d'une espèce juste, jusqu'à l'espèce suivante, sont exactement les siens.
+    Un type s'écrit avec sa majuscule : « l'eau » d'une raison n'est pas le type Eau."""
     for nom in bonnes:
-        passage: list[str] = []
+        ecrits: set[str] = set()
         for rang, citation in enumerate(citations):
             if citation.nom == nom:
                 fin = citations[rang + 1].debut if rang + 1 < len(citations) else len(texte)
-                passage += texte[citation.fin : fin]
-        if not all(contient(passage, mots(type_)) for type_ in table.types.get(nom, ())):
+                ecrits |= _types_nommes(texte[citation.fin : fin])
+        if ecrits != set(table.types.get(nom, ())):
             return False
     return True
 
 
+def _types_nommes(passage: str) -> set[str]:
+    """Types nommés dans un passage, accents ignorés, majuscule exigée."""
+    lu = _sans_accents(passage)
+    return {
+        type_
+        for type_ in TYPES
+        if re.search(rf"(?<![^\W_]){re.escape(_sans_accents(type_))}(?![^\W_])", lu)
+    }
+
+
+def _sans_accents(texte: str) -> str:
+    decompose = unicodedata.normalize("NFKD", texte)
+    return "".join(c for c in decompose if not unicodedata.combining(c))
+
+
 def _controle(
-    question: Question, reponse: str, especes: Especes, controle: Controleur | None
+    question: Question, texte: str, especes: Especes, controle: Controleur | None
 ) -> _Jugement:
     """Q2 : les 6 espèces proposées, contrôlées par q02.cypher (plan, D6). Une équipe qui laisse un
-    type sans résistance est fausse : la règle du README est binaire."""
-    noms = equipe(reponse, especes, especes.citees(question.preambule or ""))
+    type sans résistance est fausse : la règle du README est binaire. Un doute sur les 6 noms
+    (banc.lecture.equipe) la fait passer « à revoir »."""
+    noms = equipe(texte, especes, especes.citees(question.preambule or ""))
     if noms is None:
         return _Jugement("à revoir", ("noms-q2",))
     if controle is None:
@@ -360,46 +412,71 @@ def _cite(valeur: Valeur, texte: Sequence[str], nombres_du_texte: Sequence[float
     return any(math.isclose(nombre, valeur) for nombre in nombres_du_texte)
 
 
-def _distracteur_cite(question: Question, reponse: str) -> bool:
-    texte, nombres_du_texte = mots(reponse), nombres(reponse)
-    return any(_cite(d, texte, nombres_du_texte) for d in question.distracteurs)
+def _distracteur_cite(question: Question, texte: str) -> bool:
+    lus, nombres_du_texte = mots(texte), nombres(texte)
+    return any(_cite(d, lus, nombres_du_texte) for d in question.distracteurs)
 
 
-def _especes_citees(especes: Especes, question: Question, reponse: str) -> list[str]:
-    """Espèces citées par la réponse, hors celles de la question (Dracaufeu à Q8)."""
-    sujet = set(especes.citees(question.texte))
-    return [nom for nom in especes.citees(reponse) if nom not in sujet]
+def _citations(especes: Especes, question: Question, texte: str) -> list[Citation]:
+    """Espèces citées par la réponse, hors celles que la question nomme (Dracaufeu à Q8, l'équipe
+    de référence du préambule de Q2)."""
+    sujet = set(especes.citees(f"{question.texte}\n{question.preambule or ''}"))
+    return [citation for citation in especes.citations(texte) if citation.nom not in sujet]
+
+
+def _noms(citations: Sequence[Citation]) -> list[str]:
+    return list(dict.fromkeys(citation.nom for citation in citations))
 
 
 def _source(lues: Sections, tour: Tour, valeurs: Sequence[Valeur]) -> Source:
-    """Source citée (plan, D4). Une description citée doit avoir été renvoyée par une lecture du
-    tour : inventée, la source est fausse. Une requête citée doit avoir été exécutée sans erreur
-    pendant le tour, aux espaces près, et ses résultats contenir les valeurs justes de la réponse ;
-    sans valeur juste (réponse fausse), il suffit qu'elle ait été exécutée."""
+    """Source citée (plan, D4), vérifiée sur les lectures sans erreur du tour.
+
+    Les valeurs à retrouver : les valeurs justes de la réponse ; à défaut, les espèces qu'elle
+    avance (une réponse fausse se juge sur ce qu'elle affirme). Une requête citée porte la réponse
+    si elle a été exécutée pendant le tour, aux espaces près, et que ses résultats contiennent ces
+    valeurs ; une description citée, si l'enregistrement qui l'a renvoyée contient aussi l'une
+    d'elles. Une citation introuvable à côté d'une source valable : « à revoir » (inventée, ou
+    simple citation de la question ?). Rien à vérifier : « à revoir ».
+    """
     if lues.sources is None:
         return "non"
     lectures = [a for a in tour.appels if a.outil == LECTURE and not a.erreur]
-    textes_renvoyes = [
-        mots(f) for a in lectures for f in _feuilles(a.resultat) if isinstance(f, str)
-    ]
-    descriptions = descriptions_citees(lues.sources)
-    if not all(any(contient(t, mots(d)) for t in textes_renvoyes) for d in descriptions):
-        return "non"
+    enregistrements = [e for a in lectures for e in _enregistrements(a.resultat)]
+    inventee = pertinente = False
+    for description in descriptions_citees(lues.sources):
+        cible = mots(description)
+        porteurs = [
+            e
+            for e in enregistrements
+            if any(isinstance(f, str) and contient(mots(f), cible) for f in e)
+        ]
+        inventee = inventee or not porteurs
+        pertinente = pertinente or any(_renvoyee(v, e) for e in porteurs for v in valeurs)
     requetes = requetes_citees(lues.sources)
     executees = [a for a in lectures if any(meme_requete(r, a.requete) for r in requetes)]
     portees = [f for a in executees for f in _feuilles(a.resultat)]
-    if executees and all(_renvoyee(valeur, portees) for valeur in valeurs):
-        return "oui"
-    return "oui" if descriptions else "non"
+    porteuse = bool(executees and valeurs) and all(_renvoyee(v, portees) for v in valeurs)
+    if porteuse or pertinente:
+        return "à revoir" if inventee else "oui"
+    if executees and not valeurs:
+        return "à revoir"
+    return "non"
+
+
+def _enregistrements(resultat: str) -> list[list[object]]:
+    """Valeurs de chaque enregistrement d'un résultat de read-cypher (JSON, nœuds compris) ; un
+    résultat qui n'est pas du JSON se lit comme un seul enregistrement, d'un seul texte."""
+    try:
+        donnees = json.loads(resultat)
+    except json.JSONDecodeError:
+        return [[resultat]]
+    if isinstance(donnees, list):
+        return [list(_deplier(element)) for element in donnees]
+    return [list(_deplier(donnees))]
 
 
 def _feuilles(resultat: str) -> list[object]:
-    """Valeurs d'un résultat de read-cypher (JSON des enregistrements, nœuds compris) ; un
-    résultat qui n'est pas du JSON se lit comme un seul texte."""
-    try:
-        return list(_deplier(json.loads(resultat)))
-    except json.JSONDecodeError:
-        return [resultat]
+    return [feuille for e in _enregistrements(resultat) for feuille in e]
 
 
 def _deplier(valeur: object) -> Iterator[object]:

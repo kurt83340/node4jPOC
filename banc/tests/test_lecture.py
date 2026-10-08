@@ -18,6 +18,7 @@ from banc.lecture import (
     mots,
     nom_permis,
     nombres,
+    prose,
     requetes_citees,
     sections,
 )
@@ -63,6 +64,9 @@ def test_sections_de_la_consigne() -> None:
         pytest.param("RÉPONSE :", "SOURCES :", id="capitales"),
         pytest.param("Reponse :", "Source :", id="sans-accent-singulier"),
         pytest.param("**Réponse courte :**", "**Sources :**", id="reponse-courte"),
+        pytest.param("**Réponse finale :**", "**Sources utilisées :**", id="finale-utilisees"),
+        pytest.param("Réponse :", "**Source(s) :**", id="source-s"),
+        pytest.param("Réponse :", "**Requêtes exécutées :**", id="requetes-executees"),
     ],
 )
 def test_entetes_sur_la_ligne(entete_reponse: str, entete_sources: str) -> None:
@@ -78,6 +82,34 @@ def test_entete_seul_sur_sa_ligne(entete: str) -> None:
     lues = sections(f"{entete}\nDracaufeu,\nplus rapide.\n\n## Sources\n`RETURN 1`")
     assert lues.reponse == "Dracaufeu,\nplus rapide."
     assert lues.sources == "`RETURN 1`"
+
+
+def test_sources_reunies_apres_la_reponse() -> None:
+    # « Sources : » puis « - Requête : … » : deux en-têtes de sources, une seule section.
+    texte = "**Réponse :** Dracaufeu.\n**Sources :** la fiche.\n- Requête : MATCH (p) RETURN p"
+    lues = sections(texte)
+    assert lues.reponse == "Dracaufeu."
+    assert lues.sources == "la fiche.\n\nMATCH (p) RETURN p"
+
+
+def test_sources_d_un_brouillon_ignorees() -> None:
+    # Des sources avant la dernière « Réponse » ne comptent que s'il n'y en a pas après.
+    texte = "Sources : brouillon.\n**Réponse :** Dracaufeu.\n**Sources :** la requête."
+    assert sections(texte).sources == "la requête."
+
+
+def test_cloture_sur_une_seule_ligne() -> None:
+    # « ```RETURN 1``` » n'ouvre aucun bloc : les en-têtes qui suivent comptent.
+    lues = sections("Essai : ```RETURN 1```\n```RETURN 2```\n**Réponse :** Dracaufeu.")
+    assert lues.reponse == "Dracaufeu."
+
+
+def test_prose_sans_code() -> None:
+    # Les valeurs d'une requête recopiée dans la réponse ne comptent pas comme dites.
+    texte = "Dracaufeu, `MATCH (p {nom: 'Tortank'})`, `Feu`.\n```cypher\nRETURN 'Tortank'\n```"
+    assert "Tortank" not in prose(texte)
+    assert "Dracaufeu" in prose(texte)
+    assert "Feu" in prose(texte)
 
 
 def test_ordre_inverse() -> None:
@@ -222,15 +254,53 @@ def test_orthographe_approchee() -> None:
     assert ESPECES.citees("magneton, ho oh, m mime") == ["Magnéton", "Ho-Oh", "M. Mime"]
 
 
-def test_faux_positifs_connus() -> None:
-    # Relevés le 2026-10-08 : Draco dans les attaques Draco-…, Ronflex dans « Gare au Ronflex ».
-    # Ils font passer une réponse « à revoir », jamais « juste » à tort.
-    assert ESPECES.citees("Il connaît Draco-Météore.") == ["Draco"]
+def test_nom_colle_a_un_tiret() -> None:
+    # Relevé le 2026-10-08 : Draco dans 12 attaques Draco-… ; collé au mot suivant, ce n'est pas
+    # l'espèce.
+    assert ESPECES.citees("Il connaît Draco-Météore et Draco-Queue.") == []
+    assert ESPECES.citees("Draco - puis Draco.") == ["Draco"]
+
+
+def test_faux_positif_restant() -> None:
+    # « Gare au Ronflex » (capacité Z) cite Ronflex : la notation l'envoie « à revoir » là où une
+    # espèce inattendue compte (test_notation).
+    assert ESPECES.citees("Gare au Ronflex") == ["Ronflex"]
 
 
 def test_citations_situees() -> None:
-    [citation] = ESPECES.citations(mots("Le Pokémon Porygon-Z"))
-    assert (citation.nom, citation.debut, citation.fin) == ("Porygon-Z", 2, 4)
+    [citation] = ESPECES.citations("Le Pokémon Porygon-Z")
+    assert (citation.nom, citation.debut, citation.fin, citation.forme) == (
+        "Porygon-Z",
+        11,
+        20,
+        False,
+    )
+
+
+@pytest.mark.parametrize(
+    ("texte", "nom"),
+    [
+        pytest.param("Raichu d'Alola", "Raichu", id="regionale"),
+        pytest.param("Méga-Dracaufeu X", "Dracaufeu", id="mega"),
+        pytest.param("Primo-Groudon", "Groudon", id="primo"),
+        pytest.param("Motisma Lavage", "Motisma", id="nom-de-forme"),
+        pytest.param("Ossatueur de Galar", "Ossatueur", id="de"),
+    ],
+)
+def test_nomme_comme_une_forme(texte: str, nom: str) -> None:
+    [citation] = ESPECES.citations(texte)
+    assert (citation.nom, citation.forme) == (nom, True)
+
+
+def test_pas_une_forme() -> None:
+    texte = "Onix, Steelix et Groudon (Sol) ; Magnéton\nLugia : Psy"
+    assert [c.forme for c in ESPECES.citations(texte)] == [False] * 5
+
+
+def test_mots_d_un_nom_lies() -> None:
+    # Les mots d'un nom se suivent : « Ho, Oh » ne cite pas Ho-Oh.
+    assert ESPECES.citees("Ho-Oh, ho oh") == ["Ho-Oh"]
+    assert ESPECES.citees("Ho, Oh") == []
 
 
 def test_noms_qui_se_confondent() -> None:
@@ -258,6 +328,19 @@ def test_requete_sans_bloc() -> None:
     assert requetes_citees(sources) == ["MATCH (t:Type)\nRETURN t.nom"]
 
 
+def test_requete_apres_une_etiquette() -> None:
+    sources = "Voici.\n\n- **Requête :** MATCH (t:Type) RETURN t.nom"
+    assert requetes_citees(sources) == ["MATCH (t:Type) RETURN t.nom"]
+
+
+def test_deux_requetes_d_un_bloc_sans_point_virgule() -> None:
+    bloc = "```cypher\nMATCH (a) RETURN a\n\nMATCH (b)\n\nRETURN b\n```"
+    requetes = requetes_citees(bloc)
+    assert "MATCH (a) RETURN a" in requetes
+    # Une requête qui a elle-même une ligne vide reste entière parmi les candidates.
+    assert "MATCH (a) RETURN a\n\nMATCH (b)\n\nRETURN b" in requetes
+
+
 def test_aucune_requete() -> None:
     assert requetes_citees("la fiche de schéma") == []
 
@@ -269,6 +352,10 @@ def test_aucune_requete() -> None:
         pytest.param(REQUETE + ";", id="point-virgule"),
         pytest.param(REQUETE.replace("IN [", "IN[").replace("', '", "','"), id="espaces-retires"),
         pytest.param("  " + REQUETE.replace("\n", "\n    "), id="indentation"),
+        pytest.param("// Vitesses comparées\n" + REQUETE, id="commentaire"),
+        pytest.param(
+            REQUETE.replace("pokemon,", "pokemon, // l'espèce\n"), id="commentaire-apostrophe"
+        ),
     ],
 )
 def test_meme_requete_aux_espaces_pres(citee: str) -> None:
@@ -281,10 +368,19 @@ def test_meme_requete_aux_espaces_pres(citee: str) -> None:
         pytest.param(REQUETE.replace("Tortank", "Tortan"), id="autre-litteral"),
         pytest.param(REQUETE.replace("RETURN", "RETURN DISTINCT"), id="autre-requete"),
         pytest.param(REQUETE.replace("'Dracaufeu'", "'Dracau feu'"), id="espace-dans-une-chaine"),
+        pytest.param(REQUETE.replace("'Tortank'", "'Tortank // non'"), id="barres-dans-une-chaine"),
     ],
 )
 def test_requetes_differentes(citee: str) -> None:
     assert not meme_requete(citee, REQUETE)
+
+
+def test_descriptions_en_bloc_de_citation_et_en_italique() -> None:
+    sources = "> Il vit près des volcans, dit-on.\n*Ses flammes brûlent tout sur son passage*"
+    assert descriptions_citees(sources) == [
+        "Il vit près des volcans, dit-on.",
+        "Ses flammes brûlent tout sur son passage",
+    ]
 
 
 def test_descriptions_citees() -> None:
@@ -322,8 +418,12 @@ def test_equipe_expliquee() -> None:
 
 
 def test_equipe_avec_un_membre_de_reference() -> None:
+    # Un membre de la référence parmi les 6 : proposé, ou cité à la place d'un nom non reconnu
+    # (« Mr. Mime (qui protège Tortank) ») ? À revoir (revue adverse du 2026-10-08).
     reponse = "Magnéton, Dracolosse, Flagadoss, Noadkoko, Staross et Ronflex."
-    assert equipe(reponse, ESPECES, REFERENCE) == (*EQUIPE[:5], "Ronflex")
+    assert equipe(reponse, ESPECES, REFERENCE) is None
+    reponse = "Magnéton, Dracolosse, Flagadoss, Noadkoko, Staross, Mr. Mime (qui protège Tortank)."
+    assert equipe(reponse, ESPECES, REFERENCE) is None
 
 
 def test_equipe_remise_a_son_orthographe() -> None:
@@ -343,6 +443,17 @@ def test_equipe_remise_a_son_orthographe() -> None:
             id="membre-de-reference-et-explication",
         ),
         pytest.param("Magnetonne, Dracolosse, Flagadoss, Noadkoko, Staross, Parasect.", id="faute"),
+        pytest.param(
+            "Magnéton, Dracolosse (avec Draco-Météore), Flagadoss, Noadkoko, Staross et Skarmory.",
+            id="nom-anglais-et-attaque",
+        ),
+        pytest.param(
+            "Motisma Lavage, Dracolosse, Flagadoss, Noadkoko, Staross, Parasect.", id="forme"
+        ),
+        pytest.param(
+            "Magnéton, Dracolosse, Flagadoss, Noadkoko, Staross, Sabelette d'Alola.",
+            id="forme-regionale",
+        ),
     ],
 )
 def test_equipe_introuvable(reponse: str) -> None:
