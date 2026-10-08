@@ -1,5 +1,6 @@
-# Prix des modèles du banc d'essai (plan 002, D10) : dollars par million de tokens, point d'accès
-# multirégion `eu` de Vertex (Gemini Enterprise Agent Platform), relevés le 2026-10-07.
+# Prix des modèles du banc d'essai (plan 002, D10) : dollars par million de tokens, par voie d'accès :
+# `vertex-eu`, le point multirégion `eu` de Vertex (Gemini Enterprise Agent Platform), et `api`, l'API
+# Anthropic des cellules Claude depuis l'ADR-0011. Relevés le 2026-10-07, revus le 2026-10-08.
 #
 # La réflexion se facture comme la sortie. Contexte de 200k tokens au plus par requête : au-delà,
 # un autre palier existe, que le banc n'atteint pas. Un prix change : nouvelle période datée, jamais
@@ -15,6 +16,7 @@
 
 [[tarif]]
 modele = "claude-sonnet-5-5"
+acces = "vertex-eu"
 du = 2026-10-07
 entree = 2.20
 sortie = 11.00
@@ -25,6 +27,7 @@ source = "marketplace"
 
 [[tarif]]
 modele = "claude-sonnet-5"
+acces = "vertex-eu"
 du = 2026-10-07
 entree = 2.20
 sortie = 11.00
@@ -35,6 +38,7 @@ source = "google"
 
 [[tarif]]
 modele = "claude-haiku-4-5@20251001"
+acces = "vertex-eu"
 du = 2026-10-07
 entree = 1.10
 sortie = 5.50
@@ -47,6 +51,7 @@ source = "google"
 # le cache implicite de Gemini ne coûte qu'à la lecture.
 [[tarif]]
 modele = "gemini-3.8-flash"
+acces = "vertex-eu"
 du = 2026-10-07
 au = 2026-12-31
 entree = 0.825
@@ -58,6 +63,7 @@ source = "google"
 
 [[tarif]]
 modele = "gemini-3.8-flash"
+acces = "vertex-eu"
 du = 2027-01-01
 entree = 1.65
 sortie = 8.25
@@ -65,3 +71,41 @@ cache_ecriture_5m = 0
 cache_ecriture_1h = 0
 cache_lecture = 0.165
 source = "google"
+
+# API Anthropic (ADR-0011), source « anthropic ». Prix de Vertex `eu` divisés par 1,1. Lecture du cache
+# de Sonnet 5.5 comptée à 0,20 $ par prudence (ADR-0011) : la page de prix dit 0,10 $ (multiplicateur
+# 0,05) au 2026-10-08 ; une nouvelle période la corrigera après la première facture.
+[[tarif]]
+modele = "claude-sonnet-5-5"
+acces = "api"
+du = 2026-10-07
+entree = 2.00
+sortie = 10.00
+cache_ecriture_5m = 2.50
+cache_ecriture_1h = 4.00
+cache_lecture = 0.20
+source = "anthropic"
+
+# Repli des deux cellules Claude (plan, D2) ; 2 $ / 10 $ est devenu son prix standard.
+[[tarif]]
+modele = "claude-sonnet-5"
+acces = "api"
+du = 2026-10-07
+entree = 2.00
+sortie = 10.00
+cache_ecriture_5m = 2.50
+cache_ecriture_1h = 4.00
+cache_lecture = 0.20
+source = "anthropic"
+
+# Petit modèle de Claude Code, sous son identifiant de l'API (« @20251001 » est la forme de Google).
+[[tarif]]
+modele = "claude-haiku-4-5-20251001"
+acces = "api"
+du = 2026-10-07
+entree = 1.00
+sortie = 5.00
+cache_ecriture_5m = 1.25
+cache_ecriture_1h = 2.00
+cache_lecture = 0.10
+source = "anthropic"

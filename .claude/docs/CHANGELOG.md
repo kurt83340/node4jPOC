@@ -33,6 +33,8 @@ Format : [Keep a Changelog](https://keepachangelog.com/). Versionning : `vYYYY.M
 - Secrets dans Secret Manager, plus de `.env` ; services gérés, le poste local n'est qu'un client, plus de repli Docker ([ADR-0007](adr/0007-infra-secrets-et-services-geres.md))
 - Notation des questions sémantiques : grille écrite avant le tri, trois ensembles (obligatoire, acceptable, écarté), table de classement rejouable, règle du cœur de la question ([ADR-0008](adr/0008-mvp-notation-questions-semantiques.md))
 - Protocole de mesure des techniques : plan croisé client × modèle, consigne et fiche communes, un seul chemin vers la base en lecture seule, notation mixte sans juge LLM, source citée vérifiée sur la trace, échec de l'agent compté faux, pilote puis 3 passes ([ADR-0009](adr/0009-mvp-protocole-mesure-techniques.md))
+- Plafond de dépense : budget de 100 € sur `jleroy-labo` jusqu'au 2026-12-31, alertes par palier, coupure automatique de l'API Vertex à construire avant toute campagne ([ADR-0010](adr/0010-infra-plafond-de-depense.md))
+- Claude par l'API Anthropic pour les deux cellules Claude, Gemini sur Vertex `eu` ; crédits prépayés sans recharge automatique comme plafond ([ADR-0011](adr/0011-infra-claude-par-api-anthropic.md))
 
 ---
 

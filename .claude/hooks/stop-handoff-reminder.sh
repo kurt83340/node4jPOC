@@ -51,6 +51,9 @@ CWD="${PARSED%%$'\t'*}"
 REST="${PARSED#*$'\t'}"
 AGENT="${REST%%$'\t'*}"
 SID="${REST#*$'\t'}"
+# Racine = CLAUDE_PROJECT_DIR (fixe pour la session), pas le cwd du payload, qui suit les `cd`
+# (même règle que posttooluse-growth-detection depuis la PR n°2).
+if [ -n "${CLAUDE_PROJECT_DIR:-}" ]; then CWD="$CLAUDE_PROJECT_DIR"; fi
 if [ -z "$CWD" ]; then CWD="$PWD"; fi
 if [ -z "$SID" ]; then SID="nosession"; fi
 

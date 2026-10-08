@@ -8,7 +8,8 @@ Auto-chargé (doc Claude Code — memory.md) :
   · `.claude/CLAUDE.md` et ses `@-imports`
   · toutes les rules `.claude/rules/**/*.md` SANS frontmatter `paths:` (celles avec `paths:`
     ne se chargent que quand Claude lit un fichier qui matche)
-  · hors projet : `~/.claude/CLAUDE.md` (user) et `MEMORY.md` de l'auto-memory
+  · hors projet : `~/.claude/CLAUDE.md` (user) et `MEMORY.md` de l'auto-memory — sous
+    `$CLAUDE_CONFIG_DIR` s'il est défini
 À la demande : rules scopées, corps des skills (seul le frontmatter est listé), tout le reste.
 
 Estimation : **tokens ≈ chars / 2** — calibrée le 2026-09-08 sur du markdown français (tables,
@@ -152,14 +153,16 @@ def collect(root: Path, with_user: bool):
 
     user_rows = []
     if with_user:
-        u = Path.home() / ".claude" / "CLAUDE.md"
+        cfg = Path(os.environ.get("CLAUDE_CONFIG_DIR") or Path.home() / ".claude")
+        u = cfg / "CLAUDE.md"
         if u.is_file():
             ut = read(u)
-            user_rows.append({"path": "~/.claude/CLAUDE.md", "tok": est(len(ut))})
+            user_rows.append({"path": str(u).replace(str(Path.home()), "~"), "tok": est(len(ut))})
             for imp in find_imports(ut, u):
                 user_rows.append({"path": str(imp).replace(str(Path.home()), "~"), "tok": est(len(read(imp)))})
-        slug = re.sub(r"[/.]", "-", str(root.resolve()))
-        mem = Path.home() / ".claude" / "projects" / slug / "memory" / "MEMORY.md"
+        # Slug de Claude Code : tout caractère non alphanumérique → « - » (« _ » compris).
+        slug = re.sub(r"[^A-Za-z0-9]", "-", str(root.resolve()))
+        mem = cfg / "projects" / slug / "memory" / "MEMORY.md"
         if mem.is_file():
             user_rows.append({"path": "auto-memory MEMORY.md", "tok": est(len(read(mem)))})
     return rows, on_demand, skills_tok, user_rows

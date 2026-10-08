@@ -41,12 +41,13 @@ stat -c "%y %n" .claude/docs/cadrage/README.md
 ```
 
 Seuils :
-| Fichier | Vert | 🟠 Orange | 🔴 Rouge |
-|---|---|---|---|
-| .claude/docs/HANDOFF.md | < 3j | 3-7j | > 7j |
-| .claude/docs/ROADMAP.md | < 7j | 7-14j | > 14j |
-| .claude/docs/CHANGELOG.md | < 14j (si livraison récente) | — | > 30j sans entry |
-| .claude/docs/ACCESS.md | — | — | > 30j (peut-être obsolète) |
+
+| Fichier                   | Vert                         | 🟠 Orange | 🔴 Rouge                   |
+| ------------------------- | ---------------------------- | --------- | -------------------------- |
+| .claude/docs/HANDOFF.md   | < 3j                         | 3-7j      | > 7j                       |
+| .claude/docs/ROADMAP.md   | < 7j                         | 7-14j     | > 14j                      |
+| .claude/docs/CHANGELOG.md | < 14j (si livraison récente) | —         | > 30j sans entry           |
+| .claude/docs/ACCESS.md    | —                            | —         | > 30j (peut-être obsolète) |
 
 ## Étape 2 — Growth opportunities
 
@@ -197,7 +198,8 @@ Si > 5 idées vieilles → 🟢 "review idées : promouvoir / discard / archiver
 > (« n'oublie rien ») vient de la **promotion** vers les docs versionnées (rule / leçon / ADR).
 
 1. Localise la mémoire : `autoMemoryDirectory` dans `.claude/settings.json` si défini, sinon
-   `~/.claude/projects/<clé>/memory/MEMORY.md` où `<clé>` = le chemin absolu du repo avec
+   `<config>/projects/<clé>/memory/MEMORY.md` où `<config>` = `$CLAUDE_CONFIG_DIR` s'il est
+   défini, `~/.claude` sinon, et `<clé>` = le chemin absolu du repo avec
    chaque caractère non-alphanumérique remplacé par `-` (ex. `/mnt/e/proj/x` → `-mnt-e-proj-x`).
    (Keyée par repo git : les worktrees partagent la même mémoire.) Lis-la avec le tool Read.
 2. Lis `MEMORY.md` (l'index) + les fichiers de mémoire pointés qui semblent stables.

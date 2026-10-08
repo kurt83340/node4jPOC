@@ -84,6 +84,7 @@ Décision cross-feature ou qui survit à la feature → `/adr` ; locale → § `
 
 (Mode `macro` : mêmes étapes, sur `conception/research.md` + `ARCHITECTURE.md` + `tasks.md` —
 avec deux règles v1.2 :
+
 - **Express par défaut si le MVP tient en ≤ 3 specs** : PRD 1 page (≤ 5 features, § Scope OUT
   obligatoire), ARCHITECTURE ~10 lignes + schéma ASCII, tasks = la table de découpage seule.
   Le design profond part dans le micro de la feature 1 — on ne conçoit pas deux fois.

@@ -27,6 +27,13 @@ Ton rôle : finaliser proprement une feature en synchronisant tous les fichiers 
 2. Vérifier que TOUS les tasks sont cochés `[x]`
 3. Vérifier que le DoD est rempli
 4. Si non → demander à l'user "Es-tu sûr que la feature est livrée ? Tasks restants : X, Y"
+5. Si le projet suit ses travaux dans un outil de tickets (Jira, Linear, GitHub Issues…) : relire le
+   ticket de la feature, ou l'epic de son jalon, **avant** de le clore. Chaque critère reçoit son
+   résultat, chaque question sa réponse (sinon : corriger la description, ou ouvrir un autre ticket) ;
+   ce qu'un ticket enfant a trouvé remonte dans le parent.
+
+> Vécu 2026-10-07 (node4jPOC) : un epic s'est fermé en disant encore « la limite d'AuraDB Free est
+> inconnue », une semaine après qu'un ticket enfant l'avait trouvée.
 
 ## Étape 2 — Détecter les décisions tech à promouvoir en ADR
 
@@ -145,9 +152,6 @@ gh pr create --title "feat(<spec-id>): <titre court> (NEO-<ticket de la phase>)"
 
 - CI verte obligatoire avant merge ; merge commit (seul mode permis par le dépôt), puis tag annoté du jalon :
   `git tag -a jalon-<N> -m "Jalon <N> livré : <titre>"` sur `main` à jour, et `git push origin jalon-<N>`.
-- **Outil de suivi** (Jira…) : clore l'epic du jalon avec son skill, après relecture de sa description ; chaque
-  critère de réussite a son résultat, chaque question ouverte sa réponse, et ce que ses tickets ont trouvé y
-  remonte (skill jira : `statut <epic> Terminé --relu`).
 - Pas de remote / pas de `gh` / solo sans PR → rester sur le commit local, et si release :
 
 ```bash
@@ -176,6 +180,7 @@ git tag -a v$(date +%Y.%m.%d-%H%M) -m "Feature <spec-id> livrée"
 ## Anti-patterns
 
 - ❌ Cocher [x] sans vérifier le DoD
+- ❌ Clore le ticket ou l'epic de la feature sans relire ses critères et ses questions (Étape 1)
 - ❌ Promouvoir trop d'ADRs (chaque décision **locale** = pas un ADR — garder dans plan.md)
 - ❌ Auto-commit sans demander
 - ❌ Ajouter des descriptions fichier-par-fichier dans code-map.md (déductible — Claude le retrouve seul)

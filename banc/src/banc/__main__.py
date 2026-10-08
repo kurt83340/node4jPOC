@@ -12,7 +12,7 @@ def main() -> int:
         prog="banc", description="Banc d'essai des techniques text-to-Cypher (spec 002)."
     )
     commandes = parseur.add_subparsers(dest="commande", required=True)
-    commandes.add_parser("acces", help="un appel minimal à Vertex par client (T0.2)")
+    commandes.add_parser("acces", help="un appel minimal par client (T0.2), par scripts/banc.sh")
     parseur.parse_args()
     return acces()
 

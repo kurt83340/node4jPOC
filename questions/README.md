@@ -2,7 +2,7 @@
 
 > Définies le 2026-09-29 (spec [001-socle-donnees](../.claude/docs/specs/001-socle-donnees/spec.md), tâche T1.1). Le brief en demandait 10 ; Julien a porté le banc à **30, en 6 catégories de 5**, pour qu'aucune technique ne soit jugée sur une ou deux questions seulement.
 > Chaque question est posée **telle quelle** à toutes les techniques du banc d'essai ; la « technique visée » est celle qui devrait y briller.
-> Les requêtes Cypher de référence et les réponses attendues sont dans `qNN.cypher` et `attendu/qNN.txt` (T7.1, 2026-10-01) ; `scripts/questions.sh --verifier` les rejoue en lecture seule. La colonne « Premier calcul » vient d'une analyse des CSV du commit PokéAPI `168b1e8` : elle prouve que la question a une réponse dans les données, elle ne fait pas foi.
+> Les requêtes Cypher de référence et les réponses attendues sont dans `qNN.cypher` et `attendu/qNN.txt` (T7.1, 2026-10-01) ; `scripts/questions.sh --verifier` les rejoue en lecture seule. Le harnais du jalon 2 lit les questions dans `banc.toml` (texte posé, mode de notation, valeurs attendues, distracteurs), qu'un test garde cohérent avec ce README et `attendu/` (spec 002, T1.1). La colonne « Premier calcul » vient d'une analyse des CSV du commit PokéAPI `168b1e8` : elle prouve que la question a une réponse dans les données, elle ne fait pas foi.
 
 **Équipe de référence (« la mienne » dans Q2 et Q18)** : Florizarre, Dracaufeu, Tortank, Pikachu, Ronflex, Lokhlass.
 
@@ -85,8 +85,9 @@
   - **Notation** : au singulier (Q3, Q16), juste si la réponse cite au moins une espèce obligatoire ou acceptable et aucune hors ensemble, partiel si elle en mêle, faux sinon. Au pluriel (Q9, Q17, Q26), rappel (part des espèces obligatoires trouvées) et précision (part des espèces citées qui sont justes) : juste si la précision vaut 100 % et le rappel au moins 50 %. Q9 demande aussi les types (exacts, forme par défaut) ; Q17 filtre sur le type Eau (exact).
   - **Correction sur preuve** : une espèce hors ensemble, citée avec la description qui la justifie, est examinée avec la grille ; si elle la satisfait, la réponse compte juste et l'espèce entre dans la table, datée.
 
-- **Q7** : ensemble exact sur les types. Les immunités dues à un talent (Paratonnerre, Absorb Volt, Motorisé) sont acceptées en plus si l'agent les signale comme telles.
-- **Q8** : similarité de Jaccard sur les attaques apprises (formes par défaut), famille d'évolution exclue ; top 5 classé, avec une tolérance sur l'ordre quand les scores sont à moins de 0,01 (Groudon 0,484 face à Braségali 0,480).
+- **Q7** : ensemble exact sur les types. Les immunités dues à un talent (Paratonnerre, Absorbe-Volt, Motorisé) sont acceptées en plus si l'agent les signale comme telles.
+- **Q7 et Q14 (longues listes, 71 et 55 espèces)** : la réponse peut donner la liste complète, ou le compte avec un extrait. Juste : la liste complète sans intrus, ou le compte exact avec un extrait sans intrus ; partiel : un extrait juste, sans liste complète ni compte exact. Un intrus, ou un compte sans aucune espèce, s'examine à la main (règle écrite avant le pilote du jalon 2, 2026-10-08).
+- **Q8** : similarité de Jaccard sur les attaques apprises (formes par défaut), famille d'évolution exclue ; top 5 classé, avec une tolérance sur l'ordre quand les scores sont à moins de 0,01 (Groudon 0,484 face à Braségali 0,480 et à Typhlosion 0,476).
 - **Q12** : Leuphorie ; Éthernatos Infinimax est accepté s'il est signalé comme une forme.
 - **Q13** : Zénith, toutes catégories d'attaques confondues ; Lance-Flammes est accepté si l'agent précise qu'il ne compte que les attaques offensives.
 - **Q27** : toute attaque Électrik puissante, avec l'explication (×2 contre l'Eau) ; la précision compte dans l'explication (Élecanon, en tête par la puissance, n'a que 50 %). **Q28** : l'agent doit signaler que l'Électrik est sans effet contre Onix ; Surf est attendu, une autre attaque ×4 ou ×2 est acceptée avec son explication.

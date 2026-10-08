@@ -7,6 +7,7 @@ paths:
 
 > Invariants et déclencheurs seulement. Les FORMATS vivent dans les skills qui écrivent (source
 > unique — ne pas les redupliquer ici) :
+
 - HANDOFF → `/handoff` · leçon → `/lecon`
 - spec → `/spec` + `/conception` · livraison → `/feature-done` · pivot client → `/pivot`
 - ADR → `/adr` · idée → `/idee` · code-map → `/codemap` · audit → `/doc-health`
@@ -15,11 +16,11 @@ paths:
 
 ## 3 mémoires, 3 usages
 
-| Mémoire | Contenu | Qui écrit | Versionné |
-| --- | --- | --- | --- |
-| `.claude/docs/` | état du projet, décisions, specs, leçons — **partagé** | skills doc, validés par l'utilisateur | ✅ |
-| auto-memory (`~/.claude/projects/…/memory/`) | patterns techniques, préférences — **cache machine** | Claude, au fil de l'eau | ❌ |
-| `/resume` (transcript) | reprise exacte d'UNE session | natif | ❌ |
+| Mémoire                                      | Contenu                                                | Qui écrit                             | Versionné |
+| -------------------------------------------- | ------------------------------------------------------ | ------------------------------------- | --------- |
+| `.claude/docs/`                              | état du projet, décisions, specs, leçons — **partagé** | skills doc, validés par l'utilisateur | ✅        |
+| auto-memory (`~/.claude/projects/…/memory/`) | patterns techniques, préférences — **cache machine**   | Claude, au fil de l'eau               | ❌        |
+| `/resume` (transcript)                       | reprise exacte d'UNE session                           | natif                                 | ❌        |
 
 Un pattern stable de l'auto-memory se **promeut** en rule / leçon / ADR (`/doc-health` le propose) :
 le « n'oublie rien » durable passe par `.claude/docs/`.
@@ -32,22 +33,22 @@ le « n'oublie rien » durable passe par `.claude/docs/`.
 
 ## Quand créer un fichier (à la demande, JAMAIS préventivement)
 
-| Déclencheur | Fichier |
-| --- | --- |
-| 1er credential / accès à obtenir | `ACCESS.md` — OÙ trouver l'accès, jamais la valeur |
-| 1er déploiement prod | `RUNBOOK.md` |
-| Terme métier récurrent non expliqué (> 3 fois) | `GLOSSARY.md` |
-| ≥ 5 interlocuteurs / plusieurs équipes client | `STAKEHOLDERS.md` (modèle : STRUCTURE.md) — sinon § Interlocuteurs de `cadrage/README.md` |
-| Démarrage d'une feature | `specs/00X-<slug>/` via `/spec` |
-| Décision qui survit à la feature ou touche plusieurs specs | ADR via `/adr` (`adr/00XX-<scope>-<titre>.md`) |
-| Décision locale à UNE feature | `specs/00X/plan.md` § Décisions (pas d'ADR) |
-| Idée pas mûre | `idees/YYYY-MM-DD-<titre>.md` via `/idee` |
-| Bug, piège, observation à décider plus tard | entrée dans `lecons.md` via `/lecon` |
-| Piège lié à un fichier / une zone du code | bullet dans `code-map-gotchas.md` (citer le chemin en backticks) |
-| Nouvelle règle de couplage / contrainte d'archi | `code-map.md` (jamais de description fichier par fichier) |
-| Nouvelle lib, service tiers, LLM | table de `stack.md` |
-| Doc, ticket, compte-rendu reçus du client | `cadrage/documents/` · `cadrage/tickets/<ID>-<titre>.md` · `cadrage/reunions/YYYY-MM-DD-<sujet>.md` (verbatim) |
-| Diagramme | ASCII inline par défaut ; gros schéma → `diagrams/<x>.excalidraw` + export `.svg` à côté |
+| Déclencheur                                                | Fichier                                                                                                        |
+| ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| 1er credential / accès à obtenir                           | `ACCESS.md` — OÙ trouver l'accès, jamais la valeur                                                             |
+| 1er déploiement prod                                       | `RUNBOOK.md`                                                                                                   |
+| Terme métier récurrent non expliqué (> 3 fois)             | `GLOSSARY.md`                                                                                                  |
+| ≥ 5 interlocuteurs / plusieurs équipes client              | `STAKEHOLDERS.md` (modèle : STRUCTURE.md) — sinon § Interlocuteurs de `cadrage/README.md`                      |
+| Démarrage d'une feature                                    | `specs/00X-<slug>/` via `/spec`                                                                                |
+| Décision qui survit à la feature ou touche plusieurs specs | ADR via `/adr` (`adr/00XX-<scope>-<titre>.md`)                                                                 |
+| Décision locale à UNE feature                              | `specs/00X/plan.md` § Décisions (pas d'ADR)                                                                    |
+| Idée pas mûre                                              | `idees/YYYY-MM-DD-<titre>.md` via `/idee`                                                                      |
+| Bug, piège, observation à décider plus tard                | entrée dans `lecons.md` via `/lecon`                                                                           |
+| Piège lié à un fichier / une zone du code                  | bullet dans `code-map-gotchas.md` (citer le chemin en backticks)                                               |
+| Nouvelle règle de couplage / contrainte d'archi            | `code-map.md` (jamais de description fichier par fichier)                                                      |
+| Nouvelle lib, service tiers, LLM                           | table de `stack.md`                                                                                            |
+| Doc, ticket, compte-rendu reçus du client                  | `cadrage/documents/` · `cadrage/tickets/<ID>-<titre>.md` · `cadrage/reunions/YYYY-MM-DD-<sujet>.md` (verbatim) |
+| Diagramme                                                  | ASCII inline par défaut ; gros schéma → `diagrams/<x>.excalidraw` + export `.svg` à côté                       |
 
 ## Invariants
 

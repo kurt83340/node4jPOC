@@ -8,7 +8,7 @@
 > il « perd le fil » (échecs ×4 constatés en télémétrie, Morph 2026) → découper la phase.
 
 **Date :** 2026-10-01
-**Status :** [~] 4/33 tasks → MAJ au fil de l'eau
+**Status :** [~] 8/33 tasks → MAJ au fil de l'eau
 
 > Phases 0 à 6 : sans la base (prévues pendant la période creuse de NEO-13, close le 2026-10-07). Phases 7 à 11 : sur la base.
 > Les tests n'appellent aucun outil réel : PATH réduit aux faux outils, HOME temporaire.
@@ -19,8 +19,8 @@
 
 - [x] **T0.1** : projet `banc/` (uv, Python 3.14 ; `google-adk`, `claude-agent-sdk` et `anthropic[vertex]` à versions figées ; ruff, mypy, pytest) ; compatibilité de 3.14 vérifiée, sinon 3.13 et la raison notée — fait le 2026-10-07 : Python 3.14.7 ; `google-adk[mcp]` 2.11.0 (MCP est un extra depuis la v2), `claude-agent-sdk` 0.2.164 (Claude Code 2.1.292 embarqué), `anthropic[vertex]` 1.11.0 ; 3.14 gardée : toutes les dépendances ont une roue 3.14 (rien de compilé), et `tests/test_compatibilite.py` importe les points d'entrée des cellules, car `claude-agent-sdk` ne déclare que 3.13 (sa CI ne teste que 3.12)
   - DoD : `command_passes: uv run --directory banc pytest -q && uv run --directory banc ruff check && uv run --directory banc mypy .`
-- [ ] **T0.2** : accès Vertex par les 3 vrais clients (Claude Code avec `CLAUDE_CODE_USE_VERTEX` et la région `eu`, la classe Claude d'ADK, Gemini dans ADK) : un appel minimal chacun ; Haiku 4.5 compris, petit modèle de Claude Code ; quotas Claude en `eu`, effort effectif et reprises internes des clients (429, 5xx) relevés ; prix datés (cache et réflexion compris) dans `banc/prix.toml` — en cours le 2026-10-07 : conditions de Model Garden acceptées, `banc acces` prêt (prix datés, liste blanche, sondes) ; Gemini répond, Claude bute sur un quota à 0 en `eu` : hausse demandée puis refusée le jour même (refus automatique), T0.2 en parking pour Claude ; relevé dans `plan.md` (D2, D3, D13)
-  - DoD : `manual: Julien accepte les conditions de Model Garden pour Sonnet 5.5, Sonnet 5 et Haiku 4.5`, puis `command_passes: uv run --directory banc python -m banc acces`
+- [x] **T0.2** : accès par les 3 vrais clients, Claude Code et `AnthropicLlm` d'ADK par l'API Anthropic, Gemini dans ADK par Vertex `eu` ([ADR-0011](../../adr/0011-infra-claude-par-api-anthropic.md)) : un appel minimal chacun, `apiKeySource` = la clé ; Haiku 4.5 compris, petit modèle de Claude Code ; limites de débit de l'API, effort effectif et reprises internes des clients (429, 5xx) relevés ; prix datés (cache et réflexion compris) dans `banc/prix.toml` — en cours le 2026-10-07 : conditions de Model Garden acceptées, `banc acces` prêt (prix datés, liste blanche, sondes) ; Gemini répond, Claude bute sur un quota à 0 en `eu` : hausse demandée puis refusée le jour même (refus automatique), T0.2 en parking pour Claude ; relevé dans `plan.md` (D2, D3, D13) ; voie tranchée le 2026-10-08 : API Anthropic, 20 $ de crédits sans recharge automatique ; fait le 2026-10-08 : `scripts/banc.sh acces` passe (5 clients, 0,0027 $), `apiKeySource` = la clé, coût calculé égal à celui de Claude Code ; relevé dans `plan.md` (D2, D3)
+  - DoD : `manual: Julien crée le workspace du banc, ses 20 $ de crédits (recharge automatique coupée) et sa clé, rangée dans Secret Manager (anthropic-api-banc)`, puis `command_passes: scripts/banc.sh acces`
 - [x] **T0.3** : `neo4j-mcp` v1.6.0 installé depuis la release GitHub, sans le lancer (il interroge la base au démarrage) ; noms des variables, lecture seule et télémétrie lus dans le source du tag v1.6.0, et notés dans `plan.md` § D1 — fait le 2026-10-07 : somme vérifiée, binaire dans `~/.local/share/neo4j-mcp/v1.6.0/` ; lecture seule et télémétrie se règlent, circuit breaker non déclenché
   - DoD : `command_passes: sha256sum -c <fichier des sommes publié avec la release v1.6.0> --ignore-missing`
 - [x] **T0.4** : `scripts/mcp-neo4j.sh` : chemin absolu, secret lu par `commun.sh` avec `gcloud` sans stdin, variables du tag, `READ_ONLY` et télémétrie coupée, anciens noms retirés, rien sur stdout, stderr filtré, puis `exec` — fait le 2026-10-07 : 12 tests, PATH réduit à bash et aux deux faux outils ; aucun argument transmis (les options de `neo4j-mcp` passent avant l'environnement), tout `NEO4J_*` hérité retiré ; chaque propriété vérifiée par mutation (10 fautes injectées, 10 détectées) ; `trouver_outils` accepte une liste d'outils, `filtrer_flux` filtre un flux
@@ -28,11 +28,11 @@
 
 ## Phase 1 — Banc lisible par le harnais (NEO-16)
 
-- [ ] **T1.1** : `questions/banc.toml` : les 30 questions (texte exact, catégorie, mode de notation, tour précédent, valeurs attendues, distracteurs, règle des longues listes pour Q7 et Q14), en TDD
+- [x] **T1.1** : `questions/banc.toml` : les 30 questions (texte exact, catégorie, mode de notation, tour précédent, valeurs attendues, distracteurs, règle des longues listes pour Q7 et Q14), en TDD — fait le 2026-10-08 : distracteurs tirés des CSV du commit figé, relus et validés par Julien ; règle des longues listes et tolérance de Q8 (Typhlosion) ajoutées au README ; `banc.questions` refuse tout champ hors de son mode, `banc.attendu` relit `attendu/` ; 102 tests de cohérence, 15 fautes injectées, toutes détectées
   - DoD : `command_passes: uv run --directory banc pytest tests/test_banc_toml.py -q` (cohérence avec les tableaux du README et avec `questions/attendu/`)
-- [ ] **T1.2** : `questions/consigne.md` et `questions/fiche-schema.md` : modèle, règles et cas limites (liste du jalon 2 de la ROADMAP, plus le niveau minimal d'`APPREND` et « pas de relation d'efficacité = ×1 »), illustrés par d'autres cas que ceux du banc ; valeurs possibles, index plein texte, 6 à 8 exemples hors banc
-  - DoD : `command_passes: uv run --directory banc pytest tests/test_contamination.py -q` (fichiers entiers ; liste blanche ; aucune valeur citée dans `questions/attendu/` hors liste blanche ; exemples comparés aux 27 requêtes, littéraux masqués), puis `manual: Julien relit la fiche et la consigne`
-- [ ] **T1.3** : `questions/q02.cypher` lit `$proposee` ; `scripts/questions.sh` le passe toujours (défaut : l'équipe actuelle), et accepte `--dossier` et `--exemples` (exemples de la fiche et `dracofeu~`)
+- [x] **T1.2** : `questions/consigne.md` et `questions/fiche-schema.md` : modèle, règles et cas limites (liste du jalon 2 de la ROADMAP, plus le niveau minimal d'`APPREND` et « pas de relation d'efficacité = ×1 »), illustrés par d'autres cas que ceux du banc ; valeurs possibles, index plein texte, 6 à 8 exemples hors banc
+  - DoD : `command_passes: uv run --directory banc pytest tests/test_contamination.py -q` (fichiers entiers ; liste blanche ; aucune valeur citée dans `questions/attendu/` hors liste blanche ; exemples comparés aux 27 requêtes, littéraux masqués), puis `manual: Julien relit la fiche et la consigne` — le 2026-10-08 : fichiers écrits, test vert (25 tests ; seuils mesurés sur les 31 requêtes de référence ; 13 contaminations injectées, toutes détectées) ; relues et validées par Julien le 2026-10-08
+- [x] **T1.3** : `questions/q02.cypher` lit `$proposee` ; `scripts/questions.sh` le passe toujours (défaut : l'équipe actuelle), et accepte `--dossier` et `--exemples` (exemples de la fiche et `dracofeu~`) — fait le 2026-10-08 : un exemple en échec ou sans ligne, index absent compris, est un écart (1) ; `--dossier` lit `D/qNN.cypher` et `D/exemples/*.cypher` (forme à suivre en T6.2), refusé avec `--enregistrer` ; `tests/test_questions_sh.py` sans base (15 tests, 5 fautes injectées, toutes détectées)
   - DoD : `command_passes: bash -n scripts/questions.sh` (contrôle sur la base en T7.2 et T7.3)
 
 ## Phase 2 — Notation, en TDD (NEO-17)
@@ -51,9 +51,9 @@
 
 ## Phase 4 — Cellules (NEO-18)
 
-- [ ] **T4.1** : cellule Agent SDK : `env -i` et liste blanche (HOME temporaire, `CLOUDSDK_CONFIG`, PATH, variables Vertex, effort `high`, petit modèle figé), `CLAUDE_CONFIG_DIR` temporaire, `setting_sources=[]`, `tools=[]`, `read-cypher` seul ; `connect()` puis `get_mcp_status()` jusqu'à « connected » avant le chrono ; budget par conversation
+- [ ] **T4.1** : cellule Agent SDK : `env -i` et liste blanche (HOME temporaire, `CLOUDSDK_CONFIG`, PATH, `ANTHROPIC_API_KEY` sans variable Vertex, effort `high`, petit modèle figé), `CLAUDE_CONFIG_DIR` temporaire, `setting_sources=[]`, `tools=[]`, `read-cypher` seul ; `connect()` puis `get_mcp_status()` jusqu'à « connected » avant le chrono ; budget par conversation
   - DoD : `command_passes: uv run --directory banc pytest tests/test_cellule_sdk.py -q` (faux `cli_path` : aucune variable hors liste blanche, aucun fichier de réglages lu, chrono lancé après la connexion)
-- [ ] **T4.2** : cellules ADK (Claude et Gemini) : `McpToolset` en stdio sur le lanceur, `get_tools()` avant le chrono, `tool_filter`, délai de 30 s, effort et `thinking_level` fixés, budget par conversation
+- [ ] **T4.2** : cellules ADK (Claude par `AnthropicLlm` et l'API Anthropic, Gemini par Vertex `eu`) : `McpToolset` en stdio sur le lanceur, `get_tools()` avant le chrono, `tool_filter`, délai de 30 s, effort et `thinking_level` fixés, budget par conversation
   - DoD : `command_passes: uv run --directory banc pytest tests/test_cellule_adk.py -q` (faux serveur MCP, faux LLM)
 - [ ] **T4.3** : orchestration : même session au second tour ; plafonds (10 tours, 180 s, budget) ; panne relancée (la paire pour Q18 et Q28), échec de l'agent noté faux avec sa cause, délai dû aux reprises internes compté comme panne ; groupe de processus tué, `scripts/transactions.sh` appelé ; cellules alternées question par question ; `--reprendre` ; règle de couplage de `transactions.sh` dans la code-map
   - DoD : `command_passes: uv run --directory banc pytest tests/test_orchestration.py -q && bash -n scripts/transactions.sh`
@@ -133,7 +133,7 @@ La feature est livrée quand :
 ## Blockers / questions
 
 - NEO-13 clos le 2026-10-07 : la base est de nouveau utilisable.
-- Quotas Claude à 0 sur `jleroy-labo` : hausse demandée le 2026-10-07 et refusée automatiquement ; Claude injoignable par Vertex, parking et décision de Julien (prix et reprises internes relevés).
+- Quotas Claude à 0 sur `jleroy-labo` : hausse demandée le 2026-10-07 et refusée automatiquement ; Claude injoignable par Vertex, parking et décision de Julien (prix et reprises internes relevés). Tranché le 2026-10-08 : API Anthropic ([ADR-0011](../../adr/0011-infra-claude-par-api-anthropic.md)).
 - Compatibilité de Python 3.14 avec ADK et l'Agent SDK : vérifiée le 2026-10-07 (T0.1).
 - `TERMINATE TRANSACTIONS` permis sur Aura Free ? (T7.4)
 - Noms de propriétés orphelins après la bascule (`db.propertyKeys()`) : à vérifier au jalon 4, avant qu'Aura Agent ne lise le schéma.

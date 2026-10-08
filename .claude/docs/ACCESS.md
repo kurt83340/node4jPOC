@@ -4,17 +4,24 @@
 > les secrets vivent dans GCP Secret Manager, lus au moment de servir, jamais affichés ni écrits sur le disque
 > ([ADR-0007](adr/0007-infra-secrets-et-services-geres.md)).
 
-**Dernière MAJ :** 2026-10-01
+**Dernière MAJ :** 2026-10-08
 
 ## Checklist
 
-| Accès                       | État          | 🔒 Où le trouver                                                                             |
-| --------------------------- | ------------- | -------------------------------------------------------------------------------------------- |
-| Projet Google Cloud du POC  | ✅            | `jleroy-labo`, facturation active                                                            |
-| Console Aura                | ✅ 2026-09-30 | https://console.neo4j.io, connexion Google avec fr.julienleroy@gmail.com                     |
-| Instance AuraDB Free        | ✅ 2026-09-30 | console Aura → Instances → « Free instance »                                                 |
-| Identifiants de l'instance  | ✅ 2026-09-30 | secret `neo4j-aura-poc` du projet `jleroy-labo`                                              |
-| Job de réveil `reveil-aura` | ✅ 2026-09-30 | projet `jleroy-labo` (`europe-west9`), compte `reveil-aura`, qui ne lit que `neo4j-aura-poc` |
+| Accès                           | État          | 🔒 Où le trouver                                                                                                            |
+| ------------------------------- | ------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| Projet Google Cloud du POC      | ✅            | `jleroy-labo`, facturation active                                                                                           |
+| Console Aura                    | ✅ 2026-09-30 | https://console.neo4j.io, connexion Google avec fr.julienleroy@gmail.com                                                    |
+| Instance AuraDB Free            | ✅ 2026-09-30 | console Aura → Instances → « Free instance »                                                                                |
+| Identifiants de l'instance      | ✅ 2026-09-30 | secret `neo4j-aura-poc` du projet `jleroy-labo`                                                                             |
+| Job de réveil `reveil-aura`     | ✅ 2026-09-30 | projet `jleroy-labo` (`europe-west9`), compte `reveil-aura`, qui ne lit que `neo4j-aura-poc`                                |
+| Vertex AI (Agent Platform)      | ✅ 2026-10-07 | API `aiplatform.googleapis.com` activée sur `jleroy-labo`                                                                   |
+| Claude dans Model Garden        | ✅ 2026-10-07 | Sonnet 5.5, Sonnet 5 et Haiku 4.5 : conditions acceptées (ci-dessous)                                                       |
+| Quota de Claude en `eu`         | ❌ refusé     | 0, hausse refusée le 2026-10-07 ; Claude passe par l'API Anthropic ([ADR-0011](adr/0011-infra-claude-par-api-anthropic.md)) |
+| Budget plafond de 100 €         | ✅ 2026-10-07 | « Plafond jleroy-labo 100 EUR (oct-dec 2026) », [ADR-0010](adr/0010-infra-plafond-de-depense.md)                            |
+| API Anthropic (cellules Claude) | ✅ 2026-10-08 | https://platform.claude.com, workspace `node4jpoc-banc` : crédits sans recharge automatique, limite de 20 $ par mois        |
+| Clé Anthropic du banc           | ✅ 2026-10-08 | secret `anthropic-api-banc` du projet `jleroy-labo` (`europe-west9`), lu par `scripts/banc.sh`                              |
+| `neo4j-mcp` v1.6.0              | ✅ 2026-10-07 | `~/.local/share/neo4j-mcp/v1.6.0/neo4j-mcp`, somme vérifiée (plan 002, D1)                                                  |
 
 ## Instance AuraDB Free (NEO-6)
 
@@ -89,6 +96,53 @@ exploitation : [RUNBOOK](RUNBOOK.md).
 - Premier déploiement : le build a échoué, le rôle `run.builder` posé une minute plus tôt n'étant pas encore
   propagé. Relancer `deploy.sh` a suffi.
 - Un compte de service tout juste créé met quelques secondes à être visible de l'IAM : `deploy.sh` réessaie.
+
+## Vertex AI et Model Garden (NEO-15)
+
+Ouverts le 2026-10-07 pour la spec 002 ; appels par l'ADC de fr.julienleroy@gmail.com, sans clé API.
+
+- **API** `aiplatform.googleapis.com` activée sur `jleroy-labo` (`gcloud services enable`).
+- **Claude dans Model Garden** : Sonnet 5.5, Sonnet 5 et Haiku 4.5. Conditions de Google Cloud Marketplace et
+  d'Anthropic acceptées par Julien sur la page « Agreements » (accords `anthropic-915`, `anthropic-896`,
+  `anthropic-867`). Questionnaire rempli à l'identique pour les trois : Julien Leroy, https://github.com/kurt83340,
+  fr.julienleroy@gmail.com, France, « Education », « Internal employees », POC d'apprentissage (banc text-to-Cypher,
+  données publiques PokéAPI, base en lecture seule, faible volume), « No » aux exigences de la politique d'usage.
+- **Identifiants des modèles** : `claude-sonnet-5-5`, `claude-sonnet-5`, `claude-haiku-4-5@20251001` ;
+  `gemini-3.8-flash` répond sans activation ni demande de quota.
+- **Quotas** : Claude à 0 en `eu` comme en `global` ; hausse demandée et refusée d'office le 2026-10-07 (préférences
+  `eu-claude-*`, compte jugé non éligible). Détail et suite : [plan 002](specs/002-agent-text-to-cypher/plan.md),
+  relevé de T0.2.
+- **Budget** « Plafond jleroy-labo 100 EUR (oct-dec 2026) » ([ADR-0010](adr/0010-infra-plafond-de-depense.md)) :
+  100 € cumulés du 2026-10-01 au 2026-12-31, filtré sur `jleroy-labo`, e-mails à 25, 50, 75, 90 et 100 % aux
+  administrateurs de la facturation (compte `019774-B0D77F-72CED7`). Vue : `/google-facture`. Coupure
+  automatique de Vertex : à construire.
+
+⚠️ **Pièges**
+
+- Le questionnaire ne suffit pas : c'est la page « Agreements » qui suit qui vaut acceptation. La page de prix de
+  Google ne liste pas encore Sonnet 5.5 : ses prix se lisent sur cet accord, lieu `eu`.
+- L'ADC du poste a `jleroy-outils` pour projet de quota : un agent fixe `GOOGLE_CLOUD_QUOTA_PROJECT=jleroy-labo`,
+  et `GOOGLE_APPLICATION_CREDENTIALS` sous un HOME temporaire (liste blanche du banc).
+
+## API Anthropic (NEO-15)
+
+Ouverte le 2026-10-08 pour les deux cellules Claude, à la place de Vertex ([ADR-0011](adr/0011-infra-claude-par-api-anthropic.md)).
+
+- **Console** : https://platform.claude.com, compte de Julien ; workspace dédié `node4jpoc-banc` (le workspace par
+  défaut n'accepte pas de limite de dépense).
+- **Dépense** : 20 $ de crédits prépayés, recharge automatique coupée : à zéro, l'API s'arrête. Limite mensuelle du
+  workspace : 20 $. Recharge à la main, sur décision de Julien, après le pilote. Usage visible dans la Console en
+  5 min environ.
+- **Clé** : créée dans ce workspace ; secret `anthropic-api-banc` du projet `jleroy-labo` (réplication `europe-west9`),
+  déposé par Julien en saisie masquée, lu au lancement par `scripts/banc.sh` et passé au harnais par l'environnement.
+  Contrôle sans affichage : taille et préfixe `sk-ant-` (skill `secret-manager`).
+- **Renouveler la clé** : en créer une dans le workspace, l'ajouter en version (`gcloud secrets versions add
+anthropic-api-banc --project=jleroy-labo --data-file=-`, saisie masquée), relancer `scripts/banc.sh acces`, puis
+  révoquer l'ancienne dans la Console et détruire son ancienne version.
+
+⚠️ **Piège** : l'invite masquée de `read -rs` attend la valeur de la clé, pas un nom. Une saisie vide crée le secret sans
+version (« Created secret » sans « Created version ») ; la création suivante échoue alors sur un conflit : ajouter une
+version au lieu de recréer (vu le 2026-10-08).
 
 ## Recréer l'instance
 

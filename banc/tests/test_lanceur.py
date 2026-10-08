@@ -63,6 +63,19 @@ HERITAGE_HOSTILE = {
 }
 # Variables que bash ajoute de lui-même à l'environnement d'un programme qu'il lance.
 AJOUTS_DE_BASH = {"PWD", "SHLVL"}
+# Clé factice de la cellule Claude Code (ADR-0011), et autres accès à Claude qu'un agent pourrait
+# hériter : aucun ne doit atteindre neo4j-mcp, un binaire tiers qui n'en a pas l'usage.
+CLE_ANTHROPIC = "sk-ant-api03-cle-factice-du-banc"
+ACCES_CLAUDE_HOSTILES = {
+    "ANTHROPIC_AUTH_TOKEN": "jeton-factice",
+    "CLAUDE_CODE_OAUTH_TOKEN": "oauth-factice",
+}
+
+
+def acces_claude(nom: str) -> bool:
+    """Vrai pour une variable qui donne accès à Claude, que le lanceur retire."""
+    return nom.startswith("ANTHROPIC_") or nom == "CLAUDE_CODE_OAUTH_TOKEN"
+
 
 # Faux outils : rien que la bibliothèque standard, journal dans ../journal.
 FAUX_GCLOUD = """
@@ -145,20 +158,16 @@ class Bac:
 
 
 def liste_blanche(racine: Path) -> dict[str, str]:
-    """Environnement d'un agent selon D3 : rien d'autre ne passe."""
+    """Environnement de la cellule Claude Code selon D3 (ADR-0011) : rien d'autre ne passe."""
     return {
         "HOME": str(racine / "home"),
         "CLOUDSDK_CONFIG": str(racine / "gcloud"),
         "CLAUDE_CONFIG_DIR": str(racine / "claude"),
         "PATH": str(racine / "outils"),
-        "CLAUDE_CODE_USE_VERTEX": "1",
-        "CLOUD_ML_REGION": "eu",
-        "ANTHROPIC_VERTEX_PROJECT_ID": "jleroy-labo",
-        "GOOGLE_GENAI_USE_ENTERPRISE": "true",
-        "GOOGLE_CLOUD_PROJECT": "jleroy-labo",
-        "GOOGLE_CLOUD_LOCATION": "eu",
+        "ANTHROPIC_API_KEY": CLE_ANTHROPIC,
+        "ANTHROPIC_DEFAULT_HAIKU_MODEL": "claude-haiku-4-5-20251001",
         "CLAUDE_CODE_EFFORT_LEVEL": "high",
-        "ANTHROPIC_DEFAULT_HAIKU_MODEL": "claude-haiku-4-5@20251001",
+        "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1",
     }
 
 
@@ -192,7 +201,16 @@ def test_variables_du_tag(bac: Bac) -> None:
 def test_rien_d_autre_dans_l_environnement(bac: Bac) -> None:
     env = bac.lancer().serveur()["env"]
     assert set(env) - set(bac.env) - set(CONFIGURATION) <= AJOUTS_DE_BASH
-    assert {nom: env[nom] for nom in bac.env} == bac.env
+    gardees = {nom: valeur for nom, valeur in bac.env.items() if not acces_claude(nom)}
+    assert {nom: env.get(nom) for nom in gardees} == gardees
+
+
+def test_aucun_acces_a_claude(bac: Bac) -> None:
+    # La clé de la cellule Claude Code, et tout autre accès à Claude hérité, s'arrêtent au lanceur.
+    bac.env |= ACCES_CLAUDE_HOSTILES
+    env = bac.lancer().serveur()["env"]
+    assert not [nom for nom in env if acces_claude(nom)]
+    assert all(CLE_ANTHROPIC not in valeur for valeur in env.values())
 
 
 def test_heritage_ecarte(bac: Bac) -> None:

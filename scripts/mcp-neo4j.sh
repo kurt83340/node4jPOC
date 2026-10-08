@@ -27,6 +27,9 @@ fi
 # La configuration du serveur ne vient que d'ici : toute variable NEO4J_* héritée est retirée, dont
 # les 14 anciens noms que la v1.6.0 lit encore quand le nom canonique est vide.
 unset "${!NEO4J_@}"
+# La clé Anthropic de la cellule Claude Code (ADR-0011), comme tout accès à Claude hérité, s'arrête
+# ici : neo4j-mcp, binaire tiers, n'en a pas l'usage.
+unset "${!ANTHROPIC_@}" CLAUDE_CODE_OAUTH_TOKEN
 
 # Rien sur stdout, et gcloud sans stdin : il lirait les premiers messages du client.
 trouver_outils gcloud neo4j-mcp >&2

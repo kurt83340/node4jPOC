@@ -6,7 +6,7 @@
 > Le **POURQUOI** des choix vit dans [adr/](adr/). L'**ARCHI** globale (dont **sécurité** & **observabilité**) dans [conception/ARCHITECTURE.md](conception/ARCHITECTURE.md) ; les **conventions de test** dans [../rules/testing.md](../rules/testing.md).
 > Ce fichier = **vue catalogue rapide** ("quelles techs on utilise et pour quoi ?") — **pas** de narratif archi/sécurité/tests ici (sinon drift avec ARCHITECTURE).
 
-**Dernière MAJ :** 2026-10-01
+**Dernière MAJ :** 2026-10-08
 
 ## Langage(s) & runtime
 
@@ -42,10 +42,10 @@
 
 ## LLM providers (par feature)
 
-| Feature                       | LLM utilisé                                                                                       | Coût estimé                         | Notes                            |
-| ----------------------------- | ------------------------------------------------------------------------------------------------- | ----------------------------------- | -------------------------------- |
-| Spec 002 : Claude Code et ADK | `claude-sonnet-5-5` via Vertex `eu`, et `claude-haiku-4-5` pour les tâches annexes de Claude Code | 1,5 à 3 $ par passe de 30 questions | prix exact relevé en T0.2        |
-| Spec 002 : ADK                | `gemini-3.8-flash` via Vertex `eu`                                                                | ~0,5 $ par passe                    | tarif doublé après le 2026-12-31 |
+| Feature                       | LLM utilisé                                                                                                                                                             | Coût estimé                           | Notes                                           |
+| ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------- | ----------------------------------------------- |
+| Spec 002 : Claude Code et ADK | `claude-sonnet-5-5` par l'API Anthropic ([ADR-0011](adr/0011-infra-claude-par-api-anthropic.md)), et `claude-haiku-4-5-20251001` pour les tâches annexes de Claude Code | 1,4 à 2,7 $ par passe de 30 questions | 2 $ / 10 $ ; prix vérifiés en T0.2 (2026-10-08) |
+| Spec 002 : ADK                | `gemini-3.8-flash` via Vertex `eu`                                                                                                                                      | ~0,5 $ par passe                      | tarif doublé après le 2026-12-31                |
 
 ⚠️ **Si une feature utilise un LLM**, documenter ici **ET** dans `specs/00X-feature/plan.md` (section "LLM choisi + raison + coût estimé").
 

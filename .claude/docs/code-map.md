@@ -7,7 +7,7 @@
 >
 > ⚠️ Avant d'éditer un fichier, vérifie les **règles de couplage** ci-dessous.
 
-**Dernière MAJ :** 2026-10-07
+**Dernière MAJ :** 2026-10-08
 
 > 🧭 **Principe (aligné [best-practices Anthropic](https://code.claude.com/docs/en/best-practices))** :
 > à EXCLURE d'ici → tout ce que Claude « peut trouver en lisant le code » : descriptions
@@ -21,7 +21,8 @@
 Secret Manager ─┬─► scripts/ ─► cypher-shell ─► AuraDB Free ◄─ LOAD CSV ─ CSV PokéAPI (commit figé)
                 │      ├─ cypher/     00 → 06 : chargement · 90 : vérification
                 │      ├─ questions/  banc d'essai : requêtes et réponses de référence (jalons 1 à 4)
-                │      └─ mcp-neo4j.sh ─► neo4j-mcp (stdio, lecture seule) ─► AuraDB Free ◄─ agents de banc/
+                │      ├─ mcp-neo4j.sh ─► neo4j-mcp (stdio, lecture seule) ─► AuraDB Free ◄─ agents de banc/
+                │      └─ banc.sh ─► banc/ (clé Anthropic par l'environnement) ─► API Anthropic (Claude) · Vertex eu (Gemini)
                 └─► infra/reveil-aura/ ─► Query API ─► AuraDB Free (RETURN 1 quotidien, alerte e-mail)
 ```
 
@@ -45,9 +46,15 @@ Le détail fichier-par-fichier se découvre à la demande (`grep`, lecture) — 
   passés par l'environnement (`scripts/commun.sh:59`), jamais en argument ni sur le disque ; toute sortie de
   `cypher-shell` passe par `filtrer` (`scripts/commun.sh:74`). Le job : secret monté en fichier par Cloud Run,
   sous un compte qui ne lit que lui ; tout message passe par `masquer` (`infra/reveil-aura/reveil.py:161`).
+  La clé Anthropic du banc ([ADR-0011](adr/0011-infra-claude-par-api-anthropic.md)) : lue par `scripts/banc.sh`,
+  passée au harnais par l'environnement ; `banc/` ne lit jamais Secret Manager.
 - ✅ Les agents ne joignent la base que par `scripts/mcp-neo4j.sh`, chemin absolu (plan 002, D1) : `neo4j-mcp`
-  y reçoit les `NEO4J_MCP_*` (lecture seule, sans télémétrie), sans option ni `NEO4J_*` hérité ; stderr par
-  `filtrer_flux` (`scripts/commun.sh:128`). ❌ Aucune config MCP sur le disque : `banc/` la passe en mémoire.
+  y reçoit les `NEO4J_MCP_*` (lecture seule, sans télémétrie), sans option, ni `NEO4J_*` hérité, ni accès à Claude
+  (`ANTHROPIC_*`) ; stderr par `filtrer_flux` (`scripts/commun.sh:128`). ❌ Aucune config MCP sur le disque :
+  `banc/` la passe en mémoire.
+- ✅ Agents isolés par la liste blanche de `banc/src/banc/isolement.py` (plan 002, D3) : la clé Anthropic aux seules
+  cellules Claude, jamais avec une variable Vertex (`CLAUDE_CODE_USE_VERTEX` passerait avant elle) ; la cellule
+  Gemini ne la reçoit jamais.
 - ✅ Seul le chargement (purge et preuve d'idempotence comprises) écrit dans la base : go/no-go, vérification et techniques du banc
   d'essai lisent (`--access-mode read`, `scripts/verifier.sh:45`), le réveil quotidien aussi (`accessMode: Read`,
   `infra/reveil-aura/reveil.py:119`) ; exception prévue : la mémoire d'agent (jalon 5).

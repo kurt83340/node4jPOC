@@ -60,7 +60,8 @@ SCOPE_FILES = (".claude/settings.json", ".claude/CLAUDE.md", ".claude/USAGE.md",
 PROFILES = ("script-jetable", "automation-n8n", "python-app", "web-app", "bdd-migration", "other")
 BOOTSTRAP_PREFIXES = (".claude/skills/init-from-template/", ".claude/skills/adopt-template/")
 TEAM_RULE = ".claude/rules/agent-teams.md"
-TEAM_RULE_SRC = "plugins/agent-teams/skills/team/agent-teams-rule.md"  # (v1.5.0+) dans le dépôt
+TEAM_RULE_SRC = "plugins/agent-teams/skills/team/agent-teams-rule.md"  # plugin 1.1 (template 1.5.0) seulement :
+# depuis le plugin 1.2, plus de rule — invariants injectés au spawn, rule héritée retirée par `/agent-teams:team on|off`
 TEAM_ENV = "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS"
 CORE_RE = re.compile(r"\{\{([A-Z]{2,}_[A-Z][A-Z0-9_]+)\}\}")
 MISSING = object()
@@ -193,19 +194,47 @@ def replay_init(raw: Path, dest: Path, profile: str, brownfield: bool, vars_: di
 
 # ── Déductions sur le projet ─────────────────────────────────────────────────────────────────
 
-def infer_profile(project: Path) -> str:
+def infer_profile(project: Path):
+    """(profil, indice faible ?) — un indice faible ne doit jamais s'appliquer sans confirmation.
+    Avant 1.5.0, les inits python-app et web-app sont IDENTIQUES : seul un package.json les
+    départage, et il ne dit pas quel profil l'utilisateur a choisi (vécu : projet TypeScript initié
+    en python-app avec ses propres rules TS → l'upgrade aurait ajouté code-style-web.md /
+    testing-web.md, chargés sur **/*.ts, et retiré code-style.md / testing.md)."""
     skills = project / ".claude" / "skills"
     if (skills / "handoff").is_dir() and not (skills / "spec").is_dir():
-        return "script-jetable"
+        return "script-jetable", False
     if (project / "workflows").is_dir():
-        return "automation-n8n"
+        return "automation-n8n", False
     rules = project / ".claude" / "rules"
     if (rules / "code-style-web.md").is_file() and not (rules / "code-style.md").is_file():
-        return "web-app"
+        return "web-app", False
     if (project / "package.json").is_file() and not any(
             (project / f).exists() for f in ("pyproject.toml", "requirements.txt", "setup.py")):
-        return "web-app"
-    return "python-app"
+        return "web-app", True
+    return "python-app", False  # défaut prudent : avant 1.5, mêmes rules que l'init d'origine
+
+
+BOOTSTRAP_INDEXES = (".claude/USAGE.md", ".claude/CLAUDE.md", ".claude/rules/template-maintenance.md")
+BOOTSTRAP_LINE = re.compile(r"^\s*[-|].*`/(adopt-template|init-from-template)(?![\w-])")
+
+
+def norm_line(line: str) -> str:
+    """Ligne comparable malgré un reformatage (espaces multiples, largeur des colonnes d'un tableau)."""
+    return re.sub(r"\s*\|\s*", "|", re.sub(r"\s+", " ", line)).strip()
+
+
+def bootstrap_inventory_lines(raws) -> dict:
+    """{index: lignes normalisées} des lignes d'inventaire des skills bootstrap telles que le
+    template les livre (versions base et cible) — celles que l'init greenfield purge."""
+    out = {}
+    for raw in raws:
+        for idx in BOOTSTRAP_INDEXES:
+            f = raw / idx
+            if f.is_file():
+                out.setdefault(idx, set()).update(
+                    norm_line(l) for l in f.read_text(encoding="utf-8", errors="replace").split("\n")
+                    if BOOTSTRAP_LINE.search(l) and "{{" not in l)
+    return out
 
 
 def infer_vars(raw_base: Path, project: Path) -> dict:
@@ -448,6 +477,7 @@ def migrate_1_4_0(project: Path, raw_target: Path, dry: bool, log: list):
     done = [l.strip() for l in r.stdout.splitlines() if "✅" in l]
     log.append("migration 1.4.0 (budget de contexte : journal HANDOFF, gotchas, ROADMAP) : "
                + (f"{len(done)} étape(s) — " + " | ".join(done) if done else "rien à faire"))
+    log.extend(f"migration 1.4.0 — {l.strip()}" for l in r.stdout.splitlines() if "⚠️" in l)
 
 
 HANDOFF_TEAM_NOTE = re.compile(r"^> 🧑‍🤝‍🧑 \*\*Multi-agent / agent teams\*\* : fichier partagé.*\n", re.M)
@@ -515,11 +545,17 @@ def plan_and_apply(a) -> dict:
         from_v = tv.read_text(encoding="utf-8").strip()
     if not from_v:
         raise UpgradeError("version du projet inconnue (.claude/template-version absent) → préciser --from X.Y.Z")
-    if not a.dry_run and not a.allow_dirty:
-        dirty = git_dirty(project)
-        if dirty:
-            raise UpgradeError("arbre git non propre — committer ou stasher d'abord (le diff de mise à jour "
-                               "doit être relisible seul), ou --allow-dirty :\n  " + "\n  ".join(dirty[:10]))
+    def require_clean():
+        if not a.dry_run and not a.allow_dirty:
+            dirty = git_dirty(project)
+            if dirty:
+                raise UpgradeError("arbre git non propre — committer ou stasher d'abord (le diff de mise à jour "
+                                   "doit être relisible seul), ou --allow-dirty :\n  " + "\n  ".join(dirty[:10]))
+
+    # --ack-conflicts sur un projet déjà à la version cible ne réécrit que template-lock.json : le
+    # skill fait acquitter AVANT le commit (Étape 4 → Étape 5), l'arbre est donc forcément sale.
+    if not a.ack_conflicts:
+        require_clean()
 
     tmp = Path(tempfile.mkdtemp(prefix="upgrade-template-"))
     report = {"project": str(project), "from": from_v, "to": None, "profile": None, "dry_run": a.dry_run,
@@ -551,39 +587,71 @@ def plan_and_apply(a) -> dict:
                 report["warnings"].append(f"{len(pending)} conflit(s) marqué(s) résolu(s)")
             report["status"] = "à jour"
             return report
+        if a.ack_conflicts:
+            require_clean()  # pas seulement un acquittement : une vraie mise à jour va écrire
         if pending:
             report["warnings"].append("conflits NON résolus de la mise à jour précédente (traités ici comme des "
                                       "personnalisations) : " + ", ".join(pending))
         if vtuple(from_v) > vtuple(to_v) and not a.force:
             raise UpgradeError(f"le projet ({from_v}) est plus récent que la cible ({to_v}) — rien à faire")
 
-        profile = a.profile or lock.get("profile") or infer_profile(project)
+        profile = a.profile or lock.get("profile")
+        weak = False
+        if not profile:
+            profile, weak = infer_profile(project)
         if profile not in PROFILES:
             raise UpgradeError(f"profil inconnu : {profile}")
         report["profile"] = profile + ("" if (a.profile or lock.get("profile")) else " (déduit)")
+        if weak:
+            msg = (f"profil « {profile} » deviné d'après package.json seul : avant 1.5.0 les inits "
+                   "python-app et web-app sont identiques, rien ne dit lequel a été choisi. Appliquer "
+                   "web-app ajoute code-style-web.md / testing-web.md (chargés sur **/*.ts…) et retire "
+                   "code-style.md / testing.md → confirme avec --profile web-app ou --profile python-app "
+                   "(mémorisé ensuite dans template-lock.json)")
+            if not a.dry_run:
+                raise UpgradeError(msg + " — rien n'a été écrit")
+            report["warnings"].append(msg)
+        raw_b = tmp / "raw-base"
+        has_base = extract(repo, f"v{from_v}", raw_b) if is_git_repo(repo) else False
+
         # Adopté (/adopt-template) : le lock le dit ; sans lock (< 1.5), un skill bootstrap encore
         # présent le trahit — l'init greenfield les retire toujours, l'adoption les laisse.
+        clue = None
         stack = project / ".claude" / "docs" / "stack.md"
-        adopted_mark = stack.is_file() and "adopté le" in stack.read_text(encoding="utf-8", errors="replace")
+        if stack.is_file() and "adopté le" in stack.read_text(encoding="utf-8", errors="replace"):
+            clue = "« adopté le » dans .claude/docs/stack.md"
+        for s in ("adopt-template", "init-from-template"):
+            if clue is None and (project / ".claude" / "skills" / s).is_dir():
+                clue = f"skill bootstrap .claude/skills/{s}/ encore présent"
         # L'init greenfield PURGE les lignes d'inventaire des skills bootstrap ; l'adoption (brownfield)
-        # les laisse — un indice qui survit au retrait des skills bootstrap eux-mêmes.
-        for idx in (".claude/USAGE.md", ".claude/CLAUDE.md", ".claude/rules/template-maintenance.md"):
-            f = project / idx
-            if f.is_file() and re.search(r"^\s*[-|].*`/(adopt-template|init-from-template)",
-                                         f.read_text(encoding="utf-8", errors="replace"), re.M):
-                adopted_mark = True
+        # les laisse, telles que le template les livre. Seule une ligne IDENTIQUE à celle du template
+        # compte (espaces et colonnes de tableau normalisés) — vécu : « ⚠️ `/init-from-template` a été
+        # retiré… », écrit par l'utilisateur dans USAGE.md, faisait passer un projet greenfield en
+        # brownfield (3 conflits parasites).
+        if clue is None:
+            shipped = bootstrap_inventory_lines([d for d in (raw_b, raw_t) if d.is_dir()])
+            for idx in BOOTSTRAP_INDEXES:
+                f = project / idx
+                if not f.is_file():
+                    continue
+                hit = next((l for l in f.read_text(encoding="utf-8", errors="replace").split("\n")
+                            if norm_line(l) in shipped.get(idx, set())), None)
+                if hit:
+                    clue = f"ligne d'inventaire du template dans {idx} : « {hit.strip()[:80]} »"
+                    break
         if a.mode:
             brownfield = a.mode == "brownfield"
         else:
-            brownfield = lock.get("mode") == "brownfield" or (not lock and (adopted_mark or any(
-                (project / ".claude" / "skills" / s).is_dir() for s in ("adopt-template", "init-from-template"))))
+            brownfield = lock.get("mode") == "brownfield" or (not lock and clue is not None)
+        mode_deduced = not a.mode and not lock.get("mode")
+        if mode_deduced:
+            report["warnings"].append(f"mode déduit : {'brownfield — ' + clue if brownfield else 'greenfield'}"
+                                      " → à confirmer (--mode greenfield|brownfield sinon)")
         # Fusion additive (hooks/règles du template absents du projet → ajoutés) : UNIQUEMENT à la
         # 1re mise à jour d'un projet adopté sans lock (< 1.5, fusion manuelle à l'adoption). Ensuite,
         # sémantique 3 voies stricte — sinon un retrait volontaire (ex. Edit(./**)) revenait à chaque fois.
         additive = brownfield and not lock
 
-        raw_b = tmp / "raw-base"
-        has_base = extract(repo, f"v{from_v}", raw_b) if is_git_repo(repo) else False
         if not has_base and vtuple(from_v) == vtuple(to_v):
             # --force sur la même version (tag pas encore publié) : la cible EST la base
             shutil.rmtree(raw_b, ignore_errors=True)
@@ -605,7 +673,7 @@ def plan_and_apply(a) -> dict:
         else:
             base.mkdir()
         replay_init(raw_t, target, profile, brownfield, vars_, report["warnings"])
-        report["mode"] = "brownfield" if brownfield else "greenfield"
+        report["mode"] = ("brownfield" if brownfield else "greenfield") + (" (déduit)" if mode_deduced else "")
 
         try:
             o_settings = json.loads((project / ".claude" / "settings.json").read_text(encoding="utf-8"))
@@ -621,8 +689,15 @@ def plan_and_apply(a) -> dict:
                 if is_git_repo(repo) else b""
             if content:
                 team_rule_src.write_bytes(content)
-            report["warnings"].append("équipe d'agents active (plugin agent-teams) : flag, teammateMode et "
-                                      "rule d'équipe conservés — rule mise à jour depuis le plugin")
+                report["warnings"].append("équipe d'agents active (plugin agent-teams) : flag, teammateMode et "
+                                          "rule d'équipe conservés — rule mise à jour depuis le plugin")
+            else:
+                legacy = (project / TEAM_RULE).is_file()
+                report["warnings"].append(
+                    "équipe d'agents active (plugin agent-teams) : flag et teammateMode conservés"
+                    + (f" — `{TEAM_RULE}` laissée telle quelle : obsolète avec le plugin ≥ 1.2 (invariants "
+                       "injectés au spawn, ~1,9k tokens économisés par session) → `/plugin marketplace update "
+                       "claude-setup`, puis `/agent-teams:team status` la retire" if legacy else ""))
 
         conflict_dir = project / ".claude" / ".cache" / f"upgrade-{to_v}"
         paths = sorted(scoped_files(base) | scoped_files(target) | scoped_files(project))
@@ -631,8 +706,10 @@ def plan_and_apply(a) -> dict:
             B = read_bytes(base / rel) if has_base else None
             T = read_bytes(target / rel)
             O = read_bytes(project / rel)
-            if rel == TEAM_RULE and teams and team_rule_src.is_file():
-                T = team_rule_src.read_bytes()  # la rule d'équipe vient du plugin (projet équipé)
+            if rel == TEAM_RULE and teams:
+                if not team_rule_src.is_file():
+                    continue  # plugin ≥ 1.2 : la rule héritée relève de son interrupteur, jamais touchée ici
+                T = team_rule_src.read_bytes()  # plugin 1.1 : la rule d'équipe vient du plugin (projet équipé)
             if O == T:
                 continue
             if B is None and T is None:

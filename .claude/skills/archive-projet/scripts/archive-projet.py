@@ -12,6 +12,7 @@ la bannière en tête du CLAUDE.md racine (entre marqueurs HTML — retirable au
 les références au chemin absolu (repo + crontab + ~/.claude.json, RAPPORT SEUL — jamais de
 correction silencieuse), localise l'auto-memory (~/.claude/projects/<slug>) et imprime la
 COMMANDE FINALE (mkdir + mv projet + mv mémoire) à lancer APRÈS fermeture de la session.
+Avec $CLAUDE_CONFIG_DIR, mémoire et .claude.json sont cherchés dans ce dossier, comme Claude Code.
 
 ⚠️ Le script ne déplace JAMAIS le projet lui-même : on ne déplace pas le dossier dans lequel
 la session Claude Code tourne (cwd, hooks ${CLAUDE_PROJECT_DIR}, approbations keyées chemin).
@@ -47,8 +48,21 @@ def slug(path: Path) -> str:
     return re.sub(r"[^A-Za-z0-9]", "-", str(path))
 
 
+def config_dir() -> Path:
+    """Dossier de config de Claude Code : $CLAUDE_CONFIG_DIR, sinon <home>/.claude."""
+    return Path(os.environ.get("CLAUDE_CONFIG_DIR") or home() / ".claude")
+
+
+def claude_json() -> Path:
+    """État global keyé chemin (approbations, historique) : dans $CLAUDE_CONFIG_DIR s'il est
+    défini — celui du home est alors ignoré (vérifié avec Claude Code 2.1.293) —, sinon
+    <home>/.claude.json."""
+    cfg = os.environ.get("CLAUDE_CONFIG_DIR")
+    return Path(cfg) / ".claude.json" if cfg else home() / ".claude.json"
+
+
 def memory_dir(path: Path) -> Path:
-    return home() / ".claude" / "projects" / slug(path)
+    return config_dir() / "projects" / slug(path)
 
 
 def sh(cmd, cwd=None):
@@ -121,14 +135,14 @@ def scan_external(root: Path):
     r = sh(["crontab", "-l"])
     if r.returncode == 0 and needle in r.stdout:
         out.append(f"crontab : {r.stdout.count(needle)} occurrence(s) — à repointer AVANT le move")
-    cj = home() / ".claude.json"
+    cj = claude_json()
     if cj.is_file():
         try:
             n = cj.read_text(encoding="utf-8", errors="ignore").count(needle)
         except OSError:
             n = 0
         if n:
-            out.append(f"~/.claude.json : {n} occurrence(s) (approbations/historique keyés chemin "
+            out.append(f"{cj} : {n} occurrence(s) (approbations/historique keyés chemin "
                        "— NE PAS éditer : re-prompt bénin après le move)")
     return out
 
@@ -172,7 +186,7 @@ def report_scans(root: Path) -> None:
         for e in ext:
             print(f"   - {e}")
     else:
-        print("🔗 Aucun référent externe détecté (crontab, ~/.claude.json). Reste à vérifier "
+        print(f"🔗 Aucun référent externe détecté (crontab, {claude_json()}). Reste à vérifier "
               "à la main : CI, workflows n8n appelant un chemin local du projet.")
 
 

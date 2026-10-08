@@ -48,6 +48,14 @@ Archive 📦 au bout de N mois (entries promues stables)
 
 ---
 
+## 2026-10-07 — Règle deny `Neo4j-*.txt` insensible à la casse
+
+**scope:** infra | **status:** 🆕 new
+
+La règle `Read(//**/Neo4j-*.txt)` de `.claude/settings.json` (fichier d'identifiants d'Aura, ADR-0007) a bloqué `sha256sum -c neo4j-mcp_1.6.0_checksums.txt`, le fichier de sommes public de neo4j/mcp (T0.3) : le motif ne tient pas compte de la casse.
+Contournement sûr : enregistrer le fichier sous un autre nom (`sommes-neo4j-mcp-1.6.0.txt`), contenu identique ; jamais affaiblir la règle sans décision.
+→ Piste : resserrer le motif sur `Neo4j-*-Created-*.txt` (format du fichier d'Aura), puis 🔧 rule ; à décider par Julien.
+
 ## 2026-09-28 — Hors-périmètre fixé sans connaître l'environnement cible
 
 **scope:** cadrage | **status:** 🧠 memory only

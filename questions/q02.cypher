@@ -17,10 +17,10 @@ RETURN t.nom AS menace, collect(p.nom + ' ×' + toString(multiplicateur)) AS mem
 ORDER BY menace;
 
 // Contrôle d'une équipe proposée : les types menaçants auxquels aucun membre ne résiste (liste vide =
-// équipe qui couvre tout), et le nombre d'espèces reconnues (6 attendues). Pour contrôler une autre
-// proposition, remplacer la liste proposee ; celle-ci est un exemple valide.
+// équipe qui couvre tout), et le nombre d'espèces reconnues (6 attendues). La proposition arrive par
+// $proposee (plan 002, D6), que scripts/questions.sh passe toujours : par défaut, une équipe valide.
 WITH ['Florizarre', 'Dracaufeu', 'Tortank', 'Pikachu', 'Ronflex', 'Lokhlass'] AS reference,
-  ['Magnéton', 'Dracolosse', 'Flagadoss', 'Noadkoko', 'Staross', 'Parasect'] AS proposee
+  $proposee AS proposee
 MATCH (t:Type)
 WITH reference, proposee, t,
   COLLECT {

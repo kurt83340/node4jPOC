@@ -13,6 +13,8 @@ SessionStart hook — flux selon la source :
    PLUS FRAIS que .claude/docs/HANDOFF.md → l'injecter. Dans TOUS les cas, le consommer
    (unlink) pour ne jamais réinjecter un filet périmé.
 
+   Toujours au startup : agent teams actives (flag) sans le plugin agent-teams → rappel (flux 4).
+
 3. source="startup" | "resume" | "clear" | "fork" — marqueur de début de session (horodatage +
    empreinte git + signature de HANDOFF.md) relu par sessionend-snapshot.py ; au startup, purge
    du cache par-session de plus de 7 jours.
@@ -30,6 +32,15 @@ import tempfile
 from pathlib import Path
 
 from snapshot_common import mark_session_start, purge_stale_cache
+
+
+def racine_projet(data) -> str:
+    """Racine du projet : CLAUDE_PROJECT_DIR (fixe pour la session), sinon le cwd du payload.
+
+    Le cwd du payload suit les `cd` : une session restée dans un sous-dossier ne trouvait plus
+    ni le filet ni le HANDOFF (même règle que posttooluse-growth-detection depuis la PR n°2).
+    """
+    return os.environ.get("CLAUDE_PROJECT_DIR") or data.get("cwd") or os.getcwd()
 
 
 def inject_compact_marker(data) -> None:
@@ -81,7 +92,7 @@ Le contexte vient d'être compacté. Voici le snapshot HANDOFF.md récent pour r
 
 def inject_session_end_net(data) -> None:
     """Flux 2 : filet fin de session — injecte si plus frais que HANDOFF.md, puis consomme."""
-    cwd = data.get("cwd", os.getcwd())
+    cwd = racine_projet(data)
     snap = Path(cwd) / ".claude" / ".cache" / "session-end-snapshot.md"
     if not snap.exists():
         return
@@ -116,7 +127,7 @@ def rearm_codemap_injection(data) -> None:
     """Post-compaction : efface le marker « gotchas déjà injectés » du hook PreToolUse
     (une injection par (session, fichier)) → la prochaine édition de chaque fichier ré-injecte
     ses gotchas, là où le rappel a de la valeur (le contexte vient d'être résumé)."""
-    cwd = data.get("cwd", os.getcwd())
+    cwd = racine_projet(data)
     sid = re.sub(r"[^\w.-]", "_", str(data.get("session_id", "nosession")))
     try:
         (Path(cwd) / ".claude" / ".cache" / f"codemap-injected-{sid}.json").unlink()
@@ -140,7 +151,7 @@ def warn_context_budget(data) -> None:
         max_tok = BUDGET_MAX_TOK
     if max_tok <= 0:
         return
-    cwd = Path(data.get("cwd", os.getcwd()))
+    cwd = Path(racine_projet(data))
     script = cwd / ".claude" / "skills" / "doc-health" / "scripts" / "context-budget.py"
     if not script.is_file():
         return
@@ -166,6 +177,52 @@ Cette session démarre lourde : CLAUDE.md, ses `@-imports` et les rules non scop
 du template. Ne modifie aucun fichier sans son accord.""")
 
 
+TEAM_ENV = "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS"
+
+
+def warn_team_without_plugin(data) -> None:
+    """Flux 4 — agent teams actives SANS le plugin agent-teams : le dire, jamais en silence.
+    Le flag monte une équipe à chaque session et fait partir tout subagent nommé en teammate
+    (doc agent teams) ; sans le plugin, aucun invariant d'équipe n'est injecté et l'interrupteur
+    `/agent-teams:team off` n'existe pas. Vécu : flag posé en user → toutes les sessions de tous
+    les projets. Plugin activé = 1re clé `agent-teams@…` de `enabledPlugins` par priorité
+    local > projet > user. Coupé par CLAUDE_TEAMS_PLUGIN_CHECK=off."""
+    if os.environ.get("CLAUDE_TEAMS_PLUGIN_CHECK", "").lower() == "off":
+        return
+    if os.environ.get(TEAM_ENV, "").strip().lower() not in ("1", "true", "yes", "on"):
+        return
+    root = Path(racine_projet(data))
+    user_dir = Path(os.environ.get("CLAUDE_CONFIG_DIR") or Path.home() / ".claude")
+    plugin, src = None, None
+    for label, p in (("local", root / ".claude" / "settings.local.json"),
+                     ("projet", root / ".claude" / "settings.json"),
+                     ("user", user_dir / "settings.json")):
+        try:
+            d = json.loads(p.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        if not isinstance(d, dict):
+            continue
+        ep = d.get("enabledPlugins")
+        if plugin is None and isinstance(ep, dict):
+            plugin = next((bool(v) for k, v in ep.items() if k.startswith("agent-teams@")), None)
+        env = d.get("env")
+        if src is None and isinstance(env, dict) and TEAM_ENV in env:
+            src = f"{label} — `{p}`"
+    if plugin:
+        return
+    print(f"""## ⚠️ Agent teams actives, plugin `agent-teams` absent
+
+Le flag `{TEAM_ENV}` est à 1 (source : {src or "export shell"}) mais le plugin `agent-teams` n'est pas
+activé ici : chaque session monte une équipe, et tout subagent nommé part en teammate SANS règles
+d'équipe (rapport au lead, périmètre, docs partagés) ; `/agent-teams:team on|off|status` n'existe pas.
+
+→ Signale-le à l'utilisateur en 1 ligne, sans rien modifier. Remèdes : installer le plugin
+(`claude plugin install agent-teams@claude-setup --scope project`, puis `/agent-teams:team status`), ou
+couper le flag (le retirer de sa source, ou `"{TEAM_ENV}": "0"` dans `env` de `.claude/settings.json`).
+Pour faire taire ce rappel : `CLAUDE_TEAMS_PLUGIN_CHECK=off`.""")
+
+
 def main():
     try:
         data = json.load(sys.stdin)
@@ -173,7 +230,7 @@ def main():
         sys.exit(0)
 
     source = data.get("source")
-    cwd = data.get("cwd", os.getcwd())
+    cwd = racine_projet(data)
     if source in ("compact", None):  # post-compaction (ou schéma historique sans « source »)
         rearm_codemap_injection(data)
         inject_compact_marker(data)
@@ -185,6 +242,7 @@ def main():
         if source == "startup":
             inject_session_end_net(data)
             warn_context_budget(data)
+            warn_team_without_plugin(data)
 
     sys.exit(0)
 

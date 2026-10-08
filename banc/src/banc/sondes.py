@@ -1,4 +1,6 @@
-"""Sondes d'accès à Vertex (T0.2) : un appel minimal par client, chacune dans son processus.
+"""Sondes d'accès (T0.2) : un appel minimal par client, chacune dans son processus.
+
+Claude passe par l'API Anthropic (ADR-0011), Gemini par Vertex `eu`.
 
 `banc acces` lance `python -m banc.sondes <client> <modèle>` depuis un dossier vide, avec la liste
 blanche de D3 pour seul environnement ; la sonde écrit son relevé en une ligne JSON sur stdout.
@@ -13,11 +15,10 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any
 
-from anthropic import AsyncAnthropicVertex
 from claude_agent_sdk import ClaudeAgentOptions, ResultMessage, SystemMessage, query
 from google.adk.agents import LlmAgent
 from google.adk.models import Gemini
-from google.adk.models.anthropic_llm import AnthropicGenerateContentConfig, Claude
+from google.adk.models.anthropic_llm import AnthropicGenerateContentConfig, AnthropicLlm
 from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
 from google.genai import types
@@ -27,6 +28,12 @@ from banc.prix import Usage
 
 QUESTION = "Réponds seulement : OK"
 CONSIGNE = "Tu réponds en un seul mot."
+# Source d'authentification annoncée par le message init quand la clé vient de l'environnement.
+SOURCE_CLE = "ANTHROPIC_API_KEY"
+
+
+class CleNonUtilisee(Exception):
+    """Claude Code ne paie pas par la clé de l'API : coût non mesurable (circuit breaker)."""
 
 
 @dataclass
@@ -39,6 +46,15 @@ class Releve:
     usages: dict[str, Usage] = field(default_factory=dict)
     duree_s: float = 0.0
     observations: dict[str, Any] = field(default_factory=dict)
+
+
+def verifier_cle(init: Mapping[str, Any]) -> None:
+    """Exige que Claude Code s'authentifie par la clé de l'API, jamais par un abonnement."""
+    source = init.get("apiKeySource")
+    if source != SOURCE_CLE:
+        raise CleNonUtilisee(
+            f"Claude Code ne paie pas par la clé de l'API : apiKeySource={source!r}"
+        )
 
 
 def usage_claude_code(model_usage: Mapping[str, Mapping[str, Any]]) -> dict[str, Usage]:
@@ -79,6 +95,7 @@ async def claude_code(modele: str) -> Releve:
     )
     async for message in query(prompt=QUESTION, options=options):
         if isinstance(message, SystemMessage) and message.subtype == "init":
+            verifier_cle(message.data)
             scalaires = {k: v for k, v in message.data.items() if isinstance(v, str | int | bool)}
             releve.observations["init"] = scalaires
         elif isinstance(message, ResultMessage):
@@ -91,10 +108,10 @@ async def claude_code(modele: str) -> Releve:
 
 async def adk(client: str, modele: str) -> Releve:
     """ADK avec Claude (effort, réflexion adaptative) ou Gemini (niveau de réflexion)."""
-    llm: Claude | Gemini
+    llm: AnthropicLlm | Gemini
     config: types.GenerateContentConfig
     if client == "adk-claude":
-        llm = Claude(model=modele, client=AsyncAnthropicVertex(project_id=PROJET, region=REGION))
+        llm = AnthropicLlm(model=modele)  # clé lue dans ANTHROPIC_API_KEY par le client Anthropic
         adaptative = types.ThinkingConfig(thinking_budget=-1)
         config = AnthropicGenerateContentConfig(effort=EFFORT, thinking_config=adaptative)
     else:

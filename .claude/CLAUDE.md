@@ -27,7 +27,11 @@
 - Marketplace (une fois) : `/plugin marketplace add kurt83340/claude-Setup`
 - n8n → plugin officiel `n8n-mcp-skills` (check-first `claude plugin list` : souvent déjà en user-scope)
 - BDD Alembic → `claude plugin install db-migration@claude-setup --scope project`
-- Équipe d'agents (opt-in) → `claude plugin install agent-teams@claude-setup --scope project`, puis `/agent-teams:team` : le 1er lancement l'active (flag + mode d'affichage + rule d'équipe), relance de Claude Code requise.
+- Équipe d'agents (opt-in) → `claude plugin install agent-teams@claude-setup --scope project`, puis `/agent-teams:team on` (relance requise) · `off` · `status`. Plugin absent → le dire à l'utilisateur avec cette commande, jamais monter une équipe en silence.
+
+## Permissions
+
+- Toute commande `rm` demande l'accord de l'utilisateur (règle `ask` de `settings.json`, même en bypassPermissions) : avant un `rm`, annoncer le chemin, le contenu et la raison.
 
 ## Version du template
 

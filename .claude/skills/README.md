@@ -94,11 +94,11 @@ Les plugins ont leur propre namespace automatiquement (`plugin-name:skill-name`)
 Pas livrés dans `.claude/skills/` — packagés en **plugins** installés par projet via `/plugin`
 (auto-découverts, aucun inventaire à maintenir). Recensés ici pour visibilité.
 
-| Plugin          | Skills                 | Install (selon type projet)                                     |
-| --------------- | ---------------------- | --------------------------------------------------------------- |
-| `n8n-mcp-skills` (**officiel**, [czlonkowski/n8n-skills](https://github.com/czlonkowski/n8n-skills)) | 14 skills n8n + hooks | `automation-n8n` → check-first `claude plugin list` (souvent déjà en user-scope) ; sinon marketplace add + install `--scope user` |
-| `db-migration`  | `db-migration`         | `bdd-migration` → `/plugin install db-migration@claude-setup`   |
-| `agent-teams`   | `/agent-teams:team` + rôles worker/front-end/back-end/tester | toute stack, **opt-in** → `/plugin install agent-teams@claude-setup`, puis `/agent-teams:team` (1er lancement = activation) |
+| Plugin                                                                                               | Skills                                                       | Install (selon type projet)                                                                                                                |
+| ---------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `n8n-mcp-skills` (**officiel**, [czlonkowski/n8n-skills](https://github.com/czlonkowski/n8n-skills)) | 14 skills n8n + hooks                                        | `automation-n8n` → check-first `claude plugin list` (souvent déjà en user-scope) ; sinon marketplace add + install `--scope user`          |
+| `db-migration`                                                                                       | `db-migration`                                               | `bdd-migration` → `/plugin install db-migration@claude-setup`                                                                              |
+| `agent-teams`                                                                                        | `/agent-teams:team` + rôles worker/front-end/back-end/tester | toute stack, **opt-in** → `/plugin install agent-teams@claude-setup`, puis `/agent-teams:team on` (interrupteur : `on` · `off` · `status`) |
 
 ## Skills built-in Claude Code (hors `.claude/skills/`)
 

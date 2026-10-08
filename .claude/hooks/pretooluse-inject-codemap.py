@@ -19,6 +19,12 @@ Ciblage : une entrée cible un fichier en citant en backticks un chemin, un nom 
 dossier (ou via son heading `###`) ; les entrées sous un heading « Globaux » valent pour toute
 édition de code. Projet < 1.4 sans code-map-gotchas.md → § Gotchas de code-map.md.
 
+Ordre et budget : la plus spécifique d'abord — chemin exact / nom du fichier, puis le dossier le plus
+profond, puis les dossiers parents, les Globaux en DERNIER — et la coupe à MAX_CHARS tombe entre deux
+entrées entières, avec « N gotcha(s) non injecté(s) ». Vécu : 53 Globaux migrés en tête de fichier,
+coupe à 2 500 caractères → les gotchas propres au fichier n'arrivaient jamais ; et un gotcha général
+sur `src/adapter/` passait avant ceux de `src/adapter/ocr/`, que la coupe faisait tomber.
+
 Fichiers concernés (v1.5.0) : tout fichier DU PROJET hors `.claude/` — plus de liste fixe
 src/tests/lib/app (ratait packages/, backend/…). Docs/config (.md, .json, .yaml…) : uniquement les
 gotchas qui les ciblent explicitement (workflows n8n en .json), jamais les Globaux. Les entrées du
@@ -77,15 +83,26 @@ def path_tokens(s: str):
     return [t.strip() for t in toks if ("/" in t or "." in t) and " " not in t.strip()]
 
 
-def targets_file(tokens, rel: str, name: str) -> bool:
+def match_score(tokens, rel: str, name: str) -> int:
+    """Spécificité du meilleur token qui cible `rel` (0 = ne le cible pas). Chemin exact ou nom du
+    fichier > dossier (d'autant plus spécifique qu'il est profond) > simple fragment du chemin."""
     rel_n = rel.replace("\\", "/")
+    best = 0
     for t in tokens:
         t = t.lstrip("./")
         if not t:
             continue
-        if t == name or rel_n.endswith("/" + t) or rel_n == t or t in rel_n:
-            return True
-    return False
+        depth = len([s for s in t.strip("/").split("/") if s])
+        if rel_n == t or rel_n.endswith("/" + t) or t == name:
+            score = 1000 + depth  # le fichier lui-même
+        elif ("/" + rel_n).startswith("/" + t.rstrip("/") + "/") or ("/" + t.rstrip("/") + "/") in ("/" + rel_n):
+            score = 100 + depth   # un dossier qui le contient : plus profond = plus spécifique
+        elif t in rel_n:
+            score = 1             # fragment (ancien critère, gardé pour ne rien perdre)
+        else:
+            continue
+        best = max(best, score)
+    return best
 
 
 def heading_tokens(heading: str):
@@ -94,17 +111,36 @@ def heading_tokens(heading: str):
     return path_tokens(heading) + bare
 
 
-def targeted_gotchas(text: str, rel: str, name: str, with_globals: bool = True) -> str:
-    out = []
-    for heading, entry in gotcha_entries(text):
+def targeted_entries(text: str, rel: str, name: str, with_globals: bool = True):
+    """Entrées qui s'appliquent à `rel`, de la plus spécifique à la moins spécifique (Globaux en
+    dernier) ; à spécificité égale, l'ordre du fichier."""
+    scored = []
+    for i, (heading, entry) in enumerate(gotcha_entries(text)):
         if re.search(r"\{\{[^}]*\}\}", entry):
             continue  # entrée du gabarit jamais remplie (« ⚠️ {{Piège transversal…}} ») → bruit
         if re.search(r"globa", heading, re.IGNORECASE):
             if with_globals:
-                out.append(entry)
-        elif targets_file(heading_tokens(heading) + path_tokens(entry), rel, name):
-            out.append(entry)
-    return "\n".join(out)
+                scored.append((0, i, entry))
+            continue
+        score = match_score(heading_tokens(heading) + path_tokens(entry), rel, name)
+        if score:
+            scored.append((score, i, entry))
+    return [e for _, _, e in sorted(scored, key=lambda x: (-x[0], x[1]))]
+
+
+def fit(entries, budget: int):
+    """Entrées entières jusqu'au budget ; (texte, nombre d'entrées laissées de côté). Une 1re entrée
+    plus longue que le budget est tronquée plutôt que perdue."""
+    out, used = [], 0
+    for k, e in enumerate(entries):
+        cost = len(e) + (1 if out else 0)
+        if used + cost > budget:
+            if not out:
+                return e[:budget].rstrip() + " […]", len(entries) - 1
+            return "\n".join(out), len(entries) - k
+        out.append(e)
+        used += cost
+    return "\n".join(out), 0
 
 
 def load_marker(path: Path) -> dict:
@@ -129,7 +165,9 @@ def main():
     if not file_path:
         sys.exit(0)
 
-    cwd = Path(data.get("cwd", os.getcwd()))
+    # Racine = CLAUDE_PROJECT_DIR (fixe pour la session), pas le cwd du payload, qui suit les `cd`
+    # (même règle que posttooluse-growth-detection depuis la PR n°2).
+    cwd = Path(os.environ.get("CLAUDE_PROJECT_DIR") or data.get("cwd") or os.getcwd())
     try:
         rel = os.path.relpath(file_path, cwd).replace("\\", "/")
     except ValueError:
@@ -161,7 +199,7 @@ def main():
     if rel in marker["files"]:
         sys.exit(0)  # déjà injecté pour ce fichier dans cette session
 
-    gotchas = targeted_gotchas(gsrc, rel, Path(file_path).name, with_globals=is_code) if gsrc else ""
+    entries = targeted_entries(gsrc, rel, Path(file_path).name, with_globals=is_code) if gsrc else []
     marker["files"].append(rel)
     try:
         marker_path.parent.mkdir(parents=True, exist_ok=True)
@@ -169,12 +207,15 @@ def main():
     except Exception:
         pass
 
-    if not gotchas.strip():
+    if not entries:
         sys.exit(0)
+    gotchas, left = fit(entries, MAX_CHARS)
+    more = (f"\n\n… {left} gotcha(s) de plus pour ce fichier non injecté(s) (budget {MAX_CHARS} car.) "
+            "→ lis `.claude/docs/code-map-gotchas.md`.") if left else ""
 
     context = f"""## ⚠️ Gotchas ciblant `{rel}` (code-map-gotchas.md)
 
-{gotchas[:MAX_CHARS]}
+{gotchas}{more}
 
 → Pièges déjà payés sur ce fichier/cette zone : vérifie que ton édition les respecte, corrige
 dans la foulée sinon. (Injecté une fois par session et par fichier — budget contexte.)"""

@@ -3,7 +3,7 @@ name: archive-projet
 description: Archive un projet en fin de vie (ou le restaure) — bilan final (HANDOFF/ROADMAP/CHANGELOG), marquage archivé lisible par toute session future (bannière CLAUDE.md + marqueur .claude/archived), scan des références de chemin (repo, crontab, ~/.claude.json), migration de l'auto-memory, puis commande de move vers _archives/ remise à l'utilisateur (à lancer après fermeture de session). Modes restore (dé-archiver) et status.
 allowed-tools: Read, Write, Edit, Glob, Grep, AskUserQuestion, Bash(python3 .claude/skills/archive-projet/scripts/archive-projet.py:*), Bash(git status), Bash(git log:*), Bash(git worktree list:*), Bash(git add:*), Bash(git commit:*), Bash(date:*), Bash(crontab -l)
 disable-model-invocation: true
-argument-hint: "[\"raison\"|restore|status] [--dest <dossier>]"
+argument-hint: '["raison"|restore|status] [--dest <dossier>]'
 ---
 
 # /archive-projet — Fin de vie d'un projet (archiver / restaurer)
@@ -24,11 +24,11 @@ du rapport.
 
 ## Modes
 
-| Mode                                            | Quand l'invoquer                                 |
-| ----------------------------------------------- | ------------------------------------------------ |
-| `/archive-projet ["raison"] [--dest <dir>]`     | Projet terminé/abandonné/en pause longue → archiver |
-| `/archive-projet restore`                       | Reprendre un projet archivé                      |
-| `/archive-projet status`                        | Voir l'état d'archivage                          |
+| Mode                                        | Quand l'invoquer                                    |
+| ------------------------------------------- | --------------------------------------------------- |
+| `/archive-projet ["raison"] [--dest <dir>]` | Projet terminé/abandonné/en pause longue → archiver |
+| `/archive-projet restore`                   | Reprendre un projet archivé                         |
+| `/archive-projet status`                    | Voir l'état d'archivage                             |
 
 La destination est **choisie par l'utilisateur au moment de l'archivage** (Étape 2) — elle
 n'est pas forcément la même d'un projet à l'autre. Défaut proposé : `<parent>/_archives/<projet>`
@@ -67,7 +67,9 @@ python3 .claude/skills/archive-projet/scripts/archive-projet.py archive \
 ```
 
 Montrer le résultat : destination, références internes au chemin absolu, référents externes
-détectés (crontab, `~/.claude.json`), auto-memory trouvée ou non. **Attendre le OK.**
+détectés (crontab, `~/.claude.json`), auto-memory trouvée ou non. **Attendre le OK.** Avec
+`CLAUDE_CONFIG_DIR` (un second compte, par exemple), le script cherche la mémoire et
+`.claude.json` dans ce dossier, comme Claude Code.
 
 ### Étape 4 — Exécution réelle (sans `--dry-run`)
 
