@@ -97,7 +97,10 @@
   vu le 2026-10-08).
 - ⚠️ `banc/tests/` — gitleaks (pre-commit) prend un SHA de 40 caractères hexadécimaux affecté à un nom qui contient
   « api » (`commit_pokeapi="…"`) pour une clé d'API (generic-api-key) : lire le commit par
-  `banc.mesures.commit_pokeapi()` plutôt que l'écrire (commit refusé le 2026-10-08).
+  `banc.mesures.commit_pokeapi()` plutôt que l'écrire (commit refusé le 2026-10-08). Même règle pour une clé en
+  « …tokens » dont la valeur est une expression (`self.ecrit_5m + self.ecrit_1h`, sous la clé d'écriture en cache de
+  l'API) : passer par une variable ou une propriété ; ne pas recopier non plus la forme fautive dans la doc (commit
+  refusé deux fois le 2026-10-09).
 - ⚠️ `banc/src/banc/isolement.py` — ADK (`mcp` 2.3.0, `client/stdio.py`) lance le serveur MCP dans sa propre session
   et, sans `env` explicite, ne lui passe que HOME, LOGNAME, PATH, SHELL, TERM et USER : donner la liste blanche à
   ses paramètres de lancement, et arrêter le lanceur par son propre groupe (relevé le 2026-10-08, pour T4.2).

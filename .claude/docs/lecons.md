@@ -48,6 +48,13 @@ Archive 📦 au bout de N mois (entries promues stables)
 
 ---
 
+## 2026-10-09 — Le vrai client, contre une fausse API, montre ce que sa doc tait
+
+**scope:** feature-002 | **status:** 🆕 new
+
+T4.1 : le vrai Claude Code 2.1.292, branché sur une fausse API Anthropic et un faux neo4j-mcp locaux, a révélé en quelques minutes et pour 0 $ cinq comportements que sa doc ne dit pas : budget affiché à l'agent par `--max-budget-usd`, mémoire automatique décrite dans le prompt, socket entre sessions dans `/tmp/cc-socks/`, instructions du serveur injectées, appel coupé oublié par `model_usage`. Hermétique (une seule connexion, vers la fausse API), gardé en test (`banc/tests/test_cellule_sdk_reel.py`).
+→ Piste : refaire l'essai pour les cellules ADK en T4.2 (AnthropicLlm vers une fausse API ; Gemini à voir), puis 🔧 rule `testing.md` si la méthode sert deux fois.
+
 ## 2026-10-08 — Un test d'exclusion doit employer une entrée que le code accepterait sans elle
 
 **scope:** feature-002 | **status:** 🆕 new → 🔧 → [rule](../rules/testing.md) (2026-10-09, choix de Julien, après deux nouveaux cas en phase 3)

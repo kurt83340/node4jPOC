@@ -1,22 +1,22 @@
-# HANDOFF — 2026-10-09 00h48
+# HANDOFF — 2026-10-09 14h59
 
 > Court, narratif, versionné. Patterns techniques → auto-memory. Reprise précise → /resume.
 
-**Branche** : `feature/002-phase-4` (tirée de `main` après la PR n°9 ; porte ce handoff)
-**Spec en cours** : [002-agent-text-to-cypher](specs/002-agent-text-to-cypher/spec.md) (12/33 tasks : phases 0 à 3, T7.1)
-**Goal session** : phase 3 (T3.1, T3.2) en TDD, revue adverse, PR de fin de phase, NEO-17
+**Branche** : `feature/002-phase-4` (T4.1 en 2 commits, plus ce handoff)
+**Spec en cours** : [002-agent-text-to-cypher](specs/002-agent-text-to-cypher/spec.md) (13/33 tasks : phases 0 à 3, T4.1, T7.1)
+**Goal session** : T4.1, la cellule Claude Code (Agent SDK) isolée, vérifiée sur le vrai binaire
 
 ## Status
 
-- ✅ `banc/` : 705 tests, ruff, mypy strict, shellcheck propres ; couverture de `banc.mesures` et `banc.revue` 100 % ; aucun appel LLM
-- ✅ Phase 3 fusionnée (PR n°9, merge `2f92d79`) : trace JSONL et CSV sans prose (`banc.mesures`), identifiant masqué par le lanceur (perl sur le stdout de `neo4j-mcp`), revue à l'aveugle `banc revoir` (`banc.revue`) ; NEO-17 « Terminé », risque de revue de NEO-2 relevé (~230 cas)
-- ✅ Revue adverse à contexte frais : 13 constats, tous traités (plan, D4 et D10) ; 94 + 82 fautes injectées, toutes détectées ; leçon des tests d'exclusion promue en règle ([testing](../rules/testing.md))
+- ✅ `banc/` : 801 tests, ruff, mypy strict, shellcheck, gitleaks propres ; couverture de `banc.cellule` 100 %, de `banc.cellule_sdk` 99 % ; aucun appel LLM
+- ✅ T4.1 : `banc.cellule` (commande JSON d'une conversation, plafonds) et `banc.cellule_sdk` (un processus à la liste blanche par conversation) ; 80 fautes injectées, toutes détectées
+- ✅ Vrai Claude Code 2.1.292 relevé contre une fausse API (plan, D3 et D13), gardé en 5 tests hermétiques ; choix de Julien : instructions du serveur ôtées par le lanceur, budget de 0,50 $ par conversation compté sur le flux
 
 ## Échecs tentés (à ne pas refaire)
 
-- `model_usage` de Claude Code lu comme l'usage d'un tour : il cumule la session, Q18 comptait Q2 → `usage_du_tour`
-- Tests d'exclusion passés par une règle voisine (`match=` trop large, gel invalide refusé faute de pilote) → règle de test
-- SHA de commit écrit en clair sous un nom en « api » dans un test → commit refusé par gitleaks ([gotcha](code-map-gotchas.md))
+- `--max-budget-usd` natif → l'agent voit « USD budget: … remaining » à chaque appel : budget compté par la cellule
+- Faux outil lancé en processus qui liste le HOME → il hérite de celui du poste, 7 s par test ([gotcha](code-map-gotchas.md))
+- `"…_tokens": self.a + self.b` dans un test → commit refusé par gitleaks (generic-api-key) : variable intermédiaire
 
 ## Blocked on
 
@@ -24,15 +24,15 @@
 
 ## Next (par ordre)
 
-1. **Phase 4 (NEO-18)** : T4.1 cellule Agent SDK, T4.2 cellules ADK, T4.3 orchestration, avec le relevé de la revue adverse (plan, D13 : usage cumulé et `interrupt()`, `env` et session du serveur MCP sous ADK, `fin` à l'échéance, Q18 fausse d'office si Q2 échoue)
-2. Avant toute campagne payante (au plus tard T5.1) : coupure automatique de l'ADR-0010, branche à part
-3. T4.1 : fixer `permissionMode`, couper la socket `/tmp/cc-socks/` si possible, plafonner `CLAUDE_CODE_MAX_RETRIES` (plan, D3 et D13)
-4. Mineurs : pre-commit (shellcheck, Prettier, pytest) ; flag des équipes en portée user
+1. **T4.2 (NEO-18)** : cellules ADK sur `banc.cellule` (même commande, mêmes plafonds, budget hors du client) ; `McpToolset` avec la liste blanche en `env` et son propre groupe (gotcha `mcp` 2.3.0) ; refaire l'essai réel contre une fausse API là où c'est possible ([leçon du 2026-10-09](lecons.md))
+2. **T4.3** : orchestration (groupe de processus, `scripts/transactions.sh`, relances, ligne de Q18 après l'échec de Q2 selon l'ADR-0012, alternance, `--reprendre`), puis PR de la phase 4 `(NEO-18)`
+3. Avant toute campagne payante (au plus tard T5.1) : coupure automatique de l'ADR-0010, branche à part
+4. À trancher et mineurs : un ADR qui précise l'ADR-0009 (plafonds invisibles de l'agent, instructions du serveur ôtées) ? ; pre-commit (shellcheck, Prettier, pytest) ; flag des équipes en portée user
 
 ## Continuation State (machine-readable — grammaire fixe `Clé: valeur`, 1 ligne chacune)
 
 Spec: 002-agent-text-to-cypher
-Task: T4.1
+Task: T4.2
 Fichiers en cours: aucun
 Bloqué sur: rien
 Commande de reprise: git switch feature/002-phase-4 && git pull
