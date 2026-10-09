@@ -16,6 +16,8 @@ from typing import Any
 
 import pytest
 
+from banc.isolement import environnement_agent
+
 LANCEUR = Path(__file__).resolve().parents[2] / "scripts" / "mcp-neo4j.sh"
 
 # Secret factice, au format du fichier d'identifiants d'Aura : l'utilisateur et la base valent
@@ -253,6 +255,24 @@ def test_aucun_acces_a_claude(bac: Bac) -> None:
     env = bac.lancer().serveur()["env"]
     assert not [nom for nom in env if acces_claude(nom)]
     assert all(CLE_ANTHROPIC not in valeur for valeur in env.values())
+
+
+def test_aucun_acces_a_vertex(bac: Bac) -> None:
+    # Les variables Vertex de la cellule Gemini (D3 : ADC, projet, région) s'arrêtent au lanceur,
+    # comme la clé Anthropic ; gcloud lit le secret sans elles.
+    vertex = {
+        nom: valeur
+        for nom, valeur in environnement_agent(
+            "adk-gemini", bac.racine / "home", bac.racine
+        ).items()
+        if nom.startswith("GOOGLE_")
+    }
+    assert "GOOGLE_APPLICATION_CREDENTIALS" in vertex
+    bac.env |= vertex
+    lancement = bac.lancer()
+    env = lancement.serveur()["env"]
+    assert not [nom for nom in env if nom.startswith("GOOGLE_")]
+    assert lancement.note("gcloud") is not None
 
 
 def test_heritage_ecarte(bac: Bac) -> None:
