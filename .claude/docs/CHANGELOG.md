@@ -15,12 +15,14 @@ Format : [Keep a Changelog](https://keepachangelog.com/). Versionning : `vYYYY.M
 - Socle de données du jalon 1 ([spec 001](specs/001-socle-donnees/spec.md)) : graphe Pokémon chargé en Cypher pur depuis le commit PokéAPI figé, 8 859 nœuds et 113 700 relations (`scripts/charger.sh --tout`, journal dans `logs/`) ; vérification écrite d'abord (`scripts/verifier.sh`) ; preuve d'idempotence en une commande (`charger.sh --idempotence`) ; 27 requêtes de référence et leur rejeu (`scripts/questions.sh`) (2026-10-01)
 - Suivi Jira du jalon 2 sous l'epic [NEO-2](https://frjulienleroy.atlassian.net/browse/NEO-2) : NEO-14 à NEO-24, un ticket par phase de la [spec 002](specs/002-agent-text-to-cypher/tasks.md) (les plus petites regroupées), une story (NEO-21, la mesure) et deux actions de Julien (NEO-15, NEO-22) (2026-10-01)
 - Tests du socle : `verifier.sh` 33 contrôles conformes ; `charger.sh --idempotence` IDEMPOTENT (chargement sur base vide en 37 s, second chargement sans aucune création) ; `questions.sh --verifier` 27 questions conformes ; `shellcheck` propre sur `scripts/`
+- CI GitHub Actions (`.github/workflows/ci.yml`, NEO-25) : à chaque PR et push sur `main`, banc et `reveil-aura` (ruff, mypy strict, pytest), shellcheck, Prettier 3.9.8 et gitleaks sur tout l'historique ; aucun secret ni accès au cloud ; pas de CD (2026-10-10)
 
 ### Changed
 
 - Pivot 2026-09-28 : environnement cible Google Cloud, découpage en 6 jalons ([CR](cadrage/reunions/2026-09-28-pivot.md))
 - [Règles git](../rules/git-workflow.md) : clé du ticket Jira à la fin du sujet des commits, clé de l'epic du jalon à la fin du titre des PR, aucune clé dans le nom des branches, commits et PR au seul nom de Julien (2026-09-30)
 - [Règles git](../rules/git-workflow.md) : une branche et une PR par phase, fusion en merge commit (seul mode permis par le dépôt, branche supprimée à la fusion), tag `jalon-N` à la livraison d'un jalon ; le titre d'une PR finit par la clé du ticket de sa phase (2026-10-01)
+- [Règles git](../rules/git-workflow.md) : on ne fusionne qu'une PR dont `gh pr checks` est vert, GitHub Free ne protégeant aucune branche d'un dépôt privé ; branches `chore/` pour l'outillage du dépôt (2026-10-10)
 
 ### Decided
 

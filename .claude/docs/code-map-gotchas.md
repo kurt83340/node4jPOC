@@ -166,3 +166,7 @@
 - ⚠️ `banc/tests/test_orchestration.py` — un test qui envoie un signal au processus de pytest pose d'abord un gestionnaire
   refuge : sinon, une mutation qui retire celui du harnais tue pytest. Une mutation tuée au délai laisse ses fausses
   cellules dormir 600 s dans leur session : les arrêter par leur pid (vu le 2026-10-09).
+- ⚠️ `.github/workflows/ci.yml` — la CI ne reçoit aucun secret et ne joint ni Google Cloud, ni Anthropic, ni Aura : ses
+  tests ne parlent qu'à des faux, et un test qui exige un vrai service reste hors CI. Le hook gitleaks du pre-commit ne
+  lit que les changements indexés (`--staged`) : la CI scanne tout l'historique avec le binaire de la même version,
+  vérifié par son empreinte. GitHub Free et dépôt privé : la CI ne bloque pas une fusion, `gh pr checks` le fait (NEO-25).

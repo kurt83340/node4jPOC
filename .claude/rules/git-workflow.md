@@ -33,6 +33,7 @@ commits n'est pas celui du compte Jira.
 - `feature/00X-phase-N` : une branche par phase de `specs/00X-*/tasks.md`, tirée de `main` à jour, vivante quelques
   heures ; la conception d'une spec est sa première phase (`feature/00X-conception`)
 - `fix/description-courte` : bug fixes
+- `chore/description-courte` : outillage du dépôt hors spec (CI, dépendances), avec son ticket
 - `hotfix/description` : urgences prod (merge direct dans main + tag)
 - Pas de clé Jira dans le nom d'une branche : elle va dans les commits et dans le titre de la PR
 
@@ -48,7 +49,9 @@ commits n'est pas celui du compte Jira.
   phase relève de deux tickets, les deux : `(NEO-15, NEO-16)`. La PR
   de conception porte la clé de l'epic, par exemple `(NEO-2)`. Le commit de fusion reprend ce titre (réglage du dépôt)
 - Branche supprimée à la fusion (réglage du dépôt) : ses commits restent dans `main`
-- CI verte obligatoire (tests + lint + type check) — si le projet a une CI
+- CI verte obligatoire (`.github/workflows/ci.yml` : tests, lint, types, shell, format, secrets) : `gh pr checks <n>`
+  tout vert avant `gh pr merge`. GitHub Free et dépôt privé : aucune protection de branche, rien d'autre ne bloque
+  la fusion d'une PR rouge
 
 ## Tags
 
