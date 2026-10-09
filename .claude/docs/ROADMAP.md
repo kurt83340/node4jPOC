@@ -4,7 +4,7 @@
 > **Plan détaillé** (phases, DoD) → le `tasks.md` de chaque spec ; pas de plan macro séparé ([conception/tasks.md](conception/tasks.md)).
 > MAJ à chaque session ou via `/feature-done`.
 
-**Dernière MAJ :** 2026-10-07
+**Dernière MAJ :** 2026-10-09
 
 ## 🔄 Pivot 2026-09-28 — Environnement cible Google Cloud
 
@@ -33,8 +33,8 @@ Instance créée ; données chargées en Cypher pur (`LOAD CSV`) par un script r
 
 La fiche de schéma reprend les règles de réponse du banc d'essai ([questions/README.md](../../questions/README.md) : « Pokémon » = espèce, sens de « apprendre ») et les cas limites gardés tels quels du [plan 001](specs/001-socle-donnees/plan.md) : noms en double (18 attaques Z, « Osmose Équine », 2 formes), `categorie` sans « Pokémon » pour la 9e génération, apostrophe typographique dans 62 noms. La propriété `categorie` a deux sens : « Pokémon Flamme » sur un Pokémon ; « physique », « spéciale » ou « statut » sur une attaque. Index plein texte sur les noms prévu ([ARCHITECTURE § 8](conception/ARCHITECTURE.md)).
 
-- [~] [002-agent-text-to-cypher](specs/002-agent-text-to-cypher/spec.md) — **EN COURS** 1/33 tasks : conception validée le 2026-10-01 ([ADR-0009](adr/0009-mvp-protocole-mesure-techniques.md)), T7.1 faite avec la clôture de NEO-13 ; reprise à T0.1. Elle couvre tout le jalon :
-  - `neo4j/mcp` branché sur Claude Code et sur un agent ADK (Claude Sonnet 5.5 et Gemini 3.8 Flash, via Vertex), mesuré sur les 30 questions
+- [~] [002-agent-text-to-cypher](specs/002-agent-text-to-cypher/spec.md) — **EN COURS** 12/33 tasks : conception validée le 2026-10-01 ([ADR-0009](adr/0009-mvp-protocole-mesure-techniques.md)), phases 0 à 3 faites (socle sans base, banc lisible par le harnais, notation, mesures et revue ; la dernière fusionnée le 2026-10-09), T7.1 faite avec la clôture de NEO-13 ; reprise à T4.1 (phase 4, cellules, NEO-18). Elle couvre tout le jalon :
+  - `neo4j/mcp` branché sur Claude Code et sur un agent ADK (Claude Sonnet 5.5 par l'API Anthropic, [ADR-0011](adr/0011-infra-claude-par-api-anthropic.md) ; Gemini 3.8 Flash sur Vertex `eu`), mesuré sur les 30 questions
   - Fiche de schéma commune à toutes les techniques (règles, valeurs, exemples) et mesure « schéma français contre anglais » ([ADR-0005](adr/0005-mvp-conventions-nommage-schema.md))
 
 ## 📋 Jalon 3 — GraphRAG sur les descriptions
@@ -61,6 +61,7 @@ La fiche de schéma reprend les règles de réponse du banc d'essai ([questions/
 - Limite d'AuraDB Free : 200 000 nœuds et 400 000 relations (lue le 2026-09-30) ; le graphe chargé en occupe 4,4 % et 28,4 %
 - Instance Free en pause après 72 h sans activité, supprimée après 30 jours de pause : garder le script de chargement réexécutable ; le job de réveil quotidien `reveil-aura` l'évite (NEO-13, vérifié du 2026-10-01 au 2026-10-07)
 - Coûts qui tournent en tâche de fond : éteindre Aura Agent exposé, l'agent Agent Runtime (`min_instances=0`) et toute instance Business Critical après chaque session de mesure
+- Dépense LLM : coupure automatique de Vertex ([ADR-0010](adr/0010-infra-plafond-de-depense.md)) à construire avant la première campagne payante (au plus tard T5.1) ; Claude plafonné par 20 $ de crédits sans recharge automatique ([ADR-0011](adr/0011-infra-claude-par-api-anthropic.md))
 
 ## 🚫 Hors POC
 

@@ -96,7 +96,7 @@
   - DoD : `command_passes: uv run --directory banc python -m banc rapport --campagne <id> --complet` (9 séries, aucune panne non relancée)
 - [ ] **T9.2** : revue humaine des « à revoir »
   - DoD : `command_passes: uv run --directory banc python -m banc revoir --campagne <id> --verifier` (aucun cas restant)
-- [ ] **T9.3** : coût recoupé avec l'export de facturation BigQuery (`/google-facture`), le lendemain
+- [ ] **T9.3** : coût recoupé avec l'usage de la Console Anthropic (cellules Claude, [ADR-0011](../../adr/0011-infra-claude-par-api-anthropic.md)) et l'export de facturation BigQuery (`/google-facture`, cellule Gemini), le lendemain (plan, D10)
   - DoD : `manual: écart noté dans le rapport de campagne`
 
 ## Phase 10 — Schéma anglais, sur la base (NEO-23)
