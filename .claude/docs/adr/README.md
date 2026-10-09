@@ -2,6 +2,7 @@
 
 > Décisions techniques **structurantes** du projet, capturées au fil du temps.
 > **Immuables** : on ne modifie jamais un ADR existant. Si la décision change, on en crée un nouveau qui **supersede** l'ancien.
+> Seule exception : le bandeau daté d'un amendement partiel (voir « Amendement partiel », en bas).
 
 ## Convention
 
@@ -24,16 +25,16 @@
 
 ### 🎨 mvp — Décisions projet structurantes
 
-| #                                                  | Titre                                                                             | Statut   |
-| -------------------------------------------------- | --------------------------------------------------------------------------------- | -------- |
-| [0001](0001-mvp-jeu-de-donnees-pokeapi.md)         | Jeu de données : Pokémon (CSV PokéAPI, en français)                               | Accepted |
-| [0003](0003-mvp-chargement-cypher-pur.md)          | Chargement des données : Cypher pur (`LOAD CSV`)                                  | Accepted |
-| [0004](0004-mvp-modele-espece-formes.md)           | Modèle du graphe : espèce + toutes les formes                                     | Accepted |
-| [0005](0005-mvp-conventions-nommage-schema.md)     | Conventions de nommage du schéma                                                  | Accepted |
-| [0006](0006-mvp-banc-essai-30-questions.md)        | Banc d'essai : 30 questions de référence en 6 catégories                          | Accepted |
-| [0008](0008-mvp-notation-questions-semantiques.md) | Notation des questions sémantiques : grille, trois ensembles, cœur de la question | Accepted |
-| [0009](0009-mvp-protocole-mesure-techniques.md)    | Protocole de mesure des techniques du banc d'essai                                | Accepted |
-| [0012](0012-mvp-second-tour-apres-echec.md)        | Second tour d'une paire après un échec : faux d'office                            | Accepted |
+| #                                                  | Titre                                                                             | Statut                                                                     |
+| -------------------------------------------------- | --------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| [0001](0001-mvp-jeu-de-donnees-pokeapi.md)         | Jeu de données : Pokémon (CSV PokéAPI, en français)                               | Accepted                                                                   |
+| [0003](0003-mvp-chargement-cypher-pur.md)          | Chargement des données : Cypher pur (`LOAD CSV`)                                  | Accepted                                                                   |
+| [0004](0004-mvp-modele-espece-formes.md)           | Modèle du graphe : espèce + toutes les formes                                     | Accepted                                                                   |
+| [0005](0005-mvp-conventions-nommage-schema.md)     | Conventions de nommage du schéma                                                  | Accepted                                                                   |
+| [0006](0006-mvp-banc-essai-30-questions.md)        | Banc d'essai : 30 questions de référence en 6 catégories                          | Accepted                                                                   |
+| [0008](0008-mvp-notation-questions-semantiques.md) | Notation des questions sémantiques : grille, trois ensembles, cœur de la question | Accepted                                                                   |
+| [0009](0009-mvp-protocole-mesure-techniques.md)    | Protocole de mesure des techniques du banc d'essai                                | Accepted (point amendé par [0011](0011-infra-claude-par-api-anthropic.md)) |
+| [0012](0012-mvp-second-tour-apres-echec.md)        | Second tour d'une paire après un échec : faux d'office                            | Accepted                                                                   |
 
 ### 🔧 features — Décisions promues depuis specs
 
@@ -134,3 +135,13 @@ Si on change d'avis (pivot, nouvelle contrainte, expérience) :
 2. **Créer un nouveau ADR** avec frontmatter `supersedes: 00XX`
 3. **Update le frontmatter de l'ancien** : `status: superseded` + `superseded_by: <nouveau>`
 4. **Update CE README** : déplacer l'ancien ADR vers la section "archived / superseded" avec lien vers le nouveau
+
+## Amendement partiel (pratique du projet depuis le 2026-10-08)
+
+Quand un nouvel ADR ne remplace qu'un point d'un ADR qui reste en vigueur :
+
+1. **Créer le nouvel ADR** avec `amends: 00XX` dans son frontmatter (`supersedes` reste `null`).
+2. **Dans l'ancien, un seul ajout** : un bandeau daté en tête, qui nomme le point remplacé et renvoie au nouvel ADR ; rien d'autre ne change, il reste `accepted`.
+3. **Dans cet index**, la ligne de l'ancien devient « Accepted (point amendé par NNNN) ».
+
+Exemple : [0011](0011-infra-claude-par-api-anthropic.md) amende [0009](0009-mvp-protocole-mesure-techniques.md) (Claude par l'API Anthropic au lieu de Vertex) ; le reste du protocole de 0009 tient.

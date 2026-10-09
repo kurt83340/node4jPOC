@@ -1,6 +1,6 @@
 # node4jPOC · Banc d'essai agentique Neo4j
 
-> **Initiative** · porteur : Julien Leroy · lancée le 2026-09-28 · **jalon 1 livré le 2026-10-01, jalon 2 en cours**
+> **Initiative** · porteur : Julien Leroy · lancée le 2026-09-28 · **jalon 1 livré le 2026-10-01 et clos le 2026-10-07 (tag `jalon-1`), jalon 2 en cours**
 >
 > Suivi : [tableau Jira NEO](https://frjulienleroy.atlassian.net/jira/software/projects/NEO/boards/40) · [chronologie](https://frjulienleroy.atlassian.net/jira/software/projects/NEO/boards/40/timeline) · [ROADMAP](.claude/docs/ROADMAP.md)
 

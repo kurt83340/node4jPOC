@@ -22,7 +22,7 @@ Le POC devient transposable à une entreprise full Google Cloud ; dbt reste hors
 - [x] Instance AuraDB Free créée (GCP europe-west1), vraie limite notée, identifiants dans Secret Manager (2026-09-30) → [ACCESS](ACCESS.md)
 - [x] Projet Google Cloud avec compte de facturation : `jleroy-labo`, facturation active (constaté le 2026-09-30)
 
-## ✅ Jalon 1 — Socle de données (technique 1 : Cypher à la main), terminé le 2026-10-07
+## ✅ Jalon 1 — Socle de données (technique 1 : Cypher à la main), livré le 2026-10-01, clos le 2026-10-07
 
 Instance créée ; données chargées en Cypher pur (`LOAD CSV`) par un script réexécutable sans doublons ; modèle espèce + formes documenté ; 30 questions de référence ([questions/README.md](../../questions/README.md)) avec leurs réponses attendues, calculées en Cypher pour 27 d'entre elles (Q10, Q29 et Q30, comportementales, se notent par une règle). Ces requêtes servent de vérité de référence aux jalons suivants.
 
