@@ -5,7 +5,7 @@ from typing import Any
 
 import pytest
 
-from banc.sondes import CleNonUtilisee, verifier_cle
+from banc.isolement import CleNonUtilisee, verifier_cle
 
 
 def test_cle_de_l_api_acceptee() -> None:

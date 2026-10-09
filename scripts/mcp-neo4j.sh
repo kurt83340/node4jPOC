@@ -5,7 +5,8 @@
 # Un client MCP (Claude Code, ADK) le lance par son chemin absolu, depuis un dossier vide hors du
 # dépôt, dans l'environnement réduit de D3 : il n'emploie que bash, gcloud, perl et neo4j-mcp, pris
 # dans le PATH. stdin et stdout sont le canal MCP : rien n'y est lu ni écrit avant l'exec. Le stderr
-# du serveur passe par filtrer_flux (ADR-0007), son stdout par un masque de l'identifiant (T3.1).
+# du serveur passe par filtrer_flux (ADR-0007), son stdout par un masque de l'identifiant (T3.1), qui
+# retire aussi les instructions du serveur (T4.1).
 #
 # Usage : /chemin/absolu/scripts/mcp-neo4j.sh, sans argument.
 # Variables : NEO4J_SECRET (défaut neo4j-aura-poc), GCP_PROJET (défaut jleroy-labo).
@@ -49,11 +50,18 @@ export -n NEO4J_URI NEO4J_USERNAME NEO4J_PASSWORD NEO4J_DATABASE
 # fournisseur du LLM, ni la trace du banc (T3.1). perl le reçoit par l'environnement, jamais en
 # argument (ps). Le mot de passe ne sort pas d'une lecture ; un filtre ne pourrait d'ailleurs pas
 # retirer une ligne du canal sans bloquer le client.
+# Dans la réponse à initialize (la seule qui porte serverInfo), perl ôte aussi le membre
+# « instructions » : il cite get-schema, que le client retire (plan, D1), et Claude Code l'injecterait
+# dans la conversation ; chaque cellule ne reçoit ainsi que la consigne, la fiche et les descriptions
+# des outils (choix de Julien, T4.1). Hors d'une chaîne JSON, les guillemets ne sont jamais échappés :
+# le texte d'un résultat ne peut pas y ressembler.
 # shellcheck disable=SC2016 # programme perl : ses $ ne sont pas du shell
 exec neo4j-mcp 2> >(
   exec >&2
   filtrer_flux
 ) > >(
   export MASQUE_INSTANCE="$NEO4J_USERNAME"
-  exec perl -pe 'BEGIN { $| = 1; $i = $ENV{MASQUE_INSTANCE} } s/\Q$i\E/‹instance›/g if length $i'
+  exec perl -pe 'BEGIN { $| = 1; $i = $ENV{MASQUE_INSTANCE} } s/\Q$i\E/‹instance›/g if length $i;
+    if (/"serverInfo"/) { s/,\s*"instructions"\s*:\s*"(?:[^"\\]|\\.)*"// or
+      s/"instructions"\s*:\s*"(?:[^"\\]|\\.)*"\s*,// }'
 )

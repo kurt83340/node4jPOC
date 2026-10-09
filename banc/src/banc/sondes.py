@@ -10,7 +10,6 @@ import asyncio
 import json
 import sys
 import time
-from collections.abc import Mapping
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any
@@ -23,18 +22,12 @@ from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
 from google.genai import types
 
-from banc.isolement import EFFORT, PROJET, REGION
+from banc.isolement import EFFORT, PROJET, REGION, verifier_cle
 from banc.mesures import usage_adk, usage_claude_code
 from banc.prix import Usage
 
 QUESTION = "Réponds seulement : OK"
 CONSIGNE = "Tu réponds en un seul mot."
-# Source d'authentification annoncée par le message init quand la clé vient de l'environnement.
-SOURCE_CLE = "ANTHROPIC_API_KEY"
-
-
-class CleNonUtilisee(Exception):
-    """Claude Code ne paie pas par la clé de l'API : coût non mesurable (circuit breaker)."""
 
 
 @dataclass
@@ -47,15 +40,6 @@ class Releve:
     usages: dict[str, Usage] = field(default_factory=dict)
     duree_s: float = 0.0
     observations: dict[str, Any] = field(default_factory=dict)
-
-
-def verifier_cle(init: Mapping[str, Any]) -> None:
-    """Exige que Claude Code s'authentifie par la clé de l'API, jamais par un abonnement."""
-    source = init.get("apiKeySource")
-    if source != SOURCE_CLE:
-        raise CleNonUtilisee(
-            f"Claude Code ne paie pas par la clé de l'API : apiKeySource={source!r}"
-        )
 
 
 async def claude_code(modele: str) -> Releve:
