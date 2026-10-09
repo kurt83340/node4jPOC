@@ -6,16 +6,17 @@
 > Le **POURQUOI** des choix vit dans [adr/](adr/). L'**ARCHI** globale (dont **sécurité** & **observabilité**) dans [conception/ARCHITECTURE.md](conception/ARCHITECTURE.md) ; les **conventions de test** dans [../rules/testing.md](../rules/testing.md).
 > Ce fichier = **vue catalogue rapide** ("quelles techs on utilise et pour quoi ?") — **pas** de narratif archi/sécurité/tests ici (sinon drift avec ARCHITECTURE).
 
-**Dernière MAJ :** 2026-10-08
+**Dernière MAJ :** 2026-10-09
 
 ## Langage(s) & runtime
 
-| Item           | Version | Notes                                                                                                                                                                                                            |
-| -------------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Cypher         | 25      | déjà la langue par défaut de la base, contrôlé au go/no-go (T2.2, D7 du [plan 001](specs/001-socle-donnees/plan.md))                                                                                             |
-| Bash           | —       | `scripts/charger.sh` (`--tout`, `--idempotence`, `--ping`, `--go-no-go`, `--purge`), `scripts/verifier.sh`, `scripts/questions.sh` (`--verifier`, `--enregistrer`), fonctions partagées dans `scripts/commun.sh` |
-| Java (OpenJDK) | 21      | paquet `openjdk-21-jre` (apt), requis par `cypher-shell`                                                                                                                                                         |
-| Python         | 3.14    | `infra/reveil-aura/reveil.py`, bibliothèque standard seule ; image `python:3.14-slim`                                                                                                                            |
+| Item           | Version          | Notes                                                                                                                                                                                                                                                                                                                         |
+| -------------- | ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Cypher         | 25               | déjà la langue par défaut de la base, contrôlé au go/no-go (T2.2, D7 du [plan 001](specs/001-socle-donnees/plan.md))                                                                                                                                                                                                          |
+| Bash           | —                | `scripts/charger.sh` (`--tout`, `--idempotence`, `--ping`, `--go-no-go`, `--purge`), `scripts/verifier.sh`, `scripts/questions.sh` (`--verifier`, `--enregistrer`, `--controle`), `scripts/mcp-neo4j.sh` (lanceur de `neo4j-mcp`), `scripts/banc.sh` (clé Anthropic du harnais), fonctions partagées dans `scripts/commun.sh` |
+| Java (OpenJDK) | 21               | paquet `openjdk-21-jre` (apt), requis par `cypher-shell`                                                                                                                                                                                                                                                                      |
+| Python         | 3.14             | `infra/reveil-aura/reveil.py`, bibliothèque standard seule ; image `python:3.14-slim` ; harnais `banc/` (uv, 3.14.7, spec 002, T0.1)                                                                                                                                                                                          |
+| Perl           | 5.38.2 (système) | masque de l'identifiant d'Aura sur le stdout de `neo4j-mcp`, dans `scripts/mcp-neo4j.sh` (T3.1)                                                                                                                                                                                                                               |
 
 ## Orchestration
 
@@ -33,12 +34,17 @@
 
 ## Librairies (rôles)
 
-| Lib                            | Version                     | Pour quoi                                                                                                                                                                                          | Module qui l'utilise                                                        |
-| ------------------------------ | --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
-| `cypher-shell`                 | 2026.09.0                   | client Neo4j en ligne de commande (`.deb` officiel de dist.neo4j.org)                                                                                                                              | `scripts/charger.sh`, `scripts/verifier.sh`, `scripts/questions.sh`         |
-| `gcloud` (Google Cloud SDK)    | 587.0.0                     | lecture du secret `neo4j-aura-poc` dans Secret Manager ([ADR-0007](adr/0007-infra-secrets-et-services-geres.md)) ; déploiement du job `reveil-aura`, avec le composant `beta` pour le canal e-mail | `scripts/commun.sh` (pour les trois scripts), `infra/reveil-aura/deploy.sh` |
-| pytest, pytest-cov, ruff, mypy | 9.1.1, 7.1.0, 0.16.9, 2.3.1 | tests et contrôles du job `reveil-aura` (groupe `dev`, figé par `uv.lock`)                                                                                                                         | `infra/reveil-aura/`                                                        |
-| _(aucune autre)_               | —                           | bibliothèques des jalons 2 à 4 : à choisir au démarrage de chaque jalon                                                                                                                            | —                                                                           |
+| Lib                            | Version                                | Pour quoi                                                                                                                                                                                          | Module qui l'utilise                                                        |
+| ------------------------------ | -------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| `cypher-shell`                 | 2026.09.0                              | client Neo4j en ligne de commande (`.deb` officiel de dist.neo4j.org)                                                                                                                              | `scripts/charger.sh`, `scripts/verifier.sh`, `scripts/questions.sh`         |
+| `gcloud` (Google Cloud SDK)    | 587.0.0                                | lecture du secret `neo4j-aura-poc` dans Secret Manager ([ADR-0007](adr/0007-infra-secrets-et-services-geres.md)) ; déploiement du job `reveil-aura`, avec le composant `beta` pour le canal e-mail | `scripts/commun.sh` (pour les trois scripts), `infra/reveil-aura/deploy.sh` |
+| pytest, pytest-cov, ruff, mypy | 9.1.1, 7.1.0, 0.16.9, 2.3.1            | tests et contrôles du job `reveil-aura` (groupe `dev`, figé par `uv.lock`)                                                                                                                         | `infra/reveil-aura/`                                                        |
+| `claude-agent-sdk`             | 0.2.164 (Claude Code 2.1.292 embarqué) | cellule Claude Code du banc                                                                                                                                                                        | `banc/`                                                                     |
+| `google-adk[mcp]`              | 2.11.0                                 | cellules ADK (Claude et Gemini), client MCP en stdio                                                                                                                                               | `banc/`                                                                     |
+| `anthropic[vertex]`            | 1.11.0                                 | client Anthropic de la classe Claude d'ADK                                                                                                                                                         | `banc/`                                                                     |
+| pytest, pytest-cov, ruff, mypy | 9.1.1, 7.1.0, 0.16.10, 2.4.0           | tests et contrôles du harnais (groupe `dev`, figé par `banc/uv.lock`)                                                                                                                              | `banc/`                                                                     |
+| `neo4j-mcp`                    | v1.6.0                                 | serveur MCP officiel de Neo4j, en lecture seule, sans télémétrie (binaire de la release, somme vérifiée)                                                                                           | `scripts/mcp-neo4j.sh`                                                      |
+| _(aucune autre)_               | —                                      | bibliothèques des jalons 3 et 4 : à choisir au démarrage de chaque jalon                                                                                                                           | —                                                                           |
 
 ## LLM providers (par feature)
 
@@ -63,17 +69,19 @@ Options envisagées : voir le jalon 2 de la [ROADMAP](ROADMAP.md).
 | **Jira Cloud** (projet NEO, Kanban géré par l'équipe)       | suivi : un epic par jalon, un ticket par phase ; le dépôt fait foi                               | ✅ actif                 | gratuit (offre Free)                                                                                                                       | [README](../../README.md)                                                     |
 | **GitHub** (dépôt privé `kurt83340/node4jPOC`)              | code et PR, une par phase, fusionnées en merge commit dans `main`                                | ✅ actif                 | gratuit (offre Free)                                                                                                                       | [git-workflow](../rules/git-workflow.md)                                      |
 | **GitHub for Atlassian**                                    | relie le dépôt à NEO : une clé de ticket dans un commit ou un titre de PR remonte dans le ticket | ✅ actif                 | gratuit                                                                                                                                    | [git-workflow](../rules/git-workflow.md)                                      |
+| **API Anthropic** (workspace `node4jpoc-banc`)              | cellules Claude du banc (spec 002)                                                               | ✅ en place (2026-10-08) | 20 $ de crédits prépayés sans recharge automatique, limite de 20 $ par mois                                                                | [ACCESS](ACCESS.md) · [ADR-0011](adr/0011-infra-claude-par-api-anthropic.md)  |
+| **Vertex AI** (projet `jleroy-labo`, multirégion `eu`)      | cellule ADK + Gemini 3.8 Flash du banc (spec 002)                                                | ✅ en place (2026-10-07) | à l'usage, sous le budget de 100 €                                                                                                         | [ACCESS](ACCESS.md) · [ADR-0010](adr/0010-infra-plafond-de-depense.md)        |
 
 ❌ **Pas utilisé** : dbt, Graph Data Science for BigQuery, Spanner Graph (voir « Hors POC » dans la [ROADMAP](ROADMAP.md)).
 
 ## Infra & Deploy
 
-| Item        | Choix                                                   | Notes                                                                                                                                                                                               |
-| ----------- | ------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Hébergement | services gérés : Neo4j Aura, Google Cloud               | le poste local n'est qu'un client : ni VPS ni Docker ([ADR-0007](adr/0007-infra-secrets-et-services-geres.md)) ; job `reveil-aura` sur Cloud Run ; agents : à choisir au démarrage des jalons 2 à 4 |
-| Déploiement | `infra/reveil-aura/deploy.sh` (gcloud), lancé à la main | image construite par Cloud Build depuis le `Dockerfile` ; procédures : [RUNBOOK](RUNBOOK.md)                                                                                                        |
-| CI/CD       | aucune CI                                               | garde-fou local : gitleaks v8.30.1 en pre-commit (`pre-commit install` une fois par clone)                                                                                                          |
-| Versioning  | Tags git `vYYYY.MM.DD-HHMM`                             | Voir [git-workflow.md](../rules/git-workflow.md)                                                                                                                                                    |
+| Item        | Choix                                                   | Notes                                                                                                                                                                                                                                     |
+| ----------- | ------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Hébergement | services gérés : Neo4j Aura, Google Cloud               | le poste local n'est qu'un client : ni VPS ni Docker ([ADR-0007](adr/0007-infra-secrets-et-services-geres.md)) ; job `reveil-aura` sur Cloud Run ; agents du jalon 2 : sur le poste local, lancés par `banc/` ; jalons 3 et 4 : à choisir |
+| Déploiement | `infra/reveil-aura/deploy.sh` (gcloud), lancé à la main | image construite par Cloud Build depuis le `Dockerfile` ; procédures : [RUNBOOK](RUNBOOK.md)                                                                                                                                              |
+| CI/CD       | aucune CI                                               | garde-fou local : gitleaks v8.30.1 en pre-commit (`pre-commit install` une fois par clone)                                                                                                                                                |
+| Versioning  | Tags git `vYYYY.MM.DD-HHMM`                             | Voir [git-workflow.md](../rules/git-workflow.md)                                                                                                                                                                                          |
 
 ## Hors de ce catalogue (home unique — ne pas dupliquer ici)
 
@@ -85,7 +93,7 @@ Pour éviter le drift, ces aspects vivent **ailleurs** (ce fichier ne fait que p
 
 ## Évolutions stack prévues (v2+)
 
-- Jalons 2 à 4 : `neo4j/mcp`, agent ADK, embeddings Gemini, Aura Agent, Agent Runtime ; outils et versions à choisir au démarrage de chaque jalon ([ROADMAP](ROADMAP.md), [ARCHITECTURE](conception/ARCHITECTURE.md) § 8)
+- Jalons 3 et 4 : embeddings Gemini, Aura Agent, Agent Runtime ; outils et versions à choisir au démarrage de chaque jalon ([ROADMAP](ROADMAP.md), [ARCHITECTURE](conception/ARCHITECTURE.md) § 8)
 - Jalons 5 et 6, en option : voir la [ROADMAP](ROADMAP.md)
 
 ## Mise à jour
@@ -94,4 +102,4 @@ Pour éviter le drift, ces aspects vivent **ailleurs** (ce fichier ne fait que p
 - **Nouveau service SaaS** : update "Services tiers"
 - **Feature ajoute usage LLM** : update "LLM providers" + référencer dans specs/00X/plan.md
 - **Changement infra** : update "Infra & Deploy"
-- **Source of truth** : `.pre-commit-config.yaml` (gitleaks), `cypher-shell --version` et `infra/reveil-aura/pyproject.toml` (avec son `uv.lock`) pour les versions exactes, CE fichier pour le contexte humain (WHY + services tiers + LLM)
+- **Source of truth** : `.pre-commit-config.yaml` (gitleaks), `cypher-shell --version` et `infra/reveil-aura/pyproject.toml` et `banc/pyproject.toml` (avec leur `uv.lock`) pour les versions exactes, CE fichier pour le contexte humain (WHY + services tiers + LLM)
