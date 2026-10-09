@@ -27,7 +27,7 @@
 1. **Phase 4 (NEO-18)** : T4.1 cellule Agent SDK, T4.2 cellules ADK, T4.3 orchestration, avec le relevé de la revue adverse (plan, D13 : usage cumulé et `interrupt()`, `env` et session du serveur MCP sous ADK, `fin` à l'échéance, Q18 fausse d'office si Q2 échoue)
 2. Avant toute campagne payante (au plus tard T5.1) : coupure automatique de l'ADR-0010, branche à part
 3. T4.1 : fixer `permissionMode`, couper la socket `/tmp/cc-socks/` si possible, plafonner `CLAUDE_CODE_MAX_RETRIES` (plan, D3 et D13)
-4. Mineurs : code-map à 3,3k tokens (cible < 3k, T11.2) ; pre-commit (shellcheck, Prettier, pytest) ; flag des équipes en portée user
+4. Mineurs : pre-commit (shellcheck, Prettier, pytest) ; flag des équipes en portée user
 
 ## Continuation State (machine-readable — grammaire fixe `Clé: valeur`, 1 ligne chacune)
 

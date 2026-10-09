@@ -7,13 +7,7 @@
 >
 > ⚠️ Avant d'éditer un fichier, vérifie les **règles de couplage** ci-dessous.
 
-**Dernière MAJ :** 2026-10-08
-
-> 🧭 **Principe (aligné [best-practices Anthropic](https://code.claude.com/docs/en/best-practices))** :
-> à EXCLURE d'ici → tout ce que Claude « peut trouver en lisant le code » : descriptions
-> fichier-par-fichier, listes de dépendances, listes de tests. Ça pourrit vite (drift) et
-> Claude le retrouve en un `grep`. À INCLURE → ce qui n'est pas inférable du code.
-> Préférer des **pointers `chemin:ligne`** à des copies de code/structure.
+**Dernière MAJ :** 2026-10-09
 
 ## Vue d'ensemble (macro — sous-systèmes, pas fichiers)
 
@@ -75,18 +69,11 @@ Le détail fichier-par-fichier se découvre à la demande (`grep`, lecture) — 
 
 ## Gotchas → `code-map-gotchas.md`
 
-Les pièges non évidents vivent dans [code-map-gotchas.md](code-map-gotchas.md) (**non auto-chargé**) :
-le hook PreToolUse n'injecte que ceux qui citent le fichier en cours d'édition. Ici ne restent que
-la vue macro, le couplage et l'intention — ce fichier est auto-chargé à chaque session : **< 3k tokens**.
+Pièges dans [code-map-gotchas.md](code-map-gotchas.md) (non auto-chargé : le hook injecte ceux du fichier édité).
+Ce fichier-ci est auto-chargé à chaque session : **< 3k tokens**.
 
 ## Quand mettre à jour ce fichier
 
-- Nouvelle **règle de couplage** ou contrainte d'architecture → l'ajouter
-- Découpage en sous-systèmes modifié → revoir la vue macro
-- Nouveau **gotcha** découvert (un piège qui t'a coûté du temps) → le noter
-- ❌ **NE PAS** ajouter de description fichier-par-fichier ni de liste de dépendances : Claude les retrouve seul, et elles drifteraient.
-
-> 🔁 **Entretien** : le skill `/codemap` régénère la vue macro et **détecte les violations
-> de couplage** (par grep des imports). Ce fichier est déjà en contexte (`@`) : le hook
-> `pretooluse-inject-codemap.py` n'injecte que les **gotchas qui ciblent le fichier édité**
-> (1×/fichier/session) — pas une carte structurelle (déductible et périssable).
+- Règle de couplage ou contrainte d'architecture nouvelle → l'ajouter ; découpage modifié → revoir la vue macro.
+- Piège lié à un fichier → `code-map-gotchas.md` ; ❌ jamais de description fichier par fichier ni de dépendances.
+- Entretien : `/codemap` (vue macro, violations de couplage par grep).
