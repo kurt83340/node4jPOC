@@ -8,7 +8,7 @@
 > il « perd le fil » (échecs ×4 constatés en télémétrie, Morph 2026) → découper la phase.
 
 **Date :** 2026-10-01
-**Status :** [~] 12/33 tasks → MAJ au fil de l'eau
+**Status :** [~] 13/33 tasks → MAJ au fil de l'eau
 
 > Phases 0 à 6 : sans la base (prévues pendant la période creuse de NEO-13, close le 2026-10-07). Phases 7 à 11 : sur la base.
 > Les tests n'appellent aucun outil réel : PATH réduit aux faux outils, HOME temporaire.
@@ -51,7 +51,7 @@
 
 ## Phase 4 — Cellules (NEO-18)
 
-- [ ] **T4.1** : cellule Agent SDK : `env -i` et liste blanche (HOME temporaire, `CLOUDSDK_CONFIG`, PATH, `ANTHROPIC_API_KEY` sans variable Vertex, effort `high`, petit modèle figé), `CLAUDE_CONFIG_DIR` temporaire, `setting_sources=[]`, `tools=[]`, `read-cypher` seul ; `connect()` puis `get_mcp_status()` jusqu'à « connected » avant le chrono ; budget par conversation ; à prévoir : relevé de la revue adverse de la phase 3 (plan, D13)
+- [x] **T4.1** : cellule Agent SDK : `env -i` et liste blanche (HOME temporaire, `CLOUDSDK_CONFIG`, PATH, `ANTHROPIC_API_KEY` sans variable Vertex, effort `high`, petit modèle figé), `CLAUDE_CONFIG_DIR` temporaire, `setting_sources=[]`, `tools=[]`, `read-cypher` seul ; `connect()` puis `get_mcp_status()` jusqu'à « connected » avant le chrono ; budget par conversation ; à prévoir : relevé de la revue adverse de la phase 3 (plan, D13) — fait le 2026-10-09 : `banc.cellule` (commande d'une conversation, plafonds, consigne et fiche communes) et `banc.cellule_sdk` ; relevé sur le vrai Claude Code 2.1.292 contre une fausse API (plan, D3 et D13) : socket entre sessions, mémoire automatique, reprises et durée du cache fixées par la liste blanche, `dontAsk`, `get-schema` masqué, instructions du serveur retirées par le lanceur (choix de Julien) ; budget de 0,50 $ par conversation compté sur le flux, invisible de l'agent (choix de Julien) ; 86 tests, dont 5 sur le vrai binaire (choix de Julien) ; couverture 100 % et 99 % ; 80 fautes injectées (cellule, commande, lanceur), toutes détectées
   - DoD : `command_passes: uv run --directory banc pytest tests/test_cellule_sdk.py -q` (faux `cli_path` : aucune variable hors liste blanche, aucun fichier de réglages lu, chrono lancé après la connexion)
 - [ ] **T4.2** : cellules ADK (Claude par `AnthropicLlm` et l'API Anthropic, Gemini par Vertex `eu`) : `McpToolset` en stdio sur le lanceur, `get_tools()` avant le chrono, `tool_filter`, délai de 30 s, effort et `thinking_level` fixés, budget par conversation ; à prévoir : relevé de la revue adverse de la phase 3 (plan, D13)
   - DoD : `command_passes: uv run --directory banc pytest tests/test_cellule_adk.py -q` (faux serveur MCP, faux LLM)

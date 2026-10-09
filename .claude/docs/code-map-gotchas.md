@@ -115,3 +115,11 @@
 - ⚠️ `banc/prix.toml` — l'identifiant d'un modèle dépend de la voie : `claude-haiku-4-5-20251001` sur l'API,
   `claude-haiku-4-5@20251001` chez Google ; Sonnet 5.5 garde `claude-sonnet-5-5` des deux côtés, d'où la clé `acces`
   (vu le 2026-10-08).
+- ⚠️ `banc/src/banc/cellule_sdk.py` — Claude Code 2.1.292 : `--max-budget-usd` montre son budget à l'agent après chaque
+  appel (le compter hors du client) ; `model_usage` cumule la session et oublie l'appel coupé par `interrupt()` (le flux
+  le donne) ; `init` annonce `effort: null` alors que la requête porte l'effort ; `receive_response()` est un générateur
+  déclaré `AsyncIterator`, à refermer par `aclosing` (vu le 2026-10-09, [plan 002, D13](specs/002-agent-text-to-cypher/plan.md)).
+- ⚠️ `banc/tests/fixtures/` — un faux outil lancé en processus hérite du HOME et du `CLAUDE_CONFIG_DIR` du poste : n'y lire
+  que les dossiers du bac (un `rglob` de tout le HOME coûtait 7 s par test, vu le 2026-10-09).
+- ⚠️ `banc/src/banc/isolement.py` — sans locale, Python fixe `LC_CTYPE` (PEP 538) et l'ajoute à l'environnement de tout
+  ce qu'il lance : la liste blanche la déclare (`C.UTF-8`), sinon elle n'est plus exacte (vu le 2026-10-09).
