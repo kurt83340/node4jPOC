@@ -1,0 +1,101 @@
+# CI du dépôt (NEO-25) : tests, lint, types, shell, format et secrets, à chaque PR et à chaque push
+# sur main. Aucun secret, aucun accès à Google Cloud ni à Anthropic : les tests ne parlent qu'à des
+# faux (0 $). Actions figées par empreinte de commit, outils à version fixe.
+#
+# GitHub Free et dépôt privé : aucune protection de branche, la CI ne bloque donc pas une fusion.
+# Règle .claude/rules/git-workflow.md : on ne fusionne qu'une PR dont `gh pr checks` est vert.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  banc:
+    name: banc (ruff, mypy, pytest)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: banc
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          version: "0.12.19"
+          working-directory: banc
+          cache-python: true
+      # --locked : uv.lock fait foi, une dépendance non verrouillée fait échouer la CI.
+      - run: uv sync --locked
+      - run: uv run --no-sync ruff check .
+      - run: uv run --no-sync ruff format --check .
+      - run: uv run --no-sync mypy src tests
+      # Le vrai Claude Code (embarqué par le SDK) tourne contre une fausse API sur 127.0.0.1.
+      - run: uv run --no-sync pytest -q
+
+  reveil-aura:
+    name: reveil-aura (ruff, mypy, pytest)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: infra/reveil-aura
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          version: "0.12.19"
+          working-directory: infra/reveil-aura
+          cache-python: true
+      - run: uv sync --locked
+      - run: uv run --no-sync ruff check .
+      - run: uv run --no-sync ruff format --check .
+      - run: uv run --no-sync mypy .
+      - run: uv run --no-sync pytest -q
+
+  depot:
+    name: dépôt (shellcheck, Prettier, gitleaks)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # gitleaks lit tout l'historique, pas seulement le dernier commit.
+          fetch-depth: 0
+          persist-credentials: false
+      # shellcheck 0.9.0 de l'image ubuntu-24.04, la version du poste.
+      - name: shellcheck
+        run: git ls-files -z '*.sh' | xargs -0 shellcheck
+      # Prettier 3.9.8, la version du hook de formatage de Claude Code.
+      - name: Prettier
+        run: >-
+          git ls-files -z '*.md' '*.json' '*.yaml' '*.yml' '*.html' '*.css' '*.js' '*.ts'
+          | xargs -0 npx --yes prettier@3.9.8 --check
+      # Le hook pre-commit ne lit que les changements indexés (--staged) : ici, tout l'historique.
+      # Binaire de la version du hook, vérifié par l'empreinte publiée avec lui.
+      - name: gitleaks
+        env:
+          VERSION: 8.30.1
+        run: |
+          archive="gitleaks_${VERSION}_linux_x64.tar.gz"
+          empreintes="gitleaks_${VERSION}_checksums.txt"
+          base="https://github.com/gitleaks/gitleaks/releases/download/v${VERSION}"
+          cd "$RUNNER_TEMP"
+          curl -fsSL -o "$archive" "$base/$archive"
+          curl -fsSL -o "$empreintes" "$base/$empreintes"
+          grep "  ${archive}\$" "$empreintes" | sha256sum -c -
+          tar -xzf "$archive" gitleaks
+          cd "$GITHUB_WORKSPACE"
+          "$RUNNER_TEMP/gitleaks" git --redact --no-banner .
