@@ -307,6 +307,8 @@ class UsageGenai(Protocol):
     def candidates_token_count(self) -> int | None: ...
     @property
     def thoughts_token_count(self) -> int | None: ...
+    @property
+    def tool_use_prompt_token_count(self) -> int | None: ...
 
 
 def usage_anthropic(brut: Mapping[str, Any]) -> Usage:
@@ -382,7 +384,12 @@ def usage_du_tour(avant: Mapping[str, Usage], apres: Mapping[str, Usage]) -> dic
 def usage_adk(meta: UsageGenai, *, cache_1h: bool = False) -> Usage:
     """Tokens d'une réponse d'ADK (2.11.0, models/anthropic_llm.py) : l'entrée comprend le cache
     lu et écrit, la sortie exclut la réflexion. ADK ne détaille pas la durée de l'écriture : la
-    cellule la connaît (ContextCacheConfig, 1 h dès 3 600 s)."""
+    cellule la connaît (ContextCacheConfig, 1 h dès 3 600 s). Des tokens d'invite d'outil
+    (tool_use_prompt_token_count de Gemini) arrêtent la mesure : leur tarif n'est pas relevé."""
+    if meta.tool_use_prompt_token_count:
+        raise MesureError(
+            f"{meta.tool_use_prompt_token_count} tokens d'invite d'outil : tarif non relevé"
+        )
     lu = meta.cached_content_token_count or 0
     ecrit: int = getattr(meta, "cache_creation_input_tokens", None) or 0
     return Usage(
