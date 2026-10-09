@@ -34,7 +34,7 @@ POC perso d'apprentissage de l'écosystème agentique de Neo4j : un banc d'essai
 - Credentials **JAMAIS** dans le repo : valeurs dans GCP Secret Manager ([ADR-0007](.claude/docs/adr/0007-infra-secrets-et-services-geres.md)) ; où les trouver : `.claude/docs/ACCESS.md` (jamais la valeur)
 - `.claude/docs/HANDOFF.md` à update **à chaque fin de session** (via `/handoff`)
 - Décision tech structurante → créer un ADR (via `/adr`)
-- ADR **immuable** : on ne modifie jamais, on crée un nouveau qui supersede
+- ADR **immuable** : on ne modifie jamais, on crée un nouveau qui supersede (ou qui amende un seul point : `/adr amend`, bandeau daté dans l'ancien)
 
 ---
 

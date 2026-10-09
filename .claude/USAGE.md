@@ -521,6 +521,17 @@ Un ADR est **immuable**. Si décision change :
    - Update `adr/README.md` : déplace ancien vers section "archived / superseded"
    - Append CHANGELOG section `Decided`
 
+### Pattern amend (un seul point change)
+
+L'ADR reste en vigueur, sauf **un point** :
+
+1. `/adr amend <NN> <scope> "<titre>"`
+2. Le skill :
+   - Crée le nouvel ADR avec `amends: <NN>` (sa Décision nomme le point remplacé)
+   - Ajoute dans l'ancien un bandeau daté en tête, son seul ajout permis ; l'ancien reste `accepted`
+   - Update `adr/README.md` : la ligne de l'ancien devient « Accepted (point amendé par <new NN>) »
+   - Append CHANGELOG section `Decided`
+
 ### Pattern deprecate (vs supersede)
 
 - **supersede** : décision remplacée par une autre (avec lien)

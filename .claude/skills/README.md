@@ -22,7 +22,7 @@
 ### Cycle de vie des artefacts (capture / promote / discard / archive)
 
 - `/lecon [mode] <args>` — leçons : `<scope> "<titre>"` · `promote <date>` · `discard <date>` · `archive`
-- `/adr [mode] <args>` — décisions immuables : `<scope> "<titre>"` · `supersede <NN>` · `deprecate <NN>` · `list`
+- `/adr [mode] <args>` — décisions immuables : `<scope> "<titre>"` · `supersede <NN>` · `amend <NN>` · `deprecate <NN>` · `list`
 - `/idee [mode] <args>` — idées internes : `"<titre>"` · `promote <date>` · `discard <date>` · `archive`
 
 ### Audit & technique

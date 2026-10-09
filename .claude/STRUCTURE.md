@@ -588,8 +588,8 @@ Fichier court (≤ 1 page) qui capture **une décision technique structurante** 
 
 - **Naming** : `00XX-<scope>-<titre-court>.md` — scope dans le nom, séquentiel sans reset.
 - **5 scopes** : `cadrage` (contraintes imposées au départ, souvent par le client) · `mvp` (structurant, projet entier) · `feature-00X` (réutilisable, propre à une feature — rare) · `infra` (hébergement, déploiement, secrets, monitoring) · `operations` (post-prod, incidents, runbook).
-- **Frontmatter YAML obligatoire** (lu par `/adr list` et `/doc-health`) : `status` (`proposed` · `accepted` · `deprecated` · `superseded`), `scope`, `phase`, `supersedes` — cf. exemple ci-dessous.
-- **Immuable** : on ne l'édite jamais. Changement d'avis → nouvel ADR `supersedes: 00XX`, l'ancien passe `status: superseded` (+ `superseded_by:`) via `/adr supersede` ; décision qu'on cesse d'étendre, sans remplaçant → `deprecated` (`/adr deprecate`).
+- **Frontmatter YAML obligatoire** (lu par `/adr list` et `/doc-health`) : `status` (`proposed` · `accepted` · `deprecated` · `superseded`), `scope`, `phase`, `supersedes` (et `amends` pour un amendement partiel) — cf. exemple ci-dessous.
+- **Immuable** : on ne l'édite jamais. Changement d'avis → nouvel ADR `supersedes: 00XX`, l'ancien passe `status: superseded` (+ `superseded_by:`) via `/adr supersede` ; un seul point qui change → nouvel ADR `amends: 00XX`, l'ancien reste `accepted` et reçoit un bandeau daté (`/adr amend`) ; décision qu'on cesse d'étendre, sans remplaçant → `deprecated` (`/adr deprecate`).
 - Critères OUI / NON détaillés : `.claude/docs/adr/README.md` (index du projet).
 
 ### Template d'un ADR (`adr/0002-mvp-auth-jwt.md`)

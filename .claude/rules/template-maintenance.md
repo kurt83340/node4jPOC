@@ -53,7 +53,7 @@ le « n'oublie rien » durable passe par `.claude/docs/`.
 ## Invariants
 
 1. Jamais d'overwrite silencieux : diff montré → validation de l'utilisateur → écriture.
-2. ADR **immuable** : on ne l'édite pas, on le supersede (`supersedes: 00XX` ; l'ancien passe `superseded`).
+2. ADR **immuable** : on ne l'édite pas, on le supersede (`supersedes: 00XX` ; l'ancien passe `superseded`) ; si un seul point change, on l'amende (`amends: 00XX` ; l'ancien reste `accepted`, avec un bandeau daté pour seul ajout).
 3. Numérotation continue `00X` (specs) / `00XX` (ADR) : max + 1, jamais réutilisée.
 4. ROADMAP = machine à états `[ ]` → `[~] **EN COURS**` → `[x] livré YYYY-MM-DD`, synchronisée avec le frontmatter `status:` de `spec.md`.
 5. Dates ISO `YYYY-MM-DD` ; liens relatifs.

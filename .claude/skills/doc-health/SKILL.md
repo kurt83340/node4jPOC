@@ -105,9 +105,10 @@ Si une décision **cross-feature** non capturée ressort → suggérer `/adr`. *
 ## Étape 4 — Leçons en attente de décision
 
 ```bash
-# Leçons RÉELLES en attente : status 🆕 new sous un header daté réel (## 20XX-…),
-# en EXCLUANT le bloc exemple du template (header ## YYYY-MM-DD).
-awk '/^## [0-9][0-9][0-9][0-9]-/{real=1} /^## YYYY/{real=0} real&&/🆕 new/{n++} END{print n+0}' .claude/docs/lecons.md
+# Leçons RÉELLES en attente : ligne **status:** encore 🆕 new, sous un header daté réel (## 20XX-…),
+# en EXCLUANT le bloc exemple du template (header ## YYYY-MM-DD) et les leçons décidées : une leçon
+# promue ou écartée garde « 🆕 new → … » dans son statut (/lecon promote, /lecon discard).
+awk '/^## [0-9][0-9][0-9][0-9]-/{real=1} /^## YYYY/{real=0} real && /\*\*status:\*\*/ && /🆕 new/ && !/🆕 new →/ {n++} END{print n+0}' .claude/docs/lecons.md
 ```
 
 - Si > 5 entries `🆕 new` → 🟢 review hebdo (`/lecon promote` / `discard`)
