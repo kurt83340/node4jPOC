@@ -533,12 +533,13 @@ def test_credits_epuises_puis_reprise(bac: Bac) -> None:
 
 
 def test_plafond_de_la_campagne(bac: Bac) -> None:
-    # Chaque conversation coûte 0,20 $ ; avant chacune, la dépense plus le budget d'une
-    # conversation (0,50 $) ne doit pas dépasser 1,10 $ : la 4e passe pile, la 5e non.
+    # Chaque conversation coûte 0,20 $ ; avant chacune, la dépense plus la réserve d'une
+    # conversation (1 $ : son budget de 0,50 $ et autant de marge) ne doit pas dépasser 1,60 $ :
+    # la 4e passe pile, la 5e non.
     questions = ("Q1", "Q3", "Q4", "Q5", "Q6")
     bac.scenario({f"{CC} p1 {q} e1": CHERE for q in questions})
-    with pytest.raises(ArretPlafond, match=r"0\.800000 \$ dépensés sur 1\.10 \$"):
-        bac.orchestrer(campagne(*((q,) for q in questions), cellules=(CC,)), plafond="1.10")
+    with pytest.raises(ArretPlafond, match=r"0\.800000 \$ dépensés sur 1\.60 \$"):
+        bac.orchestrer(campagne(*((q,) for q in questions), cellules=(CC,)), plafond="1.60")
     assert len(bac.lignes()) == 4
 
 
@@ -551,26 +552,26 @@ def test_plafond_compte_les_traces_ecartees(bac: Bac) -> None:
         bac.orchestrer(fixee)
     (fichier,) = (bac.racine / "traces" / "essai").glob("*.jsonl")
     fichier.rename(fichier.with_name(fichier.name + ".ecartee"))
-    # 0,20 $ de Q2 et 0,003 $ de Q18, puis la réserve de 0,50 $.
+    # 0,20 $ de Q2 et 0,003 $ de Q18, puis la réserve de 1 $.
     with pytest.raises(ArretPlafond, match="plafond de la campagne"):
-        bac.orchestrer(fixee, plafond="0.70")
-    assert bac.orchestrer(fixee, plafond="0.703") == 0
+        bac.orchestrer(fixee, plafond="1.20")
+    assert bac.orchestrer(fixee, plafond="1.203") == 0
 
 
 def test_plafond_et_les_paires(bac: Bac) -> None:
-    # Une paire coûte 0,40 $ et laisse deux lignes ; avant Q1, 0,40 + 0,50 passe pile sous
-    # 0,90 $ : la paire n'est comptée qu'une fois, ses lignes reconnues à sa trace.
+    # Une paire coûte 0,40 $ et laisse deux lignes ; avant Q1, 0,40 + 1,00 passe pile sous
+    # 1,40 $ : la paire n'est comptée qu'une fois, ses lignes reconnues à sa trace.
     paire = {"tours": [CHERE["tours"][0], CHERE["tours"][0]]}
     bac.scenario({f"{CC} p1 Q2+Q18 e1": paire})
-    assert bac.orchestrer(campagne(("Q2", "Q18"), ("Q1",), cellules=(CC,)), plafond="0.90") == 0
+    assert bac.orchestrer(campagne(("Q2", "Q18"), ("Q1",), cellules=(CC,)), plafond="1.40") == 0
     assert len(bac.lignes()) == 3
 
 
 def test_plafond_releve_a_la_reprise(bac: Bac) -> None:
     bac.scenario({f"{CC} p1 {q} e1": CHERE for q in ("Q1", "Q3")})
-    assert bac.commande(plafond="0.60", questions=("Q1", "Q3"), cellules=(CC,)) == 3
+    assert bac.commande(plafond="1.10", questions=("Q1", "Q3"), cellules=(CC,)) == 3
     assert len(bac.lignes()) == 1
-    assert bac.commande(plafond="0.90", reprendre=True) == 0
+    assert bac.commande(plafond="1.40", reprendre=True) == 0
     assert len(bac.lignes()) == 2
 
 
@@ -664,15 +665,15 @@ def test_cellule_tuee_meme_sortie_en_zero(bac: Bac) -> None:
 
 def test_plafond_compte_les_traces_sans_ligne(bac: Bac) -> None:
     # Tuée en plein tour, la cellule a payé 0,20 $ sans laisser de ligne : à la reprise, le
-    # plafond les compte, avec la réserve d'une conversation (0,50 $) ; 0,70 $ passe pile.
+    # plafond les compte, avec la réserve d'une conversation (1 $) ; 1,20 $ passe pile.
     conduite = {"tours": CHERE["tours"], "bloquer": 0}
     bac.scenario({f"{CC} p1 Q1 e1": conduite})
     fixee = campagne(cellules=(CC,), delai_s=0.5, connexion_s=0.2)
     with pytest.raises(OrchestrationError, match="cellule tuée"):
         bac.orchestrer(fixee, marge_s=0.5)
     with pytest.raises(ArretPlafond, match="plafond de la campagne"):
-        bac.orchestrer(fixee, plafond="0.69", marge_s=0.5)
-    assert bac.orchestrer(fixee, plafond="0.70", marge_s=0.5) == 0
+        bac.orchestrer(fixee, plafond="1.19", marge_s=0.5)
+    assert bac.orchestrer(fixee, plafond="1.20", marge_s=0.5) == 0
     assert bac.lancees() == [f"{CC} p1 Q1 e1", f"{CC} p1 Q1 e2"]
 
 
@@ -873,7 +874,7 @@ def test_pannes_de_suite_d_un_lancement_a_l_autre(bac: Bac) -> None:
     bac.scenario({f"{CC} p1 Q1 e{essai}": panne for essai in (1, 2, 3, 4)})
     fixee = campagne(cellules=(CC,))
     with pytest.raises(ArretPlafond):
-        bac.orchestrer(fixee, plafond="0.85")
+        bac.orchestrer(fixee, plafond="1.35")
     assert len(bac.lancees()) == 2
     with pytest.raises(OrchestrationError, match="3 pannes de suite"):
         bac.orchestrer(fixee)

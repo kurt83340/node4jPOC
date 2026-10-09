@@ -110,6 +110,10 @@ PRECEDENT = "precedent"
 PANNES_DE_SUITE = 3
 # Plus de 2 pannes dans une série (une cellule, une passe) : passe invalide (plan, D13).
 PANNES_PAR_SERIE = 2
+# Réserve du plafond avant chaque conversation, en budgets d'une conversation : le sien, et autant
+# de marge, car une cellule ne voit le coût d'un appel du modèle qu'à sa fin, et un appel peut
+# franchir le budget de tout son coût (plan, D13).
+RESERVE_EN_BUDGETS = 2
 # Au-delà des plafonds de la cellule : démarrage, jeton de Vertex, arrêt.
 MARGE_S = 60.0
 # Entre SIGTERM et SIGKILL : la cellule ADK arrête son serveur MCP, puis sort en 143.
@@ -696,17 +700,17 @@ class Orchestration:
 
     def _verifier_le_plafond(self) -> None:
         """Avant chaque conversation : ce que la campagne a coûté (son CSV, reprises comprises, et
-        ses traces restées sans ligne), plus le budget d'une conversation, ne doit pas dépasser son
-        plafond (choix de Julien)."""
+        ses traces restées sans ligne), plus la réserve d'une conversation (son budget et autant de
+        marge), ne doit pas dépasser son plafond (choix de Julien)."""
         lignes = self._lignes()
         depense = sum((Decimal(valeurs["cout_usd"]) for valeurs in lignes), Decimal(0))
         depense += self._depense_sans_ligne(lignes)
-        reserve = self.campagne.plafonds.budget_usd
+        reserve = RESERVE_EN_BUDGETS * self.campagne.plafonds.budget_usd
         if depense + reserve > self.plafond_usd:
             raise ArretPlafond(
                 f"plafond de la campagne : {depense} $ dépensés sur {self.plafond_usd} $, il "
-                f"reste moins que le budget d'une conversation ({reserve} $) ; --reprendre avec "
-                "un plafond relevé, après décision"
+                f"reste moins que la réserve d'une conversation ({reserve} $ : son budget et "
+                "autant de marge) ; --reprendre avec un plafond relevé, après décision"
             )
 
     def _depense_sans_ligne(self, lignes: Sequence[Mapping[str, str]]) -> Decimal:
