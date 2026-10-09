@@ -70,6 +70,7 @@ Un jalon, c'est un epic Jira et une technique mesurée.
 | [0009](.claude/docs/adr/0009-mvp-protocole-mesure-techniques.md)          | Protocole de mesure : plan croisé, notation mixte sans juge LLM, pilote puis 3 passes |
 | [0010](.claude/docs/adr/0010-infra-plafond-de-depense.md)                 | Plafond de dépense : budget de 100 €, coupure automatique de Vertex                   |
 | [0011](.claude/docs/adr/0011-infra-claude-par-api-anthropic.md)           | Claude par l'API Anthropic, plafonné par des crédits prépayés                         |
+| [0012](.claude/docs/adr/0012-mvp-second-tour-apres-echec.md)              | Second tour d'une paire après un échec : faux d'office                                |
 
 ## 🔗 Suivi et documentation
 

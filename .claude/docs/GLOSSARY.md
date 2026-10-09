@@ -22,7 +22,7 @@
 - **Passe** : les 30 questions posées une fois à une cellule. La **passe pilote**, non comptée, ne règle que l'extraction, la notation et le coût ; viennent ensuite 3 **passes comptées** (D7).
 - **Gel** : le protocole figé par un commit après le pilote ; dans `banc/mesures/revues.toml`, la date-heure à partir de laquelle une décision de revue se réutilise (D4, D7).
 - **Essai** : une tentative d'une conversation ; après une panne ou un arrêt, un nouvel essai la remplace, et seul le dernier est retenu (D4).
-- **Second tour** : Q18 après Q2, Q28 après Q27, dans la même session ; une relance rejoue la paire.
+- **Second tour** : Q18 après Q2, Q28 après Q27, dans la même session ; une relance rejoue la paire ; si le premier tour échoue, le second compte faux d'office ([ADR-0012](adr/0012-mvp-second-tour-apres-echec.md)).
 - **Panne** : incident d'infrastructure (serveur MCP absent, 429 ou 5xx du fournisseur, délai dû aux reprises internes du client) ; la conversation se relance, et plus de 2 pannes invalident la passe (D13).
 - **Échec de l'agent** : 180 s, 10 tours ou budget dépassés ; la réponse compte fausse, avec sa cause, et ne se relance pas (D13).
 - **Mode faux serveur** : serveur MCP, validation des noms et contrôle de Q2 simulés, sans `gcloud` ni `cypher-shell` (T5.1).

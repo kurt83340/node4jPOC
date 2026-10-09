@@ -33,6 +33,7 @@
 | [0006](0006-mvp-banc-essai-30-questions.md)        | Banc d'essai : 30 questions de référence en 6 catégories                          | Accepted |
 | [0008](0008-mvp-notation-questions-semantiques.md) | Notation des questions sémantiques : grille, trois ensembles, cœur de la question | Accepted |
 | [0009](0009-mvp-protocole-mesure-techniques.md)    | Protocole de mesure des techniques du banc d'essai                                | Accepted |
+| [0012](0012-mvp-second-tour-apres-echec.md)        | Second tour d'une paire après un échec : faux d'office                            | Accepted |
 
 ### 🔧 features — Décisions promues depuis specs
 
