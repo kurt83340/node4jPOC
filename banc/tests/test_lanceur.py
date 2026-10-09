@@ -16,6 +16,8 @@ from typing import Any
 
 import pytest
 
+from banc.isolement import environnement_agent
+
 LANCEUR = Path(__file__).resolve().parents[2] / "scripts" / "mcp-neo4j.sh"
 
 # Secret factice, au format du fichier d'identifiants d'Aura : l'utilisateur et la base valent
@@ -124,6 +126,19 @@ RESULTAT_MCP = (
     f'"[{{\\"name\\": \\"{INSTANCE}\\", \\"adresse\\": \\"{INSTANCE}.databases.neo4j.io\\"}}]"'
     "}]}}\n"
 )
+# Réponse de neo4j-mcp v1.6.0 (mcp-go v0.56.0) à initialize. Ses instructions citent get-schema, que
+# le client retire (plan, D1) : Claude Code les injecterait dans la conversation (relevé T4.1).
+INSTRUCTIONS = (
+    "This is the Neo4j official MCP server and can provide tool calling to interact with your "
+    "Neo4j database,by inferring the schema with tools like get-schema and executing arbitrary "
+    "Cypher queries with read-cypher."
+)
+DEBUT_INITIALISATION = '{"jsonrpc":"2.0","id":0,"result":{'
+RESTE_INITIALISATION = (
+    '"protocolVersion":"2025-06-18","capabilities":{"tools":{"listChanged":true}},'
+    '"serverInfo":{"name":"neo4j-mcp","version":"v1.6.0"}'
+)
+INITIALISATION_SANS_INSTRUCTIONS = DEBUT_INITIALISATION + RESTE_INITIALISATION + "}}\n"
 
 
 @dataclass
@@ -190,6 +205,10 @@ def liste_blanche(racine: Path) -> dict[str, str]:
         "ANTHROPIC_DEFAULT_HAIKU_MODEL": "claude-haiku-4-5-20251001",
         "CLAUDE_CODE_EFFORT_LEVEL": "high",
         "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1",
+        "CLAUDE_CODE_HARBOR_KITE": "0",
+        "CLAUDE_CODE_DISABLE_AUTO_MEMORY": "1",
+        "CLAUDE_CODE_MAX_RETRIES": "2",
+        "FORCE_PROMPT_CACHING_5M": "1",
     }
 
 
@@ -236,6 +255,24 @@ def test_aucun_acces_a_claude(bac: Bac) -> None:
     env = bac.lancer().serveur()["env"]
     assert not [nom for nom in env if acces_claude(nom)]
     assert all(CLE_ANTHROPIC not in valeur for valeur in env.values())
+
+
+def test_aucun_acces_a_vertex(bac: Bac) -> None:
+    # Les variables Vertex de la cellule Gemini (D3 : ADC, projet, région) s'arrêtent au lanceur,
+    # comme la clé Anthropic ; gcloud lit le secret sans elles.
+    vertex = {
+        nom: valeur
+        for nom, valeur in environnement_agent(
+            "adk-gemini", bac.racine / "home", bac.racine
+        ).items()
+        if nom.startswith("GOOGLE_")
+    }
+    assert "GOOGLE_APPLICATION_CREDENTIALS" in vertex
+    bac.env |= vertex
+    lancement = bac.lancer()
+    env = lancement.serveur()["env"]
+    assert not [nom for nom in env if nom.startswith("GOOGLE_")]
+    assert lancement.note("gcloud") is not None
 
 
 def test_heritage_ecarte(bac: Bac) -> None:
@@ -292,6 +329,54 @@ def test_stdout_masque_l_instance(bac: Bac) -> None:
     perl = lancement.note("perl")
     assert perl is not None
     assert all(INSTANCE not in argument for argument in perl["argv"])
+
+
+@pytest.mark.parametrize(
+    "initialisation",
+    [
+        pytest.param(
+            DEBUT_INITIALISATION + RESTE_INITIALISATION + f',"instructions":"{INSTRUCTIONS}"}}}}\n',
+            id="en-dernier",
+        ),
+        pytest.param(
+            f'{DEBUT_INITIALISATION}"instructions":"{INSTRUCTIONS}",{RESTE_INITIALISATION}}}}}\n',
+            id="en-premier",
+        ),
+        pytest.param(
+            DEBUT_INITIALISATION
+            + RESTE_INITIALISATION
+            + ',"instructions":"lire \\"get-schema\\" d\'abord\\nensuite read-cypher \\\\ fin"}}\n',
+            id="echappements",
+        ),
+    ],
+)
+def test_instructions_retirees(bac: Bac, initialisation: str) -> None:
+    # Elles citent get-schema, que le client retire (plan, D1) : aucune cellule ne les reçoit (choix
+    # de Julien, T4.1) ; le reste de la réponse à initialize passe tel quel.
+    (bac.racine / "journal" / "neo4j-mcp-reponse.txt").write_text(initialisation + RESULTAT_MCP)
+    sortie = bac.lancer().sortie
+    assert sortie == INITIALISATION_SANS_INSTRUCTIONS + RESULTAT_MCP.replace(INSTANCE, "‹instance›")
+
+
+@pytest.mark.parametrize(
+    "message",
+    [
+        # Un membre « instructions » ailleurs que dans la réponse à initialize reste.
+        pytest.param(
+            '{"jsonrpc":"2.0","id":3,"result":{"tools":[],"instructions":"garde-moi"}}\n',
+            id="hors-initialize",
+        ),
+        # Dans un résultat de read-cypher, les guillemets sont échappés : rien d'un membre.
+        pytest.param(
+            '{"jsonrpc":"2.0","id":4,"result":{"content":[{"type":"text","text":'
+            '"[{\\"serverInfo\\": 1, \\"instructions\\": \\"get-schema\\"}]"}]}}\n',
+            id="texte-d-un-resultat",
+        ),
+    ],
+)
+def test_instructions_ailleurs_intactes(bac: Bac, message: str) -> None:
+    (bac.racine / "journal" / "neo4j-mcp-reponse.txt").write_text(message)
+    assert bac.lancer().sortie == message
 
 
 def test_stdout_rendu_ligne_a_ligne(bac: Bac) -> None:

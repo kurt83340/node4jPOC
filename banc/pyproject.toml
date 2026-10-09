@@ -28,6 +28,14 @@ build-backend = "uv_build"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+# Bruit d'ADK 2.11.0 et de google-genai 2.28.0 dans les tests des cellules ADK (T4.2), sans rapport
+# avec le banc : fonctions expérimentales actives, classe MCPTool qu'ADK emploie lui-même,
+# sous-classe d'aiohttp.
+filterwarnings = [
+    "ignore:\\[EXPERIMENTAL\\] feature:UserWarning",
+    "ignore:MCPTool class is deprecated:DeprecationWarning",
+    "ignore:Inheritance class AiohttpClientSession:DeprecationWarning",
+]
 
 [tool.ruff]
 line-length = 100

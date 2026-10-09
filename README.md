@@ -1,6 +1,6 @@
 # node4jPOC · Banc d'essai agentique Neo4j
 
-> **Initiative** · porteur : Julien Leroy · lancée le 2026-09-28 · **jalon 1 livré le 2026-10-01, jalon 2 à démarrer**
+> **Initiative** · porteur : Julien Leroy · lancée le 2026-09-28 · **jalon 1 livré le 2026-10-01 et clos le 2026-10-07 (tag `jalon-1`), jalon 2 en cours**
 >
 > Suivi : [tableau Jira NEO](https://frjulienleroy.atlassian.net/jira/software/projects/NEO/boards/40) · [chronologie](https://frjulienleroy.atlassian.net/jira/software/projects/NEO/boards/40/timeline) · [ROADMAP](.claude/docs/ROADMAP.md)
 
@@ -23,14 +23,14 @@ Le graphe est chargé une seule fois, en Cypher pur, par un script rejouable. Le
 
 Un jalon, c'est un epic Jira et une technique mesurée.
 
-| Jalon | Résultat visé                                                  | Technique                         | Spec                                                              | Jira                                                      | État      |
-| ----- | -------------------------------------------------------------- | --------------------------------- | ----------------------------------------------------------------- | --------------------------------------------------------- | --------- |
-| 1     | Le graphe chargé et vérifié, avec les 30 réponses de référence | Cypher à la main                  | [001-socle-donnees](.claude/docs/specs/001-socle-donnees/spec.md) | [NEO-1](https://frjulienleroy.atlassian.net/browse/NEO-1) | livré     |
-| 2     | Un agent text-to-Cypher mesuré sur les 30 questions            | `neo4j/mcp`, agent ADK            | à écrire                                                          | [NEO-2](https://frjulienleroy.atlassian.net/browse/NEO-2) | à venir   |
-| 3     | GraphRAG sur les descriptions, mesuré sur les 30 questions     | vecteurs Gemini et graphe         | à écrire                                                          | [NEO-3](https://frjulienleroy.atlassian.net/browse/NEO-3) | à venir   |
-| 4     | Les agents gérés mesurés, le tableau comparatif livré          | Aura Agent, Agent Runtime         | à écrire                                                          | [NEO-4](https://frjulienleroy.atlassian.net/browse/NEO-4) | à venir   |
-| 5     | La mémoire d'agent                                             | `neo4j-agent-memory`, Memory Bank | —                                                                 | —                                                         | en option |
-| 6     | Les briques data Google Cloud                                  | Graph Analytics, CDC → Pub/Sub    | —                                                                 | —                                                         | en option |
+| Jalon | Résultat visé                                                  | Technique                         | Spec                                                                            | Jira                                                      | État      |
+| ----- | -------------------------------------------------------------- | --------------------------------- | ------------------------------------------------------------------------------- | --------------------------------------------------------- | --------- |
+| 1     | Le graphe chargé et vérifié, avec les 30 réponses de référence | Cypher à la main                  | [001-socle-donnees](.claude/docs/specs/001-socle-donnees/spec.md)               | [NEO-1](https://frjulienleroy.atlassian.net/browse/NEO-1) | livré     |
+| 2     | Un agent text-to-Cypher mesuré sur les 30 questions            | `neo4j/mcp`, agent ADK            | [002-agent-text-to-cypher](.claude/docs/specs/002-agent-text-to-cypher/spec.md) | [NEO-2](https://frjulienleroy.atlassian.net/browse/NEO-2) | en cours  |
+| 3     | GraphRAG sur les descriptions, mesuré sur les 30 questions     | vecteurs Gemini et graphe         | à écrire                                                                        | [NEO-3](https://frjulienleroy.atlassian.net/browse/NEO-3) | à venir   |
+| 4     | Les agents gérés mesurés, le tableau comparatif livré          | Aura Agent, Agent Runtime         | à écrire                                                                        | [NEO-4](https://frjulienleroy.atlassian.net/browse/NEO-4) | à venir   |
+| 5     | La mémoire d'agent                                             | `neo4j-agent-memory`, Memory Bank | —                                                                               | —                                                         | en option |
+| 6     | Les briques data Google Cloud                                  | Graph Analytics, CDC → Pub/Sub    | —                                                                               | —                                                         | en option |
 
 ## ✅ Critères de réussite
 
@@ -57,16 +57,20 @@ Un jalon, c'est un epic Jira et une technique mesurée.
 
 ## 🧱 Décisions
 
-| ADR                                                                       | Décision                                                     |
-| ------------------------------------------------------------------------- | ------------------------------------------------------------ |
-| [0001](.claude/docs/adr/0001-mvp-jeu-de-donnees-pokeapi.md)               | Jeu de données : Pokémon, CSV PokéAPI en français            |
-| [0002](.claude/docs/adr/0002-cadrage-environnement-cible-google-cloud.md) | Environnement cible Google Cloud, dbt hors POC               |
-| [0003](.claude/docs/adr/0003-mvp-chargement-cypher-pur.md)                | Chargement en Cypher pur (`LOAD CSV`)                        |
-| [0004](.claude/docs/adr/0004-mvp-modele-espece-formes.md)                 | Modèle du graphe : l'espèce et toutes ses formes             |
-| [0005](.claude/docs/adr/0005-mvp-conventions-nommage-schema.md)           | Conventions de nommage du schéma                             |
-| [0006](.claude/docs/adr/0006-mvp-banc-essai-30-questions.md)              | Banc d'essai : 30 questions en 6 catégories                  |
-| [0007](.claude/docs/adr/0007-infra-secrets-et-services-geres.md)          | Secrets dans Secret Manager, services gérés seulement        |
-| [0008](.claude/docs/adr/0008-mvp-notation-questions-semantiques.md)       | Notation des questions sémantiques : grille, trois ensembles |
+| ADR                                                                       | Décision                                                                              |
+| ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| [0001](.claude/docs/adr/0001-mvp-jeu-de-donnees-pokeapi.md)               | Jeu de données : Pokémon, CSV PokéAPI en français                                     |
+| [0002](.claude/docs/adr/0002-cadrage-environnement-cible-google-cloud.md) | Environnement cible Google Cloud, dbt hors POC                                        |
+| [0003](.claude/docs/adr/0003-mvp-chargement-cypher-pur.md)                | Chargement en Cypher pur (`LOAD CSV`)                                                 |
+| [0004](.claude/docs/adr/0004-mvp-modele-espece-formes.md)                 | Modèle du graphe : l'espèce et toutes ses formes                                      |
+| [0005](.claude/docs/adr/0005-mvp-conventions-nommage-schema.md)           | Conventions de nommage du schéma                                                      |
+| [0006](.claude/docs/adr/0006-mvp-banc-essai-30-questions.md)              | Banc d'essai : 30 questions en 6 catégories                                           |
+| [0007](.claude/docs/adr/0007-infra-secrets-et-services-geres.md)          | Secrets dans Secret Manager, services gérés seulement                                 |
+| [0008](.claude/docs/adr/0008-mvp-notation-questions-semantiques.md)       | Notation des questions sémantiques : grille, trois ensembles                          |
+| [0009](.claude/docs/adr/0009-mvp-protocole-mesure-techniques.md)          | Protocole de mesure : plan croisé, notation mixte sans juge LLM, pilote puis 3 passes |
+| [0010](.claude/docs/adr/0010-infra-plafond-de-depense.md)                 | Plafond de dépense : budget de 100 €, coupure automatique de Vertex                   |
+| [0011](.claude/docs/adr/0011-infra-claude-par-api-anthropic.md)           | Claude par l'API Anthropic, plafonné par des crédits prépayés                         |
+| [0012](.claude/docs/adr/0012-mvp-second-tour-apres-echec.md)              | Second tour d'une paire après un échec : faux d'office                                |
 
 ## 🔗 Suivi et documentation
 

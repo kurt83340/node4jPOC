@@ -298,6 +298,25 @@ def test_issue_ou_cause_refusee(tmp_path: Path, issue: str, cause: str | None) -
             journal.fin(issue, cause)
 
 
+def test_precedent_hors_trace(tmp_path: Path, trace: Path) -> None:
+    # ADR-0012 : le second tour après un échec n'est jamais posé ; sa ligne vient de
+    # l'orchestration, jamais d'une trace, ni à l'écriture ni à la relecture.
+    with Journal(tmp_path / "ecrite.jsonl", ENTETE, Horloge()) as journal:
+        journal.question("Q2", MESSAGE_Q2)
+        with pytest.raises(MesureError, match="jamais dans une trace"):
+            journal.fin("echec", "precedent")
+    lignes = trace.read_text().splitlines()
+    rang = next(i for i, ligne in enumerate(lignes) if '"type": "fin"' in ligne)
+    lignes[rang] = (
+        lignes[rang]
+        .replace('"cause": null', '"cause": "precedent"')
+        .replace('"issue": "reponse"', '"issue": "echec"')
+    )
+    trace.write_text("\n".join(lignes) + "\n")
+    with pytest.raises(MesureError, match="jamais dans une trace"):
+        lire(trace)
+
+
 def test_evenement_inconnu_refuse(trace: Path) -> None:
     with trace.open("a") as flux:
         flux.write('{"type": "autre", "t": 1.0}\n')

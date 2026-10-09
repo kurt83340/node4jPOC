@@ -1,9 +1,9 @@
 ---
 name: adr
-description: Gère le cycle de vie complet des ADR (Architecture Decision Records) — capture (mode défaut), supersede (remplacement explicite d'un ADR existant), deprecate (marque comme à éviter sans remplacement), list (liste avec status). Décisions immuables, on ne modifie jamais (on supersede).
+description: Gère le cycle de vie complet des ADR (Architecture Decision Records) — capture (mode défaut), supersede (remplacement explicite d'un ADR existant), amend (un seul point remplacé, l'ancien ADR reste en vigueur), deprecate (marque comme à éviter sans remplacement), list (liste avec status). Décisions immuables, on ne modifie jamais (on supersede ; un amend n'ajoute qu'un bandeau daté).
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash(find:*), Bash(date:*), Bash(ls:*), Bash(grep:*), AskUserQuestion
 disable-model-invocation: false
-argument-hint: "[capture|supersede|deprecate|list] <args>"
+argument-hint: "[capture|supersede|amend|deprecate|list] <args>"
 ---
 
 # /adr — Cycle de vie complet des Architecture Decision Records
@@ -11,7 +11,8 @@ argument-hint: "[capture|supersede|deprecate|list] <args>"
 > **Quand ne PAS utiliser** : décision locale à UNE feature → § `## Décisions` de son `plan.md` ·
 > simple observation/pattern à mûrir → `/lecon`.
 > **Réversibilité** : 🟢 crée fichier + index — mais un ADR accepté est **immuable** : on ne
-> supprime ni ne modifie, on `supersede <NN>` (le seul undo légitime).
+> supprime ni ne modifie, on `supersede <NN>` (le seul undo légitime) ; quand un seul point change,
+> `amend <NN>` n'y ajoute qu'un bandeau daté.
 
 Ton rôle : orchestrer le cycle de vie des ADR dans `.claude/docs/adr/`.
 
@@ -21,6 +22,7 @@ Ton rôle : orchestrer le cycle de vie des ADR dans `.claude/docs/adr/`.
 | ------------------------------------------- | ------------------------------------------------------ |
 | `/adr <scope> "<titre>"` (défaut = capture) | Capturer une nouvelle décision tech structurante       |
 | `/adr supersede <NNNN> <scope> "<titre>"`   | Remplacer un ADR existant par un nouveau               |
+| `/adr amend <NNNN> <scope> "<titre>"`       | Remplacer un seul point d'un ADR qui reste en vigueur  |
 | `/adr deprecate <NNNN> "<raison>"`          | Marquer un ADR comme déprécié (à éviter, pas remplacé) |
 | `/adr list [scope]`                         | Lister tous les ADRs avec status (optionnel filtre)    |
 
@@ -28,7 +30,7 @@ Ton rôle : orchestrer le cycle de vie des ADR dans `.claude/docs/adr/`.
 
 ## Détection du mode
 
-Si premier arg ∈ `{supersede, deprecate, list}` → mode explicite.
+Si premier arg ∈ `{supersede, amend, deprecate, list}` → mode explicite.
 Sinon → mode `capture` par défaut (premier arg = scope).
 
 ---
@@ -175,7 +177,44 @@ Combine MODE 1 (création nouvel ADR) + pattern supersede automatique :
 
 ---
 
-## MODE 3 : `deprecate`
+## MODE 3 : `amend`
+
+### Usage
+
+```
+/adr amend 0009 infra "Claude par l'API Anthropic (remplace « tous sur Vertex »)"
+```
+
+### Quand
+
+Un nouvel ADR remplace **un seul point** d'un ADR qui reste en vigueur pour tout le reste.
+Différent de `supersede`, où toute la décision change : l'ancien garde `status: accepted`.
+
+### Action
+
+1. Lance MODE `capture` avec le scope+titre fournis ; frontmatter : `supersedes: null` et
+   `amends: 0009` (auto-pré-rempli). Sa section « Décision » nomme le point remplacé.
+2. **Dans l'ADR amendé (0009), un seul ajout**, en tête du corps, juste après le frontmatter. C'est
+   la seule écriture permise dans un ADR accepté :
+
+   ```
+   > ⚠️ **Point remplacé** (YYYY-MM-DD) : « <le point> » → [ADR-NNNN](NNNN-<scope>-<titre>.md) : <la nouvelle règle, en une phrase>. Le reste de cet ADR reste en vigueur.
+   ```
+
+   Rien d'autre ne change : ni le frontmatter (`status: accepted`), ni le corps.
+
+3. **Update `adr/README.md`** : la ligne de 0009 reste dans sa table, au statut
+   `Accepted (point amendé par [NNNN](NNNN-<scope>-<titre>.md))` ; le nouvel ADR s'ajoute dans sa
+   table de scope (Étape 5 du mode capture).
+4. **CHANGELOG** : section `Decided`, comme le mode capture (Étape 7).
+
+> Vécu (node4jPOC, 2026-10-08) : un ADR « Claude par l'API Anthropic » amende le protocole de
+> mesure, qui faisait tout passer par Vertex ; le reste du protocole tient. Un supersede aurait
+> archivé tout le protocole pour un seul point.
+
+---
+
+## MODE 4 : `deprecate`
 
 ### Usage
 
@@ -201,7 +240,7 @@ Quand un ADR est encore valide MAIS on veut signaler "ne plus s'appuyer dessus".
 
 ---
 
-## MODE 4 : `list`
+## MODE 5 : `list`
 
 ### Usage
 
@@ -242,7 +281,10 @@ Affichage formaté en table markdown.
 
 ## Anti-patterns
 
-- ❌ Modifier un ADR existant (toujours créer un nouveau qui supersede)
+- ❌ Modifier un ADR existant : toujours en créer un nouveau, qui le supersede, ou qui l'amende (seul ajout permis :
+  le bandeau daté du mode `amend`)
+- ❌ Amender quand toute la décision change (c'est un supersede), ou amender sans bandeau dans l'ancien (son lecteur
+  ignorerait qu'un point a changé)
 - ❌ ADR sans frontmatter YAML (illisible machine, rate les audits)
 - ❌ ADR pour décision locale à UNE feature (utiliser `## Décisions` dans plan.md)
 - ❌ Numérotation reset entre projets/phases (séquentiel global du projet)

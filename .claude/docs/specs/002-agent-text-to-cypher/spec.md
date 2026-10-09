@@ -1,6 +1,6 @@
 ---
 status: in-progress # draft | validated | in-progress | done | parked
-progress: 12/33 # X/Y tasks (compté depuis tasks.md) — MAJ par /feature-done ou à la main
+progress: 15/33 # X/Y tasks (compté depuis tasks.md) — MAJ par /feature-done ou à la main
 ---
 
 # Spec — Agent text-to-Cypher
@@ -78,7 +78,7 @@ Mesurer la technique 2 du banc d'essai : un agent LLM qui écrit lui-même le Cy
 
 ## Scope IN
 
-- `neo4j/mcp` v1.6.0 en local, en lecture seule, lancé par `scripts/` ; Claude via Vertex pour toutes les cellules Claude
+- `neo4j/mcp` v1.6.0 en local, en lecture seule, lancé par `scripts/` ; Claude par l'API Anthropic pour toutes les cellules Claude, Gemini sur Vertex `eu` ([ADR-0011](../../adr/0011-infra-claude-par-api-anthropic.md))
 - le harnais `banc/` (Python), la liste `questions/banc.toml`, la consigne et la fiche communes, la notation mixte, les traces et les mesures
 - l'index plein texte ; le paramètre `$proposee` du contrôle de Q2
 - la mesure FR/EN par bascule de l'instance
@@ -93,14 +93,14 @@ Mesurer la technique 2 du banc d'essai : un agent LLM qui écrit lui-même le Cy
 ## Métriques de succès
 
 - 9 séries comptées (3 cellules × 3 passes), 3 séries anglaises et 1 passe française de contrôle, notées et versionnées
-- coût LLM total d'au plus 35 $, pilote compris, recoupé avec l'export de facturation
+- coût LLM total d'au plus 35 $, pilote compris, recoupé avec l'usage de la Console Anthropic et l'export de facturation BigQuery
 - base de référence intacte à la fin : 34/34 contrôles, 27/27 réponses
-- revue humaine contenue : environ 200 cas sur toute la spec, soit environ 3 h
+- revue humaine contenue : environ 230 cas sur toute la spec (Q27 et Q28 revues d'office depuis T2.2), soit environ 3 h 30
 
 ## Dépendances
 
 - NEO-13 clos (période creuse de 72 h) avant toute requête sur la base : fait le 2026-10-07
-- accès aux modèles Claude sur Vertex (Model Garden) pour `jleroy-labo`
+- accès à Claude par l'API Anthropic (workspace du banc, clé dans Secret Manager, [ADR-0011](../../adr/0011-infra-claude-par-api-anthropic.md)) : fait le 2026-10-08 (T0.2)
 - spec [001-socle-donnees](../001-socle-donnees/spec.md) livrée (graphe, `questions/attendu/`)
 
 ## Liens
@@ -108,4 +108,4 @@ Mesurer la technique 2 du banc d'essai : un agent LLM qui écrit lui-même le Cy
 - Research : [research.md](research.md)
 - Plan technique : [plan.md](plan.md)
 - Tasks : [tasks.md](tasks.md)
-- ADRs liés : [0002](../../adr/0002-cadrage-environnement-cible-google-cloud.md), [0005](../../adr/0005-mvp-conventions-nommage-schema.md), [0006](../../adr/0006-mvp-banc-essai-30-questions.md), [0007](../../adr/0007-infra-secrets-et-services-geres.md), [0008](../../adr/0008-mvp-notation-questions-semantiques.md) ; protocole de mesure : [0009](../../adr/0009-mvp-protocole-mesure-techniques.md)
+- ADRs liés : [0002](../../adr/0002-cadrage-environnement-cible-google-cloud.md), [0005](../../adr/0005-mvp-conventions-nommage-schema.md), [0006](../../adr/0006-mvp-banc-essai-30-questions.md), [0007](../../adr/0007-infra-secrets-et-services-geres.md), [0008](../../adr/0008-mvp-notation-questions-semantiques.md), [0010](../../adr/0010-infra-plafond-de-depense.md) ; protocole de mesure : [0009](../../adr/0009-mvp-protocole-mesure-techniques.md), amendé par [0011](../../adr/0011-infra-claude-par-api-anthropic.md) (Claude par l'API Anthropic) et précisé par [0012](../../adr/0012-mvp-second-tour-apres-echec.md) (second tour après un échec)

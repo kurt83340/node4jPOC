@@ -7,13 +7,7 @@
 >
 > ⚠️ Avant d'éditer un fichier, vérifie les **règles de couplage** ci-dessous.
 
-**Dernière MAJ :** 2026-10-08
-
-> 🧭 **Principe (aligné [best-practices Anthropic](https://code.claude.com/docs/en/best-practices))** :
-> à EXCLURE d'ici → tout ce que Claude « peut trouver en lisant le code » : descriptions
-> fichier-par-fichier, listes de dépendances, listes de tests. Ça pourrit vite (drift) et
-> Claude le retrouve en un `grep`. À INCLURE → ce qui n'est pas inférable du code.
-> Préférer des **pointers `chemin:ligne`** à des copies de code/structure.
+**Dernière MAJ :** 2026-10-09
 
 ## Vue d'ensemble (macro — sous-systèmes, pas fichiers)
 
@@ -22,6 +16,7 @@ Secret Manager ─┬─► scripts/ ─► cypher-shell ─► AuraDB Free ◄�
                 │      ├─ cypher/     00 → 06 : chargement · 90 : vérification
                 │      ├─ questions/  banc d'essai : requêtes et réponses de référence (jalons 1 à 4)
                 │      ├─ mcp-neo4j.sh ─► neo4j-mcp (stdio, lecture seule) ─► AuraDB Free ◄─ agents de banc/
+                │      ├─ transactions.sh ─► AuraDB Free (lectures d'agents orphelines)
                 │      └─ banc.sh ─► banc/ (clé Anthropic par l'environnement) ─► API Anthropic (Claude) · Vertex eu (Gemini)
                 └─► infra/reveil-aura/ ─► Query API ─► AuraDB Free (RETURN 1 quotidien, alerte e-mail)
 ```
@@ -29,8 +24,7 @@ Secret Manager ─┬─► scripts/ ─► cypher-shell ─► AuraDB Free ◄�
 → Orientation rapide : chargement → `cypher/NN-*.cypher` (ordre fixe : [ARCHITECTURE § 3](conception/ARCHITECTURE.md)) ;
 identifiants, purge, codes retour → `scripts/` (fonctions partagées : `scripts/commun.sh`) ; banc d'essai → `questions/` ; réveil quotidien d'Aura et
 son alerte → `infra/reveil-aura/` (job Cloud Run, [RUNBOOK](RUNBOOK.md)). Réponses de référence : `questions/attendu/`, rejouées par `scripts/questions.sh`.
-Harnais du banc d'essai (cellules, notation, mesures) → `banc/` ([plan 002](specs/002-agent-text-to-cypher/plan.md)).
-Le détail fichier-par-fichier se découvre à la demande (`grep`, lecture) — pas ici.
+Harnais du banc d'essai (cellules, orchestration, notation, mesures) → `banc/` ([plan 002](specs/002-agent-text-to-cypher/plan.md)).
 
 ## Règles de couplage (⭐ le cœur — non déductible du code)
 
@@ -50,15 +44,16 @@ Le détail fichier-par-fichier se découvre à la demande (`grep`, lecture) — 
   passée au harnais par l'environnement ; `banc/` ne lit jamais Secret Manager.
 - ✅ Les agents ne joignent la base que par `scripts/mcp-neo4j.sh`, chemin absolu (plan 002, D1) : `neo4j-mcp`
   y reçoit les `NEO4J_MCP_*` (lecture seule, sans télémétrie), sans option, ni `NEO4J_*` hérité, ni accès à Claude
-  (`ANTHROPIC_*`) ; stderr par `filtrer_flux` (`scripts/commun.sh:128`), stdout (canal MCP) par un masque de
-  l'identifiant : `banc/` ne le voit jamais. ❌ Aucune config MCP sur le disque :
-  `banc/` la passe en mémoire.
+  (`ANTHROPIC_*`), ni variable Vertex (`GOOGLE_*`) ; stderr par `filtrer_flux` (`scripts/commun.sh:128`), stdout
+  (canal MCP) par un masque de l'identifiant, qui ôte aussi les instructions du serveur (elles citent `get-schema`) :
+  `banc/` ne voit jamais l'identifiant. ❌ Aucune config MCP sur le disque : `banc/` la passe en mémoire.
 - ✅ Agents isolés par la liste blanche de `banc/src/banc/isolement.py` (plan 002, D3) : la clé Anthropic aux seules
   cellules Claude, jamais avec une variable Vertex (`CLAUDE_CODE_USE_VERTEX` passerait avant elle) ; la cellule
   Gemini ne la reçoit jamais.
 - ✅ Seul le chargement (purge et preuve d'idempotence comprises) écrit dans la base : go/no-go, vérification et techniques du banc
   d'essai lisent (`--access-mode read`, `scripts/verifier.sh:45`), le réveil quotidien aussi (`accessMode: Read`,
-  `infra/reveil-aura/reveil.py:119`) ; exception prévue : la mémoire d'agent (jalon 5).
+  `infra/reveil-aura/reveil.py:119`) ; exception prévue : la mémoire d'agent (jalon 5). Seul `scripts/transactions.sh`
+  arrête des transactions : celles de neo4j-mcp (métadonnée `app`), sans rien écrire ; `banc/` le lance sans `ANTHROPIC_*`.
 
 ## Intention & décisions locales
 
@@ -75,18 +70,11 @@ Le détail fichier-par-fichier se découvre à la demande (`grep`, lecture) — 
 
 ## Gotchas → `code-map-gotchas.md`
 
-Les pièges non évidents vivent dans [code-map-gotchas.md](code-map-gotchas.md) (**non auto-chargé**) :
-le hook PreToolUse n'injecte que ceux qui citent le fichier en cours d'édition. Ici ne restent que
-la vue macro, le couplage et l'intention — ce fichier est auto-chargé à chaque session : **< 3k tokens**.
+Pièges dans [code-map-gotchas.md](code-map-gotchas.md) (non auto-chargé : le hook injecte ceux du fichier édité).
+Ce fichier-ci est auto-chargé à chaque session : **< 3k tokens**.
 
 ## Quand mettre à jour ce fichier
 
-- Nouvelle **règle de couplage** ou contrainte d'architecture → l'ajouter
-- Découpage en sous-systèmes modifié → revoir la vue macro
-- Nouveau **gotcha** découvert (un piège qui t'a coûté du temps) → le noter
-- ❌ **NE PAS** ajouter de description fichier-par-fichier ni de liste de dépendances : Claude les retrouve seul, et elles drifteraient.
-
-> 🔁 **Entretien** : le skill `/codemap` régénère la vue macro et **détecte les violations
-> de couplage** (par grep des imports). Ce fichier est déjà en contexte (`@`) : le hook
-> `pretooluse-inject-codemap.py` n'injecte que les **gotchas qui ciblent le fichier édité**
-> (1×/fichier/session) — pas une carte structurelle (déductible et périssable).
+- Règle de couplage ou contrainte d'architecture nouvelle → l'ajouter ; découpage modifié → revoir la vue macro.
+- Piège lié à un fichier → `code-map-gotchas.md` ; ❌ jamais de description fichier par fichier ni de dépendances.
+- Entretien : `/codemap` (vue macro, violations de couplage par grep).

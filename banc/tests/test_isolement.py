@@ -7,7 +7,7 @@ import pytest
 from banc.isolement import CleAbsente, environnement_agent
 
 CLE = "sk-ant-api03-cle-factice-du-banc"
-COMMUNES = {"HOME", "PATH", "CLOUDSDK_CONFIG"}
+COMMUNES = {"HOME", "PATH", "CLOUDSDK_CONFIG", "LC_CTYPE"}
 ATTENDUES = {
     "claude-code": COMMUNES
     | {
@@ -16,6 +16,10 @@ ATTENDUES = {
         "CLAUDE_CODE_EFFORT_LEVEL",
         "CLAUDE_CONFIG_DIR",
         "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC",
+        "CLAUDE_CODE_HARBOR_KITE",
+        "CLAUDE_CODE_DISABLE_AUTO_MEMORY",
+        "CLAUDE_CODE_MAX_RETRIES",
+        "FORCE_PROMPT_CACHING_5M",
     },
     "adk-claude": COMMUNES | {"ANTHROPIC_API_KEY"},
     "adk-gemini": COMMUNES
@@ -57,6 +61,38 @@ def test_claude_code_par_la_cle(tmp_path: Path) -> None:
         str(tmp_path / "home"),
         str(tmp_path / "claude"),
     )
+
+
+def test_claude_code_hors_du_poste(tmp_path: Path) -> None:
+    # Relevé T4.1 sur le vrai Claude Code 2.1.292 : sans ces réglages, la session ouvre une socket
+    # de messagerie dans /tmp/cc-socks/ (joignable par les autres sessions du poste), décrit une
+    # mémoire persistante à l'agent, et reprend jusqu'à 10 fois un appel en échec.
+    env = environnement_agent("claude-code", tmp_path / "home", tmp_path / "claude")
+    assert env["CLAUDE_CODE_HARBOR_KITE"] == "0"
+    assert env["CLAUDE_CODE_DISABLE_AUTO_MEMORY"] == "1"
+    # Autant de reprises que le client Anthropic d'ADK (plan, D13).
+    assert env["CLAUDE_CODE_MAX_RETRIES"] == "2"
+
+
+def test_cache_a_5_minutes_par_defaut(tmp_path: Path) -> None:
+    # Durée tranchée au pilote (plan, D10) : 5 min forcées tant qu'elle ne l'est pas.
+    env = environnement_agent("claude-code", tmp_path / "home", tmp_path / "claude")
+    assert env["FORCE_PROMPT_CACHING_5M"] == "1"
+    assert "ENABLE_PROMPT_CACHING_1H" not in env
+
+
+def test_cache_a_1_heure(tmp_path: Path) -> None:
+    env = environnement_agent("claude-code", tmp_path / "home", tmp_path / "claude", cache_1h=True)
+    cinq_minutes, une_heure = "FORCE_PROMPT_CACHING_5M", "ENABLE_PROMPT_CACHING_1H"
+    assert set(env) == ATTENDUES["claude-code"] - {cinq_minutes} | {une_heure}
+    assert env["ENABLE_PROMPT_CACHING_1H"] == "1"
+
+
+@pytest.mark.parametrize("client", ["adk-claude", "adk-gemini"])
+def test_cache_d_adk_hors_environnement(client: str, tmp_path: Path) -> None:
+    # ADK règle son cache par ContextCacheConfig (T4.2), pas par une variable.
+    env = environnement_agent(client, tmp_path, tmp_path, cache_1h=True)
+    assert set(env) == ATTENDUES[client]
 
 
 @pytest.mark.parametrize("client", CLAUDE)

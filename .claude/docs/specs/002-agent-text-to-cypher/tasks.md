@@ -8,7 +8,7 @@
 > il « perd le fil » (échecs ×4 constatés en télémétrie, Morph 2026) → découper la phase.
 
 **Date :** 2026-10-01
-**Status :** [~] 12/33 tasks → MAJ au fil de l'eau
+**Status :** [~] 15/33 tasks → MAJ au fil de l'eau
 
 > Phases 0 à 6 : sans la base (prévues pendant la période creuse de NEO-13, close le 2026-10-07). Phases 7 à 11 : sur la base.
 > Les tests n'appellent aucun outil réel : PATH réduit aux faux outils, HOME temporaire.
@@ -51,11 +51,11 @@
 
 ## Phase 4 — Cellules (NEO-18)
 
-- [ ] **T4.1** : cellule Agent SDK : `env -i` et liste blanche (HOME temporaire, `CLOUDSDK_CONFIG`, PATH, `ANTHROPIC_API_KEY` sans variable Vertex, effort `high`, petit modèle figé), `CLAUDE_CONFIG_DIR` temporaire, `setting_sources=[]`, `tools=[]`, `read-cypher` seul ; `connect()` puis `get_mcp_status()` jusqu'à « connected » avant le chrono ; budget par conversation ; à prévoir : relevé de la revue adverse de la phase 3 (plan, D13)
+- [x] **T4.1** : cellule Agent SDK : `env -i` et liste blanche (HOME temporaire, `CLOUDSDK_CONFIG`, PATH, `ANTHROPIC_API_KEY` sans variable Vertex, effort `high`, petit modèle figé), `CLAUDE_CONFIG_DIR` temporaire, `setting_sources=[]`, `tools=[]`, `read-cypher` seul ; `connect()` puis `get_mcp_status()` jusqu'à « connected » avant le chrono ; budget par conversation ; à prévoir : relevé de la revue adverse de la phase 3 (plan, D13) — fait le 2026-10-09 : `banc.cellule` (commande d'une conversation, plafonds, consigne et fiche communes) et `banc.cellule_sdk` ; relevé sur le vrai Claude Code 2.1.292 contre une fausse API (plan, D3 et D13) : socket entre sessions, mémoire automatique, reprises et durée du cache fixées par la liste blanche, `dontAsk`, `get-schema` masqué, instructions du serveur retirées par le lanceur (choix de Julien) ; budget de 0,50 $ par conversation compté sur le flux, invisible de l'agent (choix de Julien) ; 86 tests, dont 5 sur le vrai binaire (choix de Julien) ; couverture 100 % et 99 % ; 80 fautes injectées (cellule, commande, lanceur), toutes détectées
   - DoD : `command_passes: uv run --directory banc pytest tests/test_cellule_sdk.py -q` (faux `cli_path` : aucune variable hors liste blanche, aucun fichier de réglages lu, chrono lancé après la connexion)
-- [ ] **T4.2** : cellules ADK (Claude par `AnthropicLlm` et l'API Anthropic, Gemini par Vertex `eu`) : `McpToolset` en stdio sur le lanceur, `get_tools()` avant le chrono, `tool_filter`, délai de 30 s, effort et `thinking_level` fixés, budget par conversation ; à prévoir : relevé de la revue adverse de la phase 3 (plan, D13)
+- [x] **T4.2** : cellules ADK (Claude par `AnthropicLlm` et l'API Anthropic, Gemini par Vertex `eu`) : `McpToolset` en stdio sur le lanceur, `get_tools()` avant le chrono, `tool_filter`, délai de 30 s, effort et `thinking_level` fixés, budget par conversation ; à prévoir : relevé de la revue adverse de la phase 3 (plan, D13) — fait le 2026-10-09 : `banc.cellule_adk` (`python -m banc.cellule_adk adk-claude|adk-gemini`) ; relevé sur le vrai ADK 2.11.0 contre une fausse API Anthropic et Vertex (jeton d'une ADC factice) et un faux serveur MCP, sans aucun appel réel (plan, D2 et D13) : `max_tokens` 128 000 comme Claude Code, donc en flux, 2 reprises pour Gemini comme pour les cellules Claude, appel coupé par le délai compté 0 (borne basse), variables Vertex retirées par le lanceur (choix de Julien) ; délai MCP au-delà d'un tour (il borne chaque appel d'outil), consigne passée par une fonction (`{rang}` serait une variable de session), liste des outils lue une fois, serveur relancé par ADK compté en panne, arrêté par son groupe ; revue adverse à contexte frais : 9 constats, dont 4 importants, tous traités (garde-fou de budget pour un résultat d'outil énorme, que Claude Code coupe à 25 000 tokens : choix de Julien) ; 114 tests, couverture 99 % ; 96 fautes injectées (cellule, mesures, lanceur) : 95 détectées, 1 équivalente
   - DoD : `command_passes: uv run --directory banc pytest tests/test_cellule_adk.py -q` (faux serveur MCP, faux LLM)
-- [ ] **T4.3** : orchestration : même session au second tour ; plafonds (10 tours, 180 s, budget) ; panne relancée (la paire pour Q18 et Q28), échec de l'agent noté faux avec sa cause, délai dû aux reprises internes compté comme panne ; groupe de processus tué, `scripts/transactions.sh` appelé ; cellules alternées question par question ; `--reprendre` ; règle de couplage de `transactions.sh` dans la code-map ; à prévoir : relevé de la revue adverse de la phase 3 (plan, D13)
+- [x] **T4.3** : orchestration : même session au second tour ; plafonds (10 tours, 180 s, budget) ; panne relancée (la paire pour Q18 et Q28), échec de l'agent noté faux avec sa cause, délai dû aux reprises internes compté comme panne ; groupe de processus tué, `scripts/transactions.sh` appelé ; cellules alternées question par question ; `--reprendre` ; règle de couplage de `transactions.sh` dans la code-map ; à prévoir : relevé de la revue adverse de la phase 3 (plan, D13) — fait le 2026-10-09 : `banc.orchestration` (`banc lancer`) et `scripts/transactions.sh` ; cellules en rotation, `--plafond-usd` exigé, passe invalide signalée sans arrêt, cellule tuée en erreur technique (choix de Julien) ; ligne `precedent` de l'ADR-0012 ; Aura nettoyé au départ et après une conversation qui finit mal ; reprise qui note une trace complète restée sans ligne, sans jamais rejouer un échec ; une campagne à la fois (verrou) ; relevé : le vrai Claude Code 2.1.292 garde son serveur MCP dans le groupe de la cellule ; `transactions.sh` (métadonnée `app` de neo4j-mcp, relectures après TERMINATE), à vérifier sur Aura Free en T7.4 ; revue adverse en deux passes (12 constats, dont 1 bloquant, puis 9 mineurs), traitée ; 107 tests ; 58 puis 76 fautes injectées dans l'orchestration et 13 dans `transactions.sh`, toutes détectées
   - DoD : `command_passes: uv run --directory banc pytest tests/test_orchestration.py -q && bash -n scripts/transactions.sh`
 
 ## Phase 5 — Répétition générale (NEO-18)
@@ -96,7 +96,7 @@
   - DoD : `command_passes: uv run --directory banc python -m banc rapport --campagne <id> --complet` (9 séries, aucune panne non relancée)
 - [ ] **T9.2** : revue humaine des « à revoir »
   - DoD : `command_passes: uv run --directory banc python -m banc revoir --campagne <id> --verifier` (aucun cas restant)
-- [ ] **T9.3** : coût recoupé avec l'export de facturation BigQuery (`/google-facture`), le lendemain
+- [ ] **T9.3** : coût recoupé avec l'usage de la Console Anthropic (cellules Claude, [ADR-0011](../../adr/0011-infra-claude-par-api-anthropic.md)) et l'export de facturation BigQuery (`/google-facture`, cellule Gemini), le lendemain (plan, D10)
   - DoD : `manual: écart noté dans le rapport de campagne`
 
 ## Phase 10 — Schéma anglais, sur la base (NEO-23)
@@ -135,6 +135,6 @@ La feature est livrée quand :
 - NEO-13 clos le 2026-10-07 : la base est de nouveau utilisable.
 - Quotas Claude à 0 sur `jleroy-labo` : hausse demandée le 2026-10-07 et refusée automatiquement ; Claude injoignable par Vertex, parking et décision de Julien (prix et reprises internes relevés). Tranché le 2026-10-08 : API Anthropic ([ADR-0011](../../adr/0011-infra-claude-par-api-anthropic.md)).
 - Compatibilité de Python 3.14 avec ADK et l'Agent SDK : vérifiée le 2026-10-07 (T0.1).
-- `TERMINATE TRANSACTIONS` permis sur Aura Free ? (T7.4)
-- Q18 (ou Q28) quand Q2 (ou Q27) échoue : la session est arrêtée, le second tour n'est jamais posé. Tranché le 2026-10-09 (Julien) : fausse d'office, ligne « echec » à 0 s, cause à créer ; à coder en T4.3 (plan, D13).
+- `TERMINATE TRANSACTIONS` permis sur Aura Free, et en `--access-mode read` ? (T7.4 ; `transactions.sh` tourne au départ de chaque campagne : sans lui, aucune ne démarre)
+- Q18 (ou Q28) quand Q2 (ou Q27) échoue : la session est arrêtée, le second tour n'est jamais posé. Tranché le 2026-10-09 (Julien, [ADR-0012](../../adr/0012-mvp-second-tour-apres-echec.md)) : fausse d'office, ligne « echec » à 0 s, cause `precedent` ; codé en T4.3 (plan, D13).
 - Noms de propriétés orphelins après la bascule (`db.propertyKeys()`) : à vérifier au jalon 4, avant qu'Aura Agent ne lise le schéma.

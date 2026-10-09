@@ -35,6 +35,7 @@ Format : [Keep a Changelog](https://keepachangelog.com/). Versionning : `vYYYY.M
 - Protocole de mesure des techniques : plan croisé client × modèle, consigne et fiche communes, un seul chemin vers la base en lecture seule, notation mixte sans juge LLM, source citée vérifiée sur la trace, échec de l'agent compté faux, pilote puis 3 passes ([ADR-0009](adr/0009-mvp-protocole-mesure-techniques.md))
 - Plafond de dépense : budget de 100 € sur `jleroy-labo` jusqu'au 2026-12-31, alertes par palier, coupure automatique de l'API Vertex à construire avant toute campagne ([ADR-0010](adr/0010-infra-plafond-de-depense.md))
 - Claude par l'API Anthropic pour les deux cellules Claude, Gemini sur Vertex `eu` ; crédits prépayés sans recharge automatique comme plafond ([ADR-0011](adr/0011-infra-claude-par-api-anthropic.md))
+- Second tour d'une paire après un échec du premier : faux d'office, sans relance ni nouvelle session ([ADR-0012](adr/0012-mvp-second-tour-apres-echec.md))
 
 ---
 

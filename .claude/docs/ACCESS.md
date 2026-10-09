@@ -57,6 +57,7 @@ Pour les jalons 2 à 4 (constaté le 2026-10-01).
 - **Visites guidées** par-dessus : « Try the new instance explorer » → Skip ; « Work in tabs » → Dismiss.
 - **Relations** : renvoyer des chemins (`MATCH chemin = (…)-[…]->(…) RETURN chemin`) ; des nœuds seuls n'en montrent aucune.
 - **Légende** : les bulles affichent `id` ; panneau « Results overview », pastille du label, « Caption », puis `nom`.
+  Le pilotage automatique de ce panneau échoue (la page se redessine sans cesse) : le faire à la main.
 - **Sans connexion** : [page de visualisation](https://claude.ai/artifact/PtTfvzP9uXHWQGF9j2rbeB) (artefact privé, 3 extraits).
 
 ## Secret `neo4j-aura-poc`

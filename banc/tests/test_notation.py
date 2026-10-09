@@ -713,6 +713,16 @@ def test_controle_par_script_en_echec(tmp_path: Path) -> None:
         controle_par_script(liste_cypher(EQUIPE), script=script)
 
 
+def test_controle_par_script_sans_reponse(tmp_path: Path) -> None:
+    # Le délai dépassé est un échec du contrôle comme un autre (sinon `banc lancer` sortirait en
+    # 1, le code d'une passe invalide).
+    script = tmp_path / "questions.sh"
+    script.write_text(f"#!{sys.executable} -I\nimport time\ntime.sleep(30)\n")
+    script.chmod(0o755)
+    with pytest.raises(NotationError, match=r"aucune réponse en 0\.5 s"):
+        controle_par_script(liste_cypher(EQUIPE), script=script, delai_s=0.5)
+
+
 @pytest.mark.parametrize(
     "sortie",
     [

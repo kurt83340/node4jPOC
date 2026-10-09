@@ -18,6 +18,15 @@
       "Bash(python3 .claude/skills/archive-projet/scripts/archive-projet.py:*)",
       "Edit(./**)"
     ],
+    "ask": [
+      "Bash(git push:*)",
+      "Bash(git reset:*)",
+      "Bash(git merge:*)",
+      "Bash(git worktree remove:*)",
+      "Bash(alembic downgrade:*)",
+      "Bash(./scripts/deploy:*)",
+      "Bash(rm:*)"
+    ],
     "deny": [
       "Read(.env)",
       "Read(.env.*)",
@@ -35,15 +44,6 @@
       "Read(*.pem)",
       "Read(*.key)",
       "Read(//**/Neo4j-*.txt)"
-    ],
-    "ask": [
-      "Bash(git push:*)",
-      "Bash(git reset:*)",
-      "Bash(git merge:*)",
-      "Bash(git worktree remove:*)",
-      "Bash(alembic downgrade:*)",
-      "Bash(./scripts/deploy:*)",
-      "Bash(rm:*)"
     ]
   },
   "hooks": {

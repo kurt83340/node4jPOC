@@ -178,11 +178,12 @@ def introspections(tour: Tour) -> int:
 
 
 def controle_par_script(
-    liste: str, *, script: Path = SCRIPT, dossier: Path | None = None
+    liste: str, *, script: Path = SCRIPT, dossier: Path | None = None, delai_s: float = 120.0
 ) -> Controle:
     """Contrôle de Q2 par scripts/questions.sh --controle : sur la base, ou avec --dossier sur la
     traduction de q02.cypher (schéma anglais, D8). Lancé sans la clé Anthropic de l'environnement :
-    elle ne sert qu'aux cellules Claude (code-map)."""
+    elle ne sert qu'aux cellules Claude (code-map). Sans réponse dans le délai : NotationError,
+    comme tout échec du contrôle."""
     arguments = [
         str(script),
         *(["--dossier", str(dossier)] if dossier else []),
@@ -190,9 +191,19 @@ def controle_par_script(
         liste,
     ]
     environnement = {cle: v for cle, v in os.environ.items() if not cle.startswith("ANTHROPIC_")}
-    fini = subprocess.run(
-        arguments, capture_output=True, text=True, timeout=120, env=environnement, check=False
-    )
+    try:
+        fini = subprocess.run(
+            arguments,
+            capture_output=True,
+            text=True,
+            timeout=delai_s,
+            env=environnement,
+            check=False,
+        )
+    except subprocess.TimeoutExpired as erreur:
+        raise NotationError(
+            f"questions.sh --controle : aucune réponse en {delai_s:g} s"
+        ) from erreur
     if fini.returncode != 0:
         message = (fini.stderr.strip().splitlines() or [""])[-1]
         raise NotationError(f"questions.sh --controle : code {fini.returncode} {message}".strip())

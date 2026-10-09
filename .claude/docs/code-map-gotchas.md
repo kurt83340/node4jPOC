@@ -97,10 +97,14 @@
   vu le 2026-10-08).
 - ⚠️ `banc/tests/` — gitleaks (pre-commit) prend un SHA de 40 caractères hexadécimaux affecté à un nom qui contient
   « api » (`commit_pokeapi="…"`) pour une clé d'API (generic-api-key) : lire le commit par
-  `banc.mesures.commit_pokeapi()` plutôt que l'écrire (commit refusé le 2026-10-08).
+  `banc.mesures.commit_pokeapi()` plutôt que l'écrire (commit refusé le 2026-10-08). Même règle pour une clé en
+  « …tokens » dont la valeur est une expression (`self.ecrit_5m + self.ecrit_1h`, sous la clé d'écriture en cache de
+  l'API) : passer par une variable ou une propriété ; ne pas recopier non plus la forme fautive dans la doc (commit
+  refusé deux fois le 2026-10-09).
 - ⚠️ `banc/src/banc/isolement.py` — ADK (`mcp` 2.3.0, `client/stdio.py`) lance le serveur MCP dans sa propre session
   et, sans `env` explicite, ne lui passe que HOME, LOGNAME, PATH, SHELL, TERM et USER : donner la liste blanche à
-  ses paramètres de lancement, et arrêter le lanceur par son propre groupe (relevé le 2026-10-08, pour T4.2).
+  ses paramètres de lancement, et arrêter le lanceur par son propre groupe (relevé le 2026-10-08, réglé en T4.2 dans
+  `banc/src/banc/cellule_adk.py`).
 - ⚠️ `banc/src/banc/mesures.py` — `ModelUsage` de Claude Code (SDK 0.2.164) et l'usage d'ADK (2.11.0) ne séparent
   pas l'écriture du cache à 5 min et à 1 h, facturée 1,6 fois plus cher à 1 h : sa part vient des messages de
   l'assistant ou de `ContextCacheConfig`. `output_tokens` d'Anthropic comprend la réflexion,
@@ -115,3 +119,50 @@
 - ⚠️ `banc/prix.toml` — l'identifiant d'un modèle dépend de la voie : `claude-haiku-4-5-20251001` sur l'API,
   `claude-haiku-4-5@20251001` chez Google ; Sonnet 5.5 garde `claude-sonnet-5-5` des deux côtés, d'où la clé `acces`
   (vu le 2026-10-08).
+- ⚠️ `banc/src/banc/cellule_sdk.py` — Claude Code 2.1.292 : `--max-budget-usd` montre son budget à l'agent après chaque
+  appel (le compter hors du client) ; `model_usage` cumule la session et oublie l'appel coupé par `interrupt()` (le flux
+  le donne) ; `init` annonce `effort: null` alors que la requête porte l'effort ; `receive_response()` est un générateur
+  déclaré `AsyncIterator`, à refermer par `aclosing` (vu le 2026-10-09, [plan 002, D13](specs/002-agent-text-to-cypher/plan.md)).
+- ⚠️ `banc/tests/fixtures/` — un faux outil lancé en processus hérite du HOME et du `CLAUDE_CONFIG_DIR` du poste : n'y lire
+  que les dossiers du bac (un `rglob` de tout le HOME coûtait 7 s par test, vu le 2026-10-09).
+- ⚠️ `banc/src/banc/isolement.py` — sans locale, Python fixe `LC_CTYPE` (PEP 538) et l'ajoute à l'environnement de tout
+  ce qu'il lance : la liste blanche la déclare (`C.UTF-8`), sinon elle n'est plus exacte (vu le 2026-10-09).
+- ⚠️ `banc/src/banc/cellule_adk.py` — ADK 2.11.0 : le délai de `StdioConnectionParams` borne aussi chaque appel d'outil
+  (5 s par défaut) ; une consigne en texte est un gabarit (`{rang}` de la fiche → KeyError) : la passer par une
+  fonction ; ADK relit la liste des outils à chaque appel du modèle (`tool_list_cache_ttl_seconds`) et relance seul un
+  serveur perdu ; en flux, Gemini joint l'usage aux morceaux partiels : ne compter que l'événement final ; `run_config`
+  ne réexporte pas `StreamingMode` (mypy strict) (vu le 2026-10-09).
+- ⚠️ `banc/src/banc/cellule_adk.py` — google-genai 2.28.0 passe par aiohttp dès qu'il est installé : un crochet httpx ne
+  voit rien ; ses reprises se lisent dans le journal de tenacity (`google_genai._api_client`, niveau INFO), qui note
+  aussi sa reprise d'une erreur de connexion d'aiohttp (1 à 10 s). Le SDK Anthropic 1.11.0 a un middleware public,
+  appelé à chaque tentative (`retries_taken`) (vu le 2026-10-09).
+- ⚠️ `banc/tests/fixtures/` — Vertex hermétique : une ADC `authorized_user` impose le vrai point de jeton de Google ;
+  une ADC de compte de service factice (clé RSA générée, `token_uri` vers la fausse API) l'évite, et
+  `GOOGLE_VERTEX_BASE_URL` pointe google-genai vers la fausse API. google-genai ne lit pas un commentaire SSE
+  (`: ping`) : UnknownApiResponseError (vu le 2026-10-09).
+- ⚠️ `banc/src/banc/cellule_adk.py` — ADK 2.11.0 : une erreur annoncée dans un flux ouvert remonte en
+  `httpx2.ResponseNotRead`, sans l'erreur d'origine ; une réponse de Gemini sans aucune part sort sans contenu
+  (MALFORMED_FUNCTION_CALL) ou ne sort pas du tout (STOP vide) : l'usage se compte dans `after_model_callback`, qu'ADK
+  appelle pour chaque réponse, morceaux compris, avant de décider d'en faire un événement ; une connexion MCP coupée par
+  un délai laisse sa session hors du pool d'ADK, que `McpToolset.close()` ne ferme pas : annuler les tâches nées pendant
+  la conversation, et elles seules (vu le 2026-10-09, revue adverse).
+- ⚠️ `banc/tests/fixtures/` — un flux coupé se simule en chunked : sans, fermer la connexion termine normalement un corps
+  sans longueur. Le faux serveur MCP lancé dans le processus des tests hérite de l'environnement du poste, secrets
+  compris : n'en écrire que les noms (`noter_env` pour le test de la liste blanche) (vu le 2026-10-09).
+- ⚠️ `banc/src/banc/orchestration.py` — chaque cellule tourne dans sa propre session : un Ctrl-C au terminal ne l'atteint
+  pas, l'orchestration l'arrête elle-même (SIGTERM au groupe, SIGKILL après la grâce ou à la première interruption, puis
+  les groupes de ses descendants relevés dans `/proc`, car le serveur MCP d'ADK vit dans sa propre session) ; SIGTERM et
+  SIGHUP au harnais suivent ce chemin, SIGHUP restant ignoré sous nohup. Claude Code 2.1.292 garde son serveur MCP dans
+  son groupe, celui de la cellule (relevé T4.3). Une trace complète restée sans ligne se note, jamais ne se rejoue (un
+  échec effacé fausserait le score, revue adverse) ; une trace fautive (un tour après un tour sans réponse) bloque la
+  reprise jusqu'à ce qu'on la renomme en `.jsonl.ecartee`. Lire `/proc/<pid>/stat` d'un processus qui s'achève lève
+  ESRCH (`ProcessLookupError`). La progression n'affiche jamais la note : revue à l'aveugle (vu le 2026-10-09).
+- ⚠️ `scripts/transactions.sh` — neo4j-mcp v1.6.0 (mcp-go v0.56.0), stdin fermé, attend la fin des appels en cours, et son
+  driver Go ne voit une annulation qu'au morceau suivant du serveur : une lecture lente survit à sa cellule. SHOW et
+  TERMINATE TRANSACTIONS se composent (YIELD aux colonnes nommées, puis RETURN, exigés ; `metaData` ne sort que par
+  YIELD) ; TERMINATE est asynchrone, d'où les relectures. Un résultat vide de cypher-shell n'écrit rien, pas même
+  l'en-tête. Mode lecture et droit d'arrêter sur Aura Free : non documentés, à vérifier en T7.4 ; l'orchestration le
+  lance à chaque départ, il doit donc marcher avant toute campagne (doc lue le 2026-10-09).
+- ⚠️ `banc/tests/test_orchestration.py` — un test qui envoie un signal au processus de pytest pose d'abord un gestionnaire
+  refuge : sinon, une mutation qui retire celui du harnais tue pytest. Une mutation tuée au délai laisse ses fausses
+  cellules dormir 600 s dans leur session : les arrêter par leur pid (vu le 2026-10-09).
