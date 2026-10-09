@@ -5,7 +5,9 @@ L'orchestration (T4.3) lance une cellule par conversation, dans un processus don
 est la liste blanche de banc.isolement, depuis un dossier vide hors du dépôt, et lui passe sa
 commande en JSON sur stdin. La cellule écrit la trace (banc.mesures.Journal), puis sort : 0 quand
 chaque question posée a son issue, 2 sur une erreur technique (commande, isolement, mesure), qui
-arrête la campagne.
+arrête la campagne. Toute vérification qui invalide la mesure d'un tour passe avant son `fin` : une
+trace complète se note même après une sortie en 2 (reprise de banc.orchestration) ; après le
+dernier `fin`, seul l'arrêt du client peut encore échouer.
 """
 
 import json

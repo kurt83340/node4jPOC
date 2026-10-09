@@ -14,6 +14,7 @@ petit modèle de Claude Code ; choix de Julien) ; leur détail reste dans la tra
 
 import csv
 import hashlib
+import io
 import json
 import re
 import time
@@ -35,13 +36,17 @@ MESURES = Path(__file__).resolve().parents[2] / "mesures"
 FORMAT = 1
 TYPES = frozenset({"conversation", "question", "llm", "appel", "resultat", "reprise", "fin"})
 # Issue d'un tour et causes permises (D13) : un échec de l'agent compte faux ; une panne se relance
-# (la paire pour Q18 et Q28) ; un plafond de dépense arrête la campagne, ni panne ni échec.
+# (la paire pour Q18 et Q28) ; un plafond de dépense arrête la campagne, ni panne ni échec. Le
+# second tour d'une paire dont le premier a échoué compte faux sans être posé, cause « precedent »
+# (ADR-0012) : l'orchestration en écrit la ligne, aucune cellule ne le pose.
 CAUSES: dict[str, frozenset[str | None]] = {
     "reponse": frozenset({None}),
-    "echec": frozenset({"delai", "tours", "budget"}),
+    "echec": frozenset({"delai", "tours", "budget", "precedent"}),
     "panne": frozenset({"serveur", "api", "reprises"}),
     "arret": frozenset({"plafond"}),
 }
+# Causes qu'aucune trace ne porte : le second tour d'une paire après un échec n'est jamais posé.
+HORS_TRACE = frozenset({"precedent"})
 NOTES: tuple[str, ...] = get_args(Note.__value__)
 SOURCES: tuple[str, ...] = get_args(Source.__value__)
 # Codes : campagne, cellule et motifs (minuscules, chiffres, tirets) ; jetons : modèles, effort,
@@ -265,9 +270,13 @@ class Journal:
 def fichier_trace(racine: Path, entete: Entete) -> Path:
     """Trace d'une conversation : <racine>/<campagne>/<cellule>-p<passe>-<questions>-e<essai>.jsonl
     (racine : TRACES pour une campagne)."""
-    questions = "+".join(entete.questions)
-    nom = f"{entete.cellule}-p{entete.passe}-{questions}-e{entete.essai}.jsonl"
-    return racine / entete.campagne / nom
+    e = entete
+    return racine / e.campagne / nom_de_trace(e.cellule, e.passe, e.questions, e.essai)
+
+
+def nom_de_trace(cellule: str, passe: int, questions: Sequence[str], essai: int) -> str:
+    """Nom du fichier de trace d'un essai, sans en-tête : l'orchestration y cherche ses traces."""
+    return f"{cellule}-p{passe}-{'+'.join(questions)}-e{essai}.jsonl"
 
 
 def lire(fichier: Path) -> Conversation:
@@ -502,7 +511,8 @@ def empreinte(reponse: str) -> str:
 def ecrire(fichier: Path, lignes: Iterable[Mapping[str, str]]) -> None:
     """Ajoute des lignes au CSV d'une campagne ; l'en-tête s'écrit à la création. Un fichier ou une
     ligne aux colonnes différentes sont refusés, avant toute écriture : jamais deux formats dans
-    un même fichier."""
+    un même fichier. Les lignes partent en une seule écriture : celles d'une conversation arrivent
+    toutes ou aucune, même si le harnais est interrompu (banc.orchestration, --reprendre)."""
     lignes = list(lignes)
     for valeurs in lignes:
         if set(valeurs) != set(COLONNES):
@@ -514,12 +524,14 @@ def ecrire(fichier: Path, lignes: Iterable[Mapping[str, str]]) -> None:
             colonnes = next(csv.reader(flux), [])
         if tuple(colonnes) != COLONNES:
             raise MesureError(f"{fichier} : colonnes {colonnes}, attendu {list(COLONNES)}")
+    tampon = io.StringIO()
+    redacteur = csv.DictWriter(tampon, fieldnames=COLONNES, lineterminator="\n")
+    if nouveau:
+        redacteur.writeheader()
+    redacteur.writerows(lignes)
     fichier.parent.mkdir(parents=True, exist_ok=True)
     with fichier.open("a", encoding="utf-8", newline="") as flux:
-        redacteur = csv.DictWriter(flux, fieldnames=COLONNES, lineterminator="\n")
-        if nouveau:
-            redacteur.writeheader()
-        redacteur.writerows(lignes)
+        flux.write(tampon.getvalue())
 
 
 def fichier_mesures(campagne: str, dossier: Path = MESURES) -> Path:
@@ -648,8 +660,11 @@ class _Relecture:
 
 
 def _verifier_issue(issue: str, cause: str | None) -> None:
+    """Issue et cause d'une fin de tour, à l'écriture de la trace comme à sa relecture."""
     if cause not in CAUSES.get(issue, frozenset()):
         raise MesureError(f"issue {issue!r} et cause {cause!r} : hors de {CAUSES}")
+    if cause in HORS_TRACE:
+        raise MesureError(f"cause {cause!r} jamais dans une trace : l'orchestration l'écrit au CSV")
 
 
 def _entete_json(entete: Entete) -> dict[str, object]:

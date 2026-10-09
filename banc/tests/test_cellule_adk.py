@@ -262,7 +262,8 @@ def vivant(pid: int) -> bool:
     """Le processus existe et n'est pas un zombie."""
     try:
         etat = Path(f"/proc/{pid}/stat").read_text().rsplit(")", 1)[1].split()[0]
-    except FileNotFoundError:
+    except FileNotFoundError, ProcessLookupError:
+        # Disparu, ou en train de disparaître : lire son stat donne alors ESRCH.
         return False
     return etat != "Z"
 

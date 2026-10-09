@@ -3,7 +3,8 @@ vrai lanceur (scripts/mcp-neo4j.sh), qui lui passe sa configuration par l'enviro
 
 Mêmes outils et mêmes instructions que la v1.6.0 (mcp-go v0.56.0) ; read-cypher renvoie
 l'identifiant de l'instance (comme CALL db.info()), que le lanceur doit masquer. Note dans
-../journal/neo4j-mcp.jsonl l'environnement reçu et les requêtes.
+../journal/neo4j-mcp.jsonl l'environnement reçu (ses noms), son groupe de processus et ses ancêtres
+(tests/test_orchestration.py : le groupe que l'orchestration arrête), puis les requêtes.
 """
 
 import json
@@ -49,8 +50,30 @@ def repondre(ident: Any, resultat: dict[str, Any]) -> None:
     sys.stdout.flush()
 
 
+def ancetres() -> list[dict[str, Any]]:
+    """Les processus dont il descend, du parent à la racine : pid, groupe, ligne de commande."""
+    lignee = []
+    pid = os.getppid()
+    while pid > 1:
+        try:
+            champs = Path(f"/proc/{pid}/stat").read_text().rsplit(")", 1)[1].split()
+            commande = Path(f"/proc/{pid}/cmdline").read_bytes().replace(b"\0", b" ").decode()
+        except OSError:
+            break
+        lignee.append({"pid": pid, "pgid": int(champs[2]), "commande": commande.strip()})
+        pid = int(champs[1])
+    return lignee
+
+
 def principal() -> None:
-    noter({"env": sorted(os.environ)})
+    noter(
+        {
+            "env": sorted(os.environ),
+            "pid": os.getpid(),
+            "pgid": os.getpgid(0),
+            "ancetres": ancetres(),
+        }
+    )
     instance = os.environ.get("NEO4J_MCP_USERNAME", "")
     for ligne in sys.stdin:
         message = json.loads(ligne)
