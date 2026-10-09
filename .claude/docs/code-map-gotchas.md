@@ -149,3 +149,20 @@
 - ⚠️ `banc/tests/fixtures/` — un flux coupé se simule en chunked : sans, fermer la connexion termine normalement un corps
   sans longueur. Le faux serveur MCP lancé dans le processus des tests hérite de l'environnement du poste, secrets
   compris : n'en écrire que les noms (`noter_env` pour le test de la liste blanche) (vu le 2026-10-09).
+- ⚠️ `banc/src/banc/orchestration.py` — chaque cellule tourne dans sa propre session : un Ctrl-C au terminal ne l'atteint
+  pas, l'orchestration l'arrête elle-même (SIGTERM au groupe, SIGKILL après la grâce ou à la première interruption, puis
+  les groupes de ses descendants relevés dans `/proc`, car le serveur MCP d'ADK vit dans sa propre session) ; SIGTERM et
+  SIGHUP au harnais suivent ce chemin, SIGHUP restant ignoré sous nohup. Claude Code 2.1.292 garde son serveur MCP dans
+  son groupe, celui de la cellule (relevé T4.3). Une trace complète restée sans ligne se note, jamais ne se rejoue (un
+  échec effacé fausserait le score, revue adverse) ; une trace fautive (un tour après un tour sans réponse) bloque la
+  reprise jusqu'à ce qu'on la renomme en `.jsonl.ecartee`. Lire `/proc/<pid>/stat` d'un processus qui s'achève lève
+  ESRCH (`ProcessLookupError`). La progression n'affiche jamais la note : revue à l'aveugle (vu le 2026-10-09).
+- ⚠️ `scripts/transactions.sh` — neo4j-mcp v1.6.0 (mcp-go v0.56.0), stdin fermé, attend la fin des appels en cours, et son
+  driver Go ne voit une annulation qu'au morceau suivant du serveur : une lecture lente survit à sa cellule. SHOW et
+  TERMINATE TRANSACTIONS se composent (YIELD aux colonnes nommées, puis RETURN, exigés ; `metaData` ne sort que par
+  YIELD) ; TERMINATE est asynchrone, d'où les relectures. Un résultat vide de cypher-shell n'écrit rien, pas même
+  l'en-tête. Mode lecture et droit d'arrêter sur Aura Free : non documentés, à vérifier en T7.4 ; l'orchestration le
+  lance à chaque départ, il doit donc marcher avant toute campagne (doc lue le 2026-10-09).
+- ⚠️ `banc/tests/test_orchestration.py` — un test qui envoie un signal au processus de pytest pose d'abord un gestionnaire
+  refuge : sinon, une mutation qui retire celui du harnais tue pytest. Une mutation tuée au délai laisse ses fausses
+  cellules dormir 600 s dans leur session : les arrêter par leur pid (vu le 2026-10-09).

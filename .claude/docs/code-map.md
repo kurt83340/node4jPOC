@@ -16,6 +16,7 @@ Secret Manager ─┬─► scripts/ ─► cypher-shell ─► AuraDB Free ◄�
                 │      ├─ cypher/     00 → 06 : chargement · 90 : vérification
                 │      ├─ questions/  banc d'essai : requêtes et réponses de référence (jalons 1 à 4)
                 │      ├─ mcp-neo4j.sh ─► neo4j-mcp (stdio, lecture seule) ─► AuraDB Free ◄─ agents de banc/
+                │      ├─ transactions.sh ─► AuraDB Free (lectures d'agents orphelines)
                 │      └─ banc.sh ─► banc/ (clé Anthropic par l'environnement) ─► API Anthropic (Claude) · Vertex eu (Gemini)
                 └─► infra/reveil-aura/ ─► Query API ─► AuraDB Free (RETURN 1 quotidien, alerte e-mail)
 ```
@@ -23,8 +24,7 @@ Secret Manager ─┬─► scripts/ ─► cypher-shell ─► AuraDB Free ◄�
 → Orientation rapide : chargement → `cypher/NN-*.cypher` (ordre fixe : [ARCHITECTURE § 3](conception/ARCHITECTURE.md)) ;
 identifiants, purge, codes retour → `scripts/` (fonctions partagées : `scripts/commun.sh`) ; banc d'essai → `questions/` ; réveil quotidien d'Aura et
 son alerte → `infra/reveil-aura/` (job Cloud Run, [RUNBOOK](RUNBOOK.md)). Réponses de référence : `questions/attendu/`, rejouées par `scripts/questions.sh`.
-Harnais du banc d'essai (cellules, notation, mesures) → `banc/` ([plan 002](specs/002-agent-text-to-cypher/plan.md)).
-Le détail fichier-par-fichier se découvre à la demande (`grep`, lecture) — pas ici.
+Harnais du banc d'essai (cellules, orchestration, notation, mesures) → `banc/` ([plan 002](specs/002-agent-text-to-cypher/plan.md)).
 
 ## Règles de couplage (⭐ le cœur — non déductible du code)
 
@@ -52,7 +52,8 @@ Le détail fichier-par-fichier se découvre à la demande (`grep`, lecture) — 
   Gemini ne la reçoit jamais.
 - ✅ Seul le chargement (purge et preuve d'idempotence comprises) écrit dans la base : go/no-go, vérification et techniques du banc
   d'essai lisent (`--access-mode read`, `scripts/verifier.sh:45`), le réveil quotidien aussi (`accessMode: Read`,
-  `infra/reveil-aura/reveil.py:119`) ; exception prévue : la mémoire d'agent (jalon 5).
+  `infra/reveil-aura/reveil.py:119`) ; exception prévue : la mémoire d'agent (jalon 5). Seul `scripts/transactions.sh`
+  arrête des transactions : celles de neo4j-mcp (métadonnée `app`), sans rien écrire ; `banc/` le lance sans `ANTHROPIC_*`.
 
 ## Intention & décisions locales
 
