@@ -1,21 +1,21 @@
-# HANDOFF — 2026-10-09 23h05
+# HANDOFF — 2026-10-10 05h38
 
 > Court, narratif, versionné. Patterns techniques → auto-memory. Reprise précise → /resume.
 
-**Branche** : `feature/002-phase-4` (phase 4 finie ; [PR n°10](https://github.com/kurt83340/node4jPOC/pull/10) ouverte)
-**Spec en cours** : [002-agent-text-to-cypher](specs/002-agent-text-to-cypher/spec.md) (15/33 tasks : phases 0 à 4, T7.1)
-**Goal session** : T4.3, l'orchestration (`banc lancer`) et `scripts/transactions.sh`
+**Branche** : `feature/002-phase-5` (phase 5 finie ; [PR n°13](https://github.com/kurt83340/node4jPOC/pull/13) ouverte)
+**Spec en cours** : [002-agent-text-to-cypher](specs/002-agent-text-to-cypher/spec.md) (16/33 tasks : phases 0 à 5, T7.1)
+**Goal session** : fusionner la phase 4, construire la coupure de Vertex (ADR-0010), puis T5.1
 
 ## Status
 
-- ✅ `banc/` : 1 025 tests, ruff, mypy strict, shellcheck, Prettier, gitleaks propres ; aucun appel LLM (0 $)
-- ✅ T4.3 : `banc.orchestration` ; vrai Claude Code 2.1.292 relevé (son serveur MCP reste dans le groupe de la cellule) ; revue adverse en deux passes (12 constats dont 1 bloquant, puis 9 mineurs) traitée ; 58 puis 76 fautes injectées, toutes détectées
-- ✅ Choix de Julien : cellules en rotation, passe invalide signalée sans arrêt, `--plafond-usd` exigé, cellule tuée = erreur technique
+- ✅ Fusionnées : PR n°10 (phase 4, réserve du plafond de campagne à 1 $), n°11 (CI sans secret ni CD, NEO-25), n°12 (coupure de Vertex essayée pour de vrai, plafond natif 30 €/mois, NEO-26, ADR-0013)
+- ✅ T5.1 : `banc lancer --faux-serveur`, campagne `repetition-1` à 0,195 $, issues attendues, leurre de `cypher-shell` jamais appelé
+- ✅ 1 042 tests, ruff, mypy, shellcheck, Prettier, gitleaks propres ; CI verte sur `main` ; fusion seulement avec `gh pr checks` vert
 
 ## Échecs tentés (à ne pas refaire)
 
-- Rejouer à la reprise toute conversation sans ligne → efface un échec (revue adverse) : une trace complète se note, seule une inachevée se rejoue
-- Verrou pris dans `lancer()` → une campagne refusée restait créée : pris dans `commande()`, avant tout
+- Simuler un outil absent avec `PATH=/usr/bin:/bin` → faux sur la CI (son image a `gcloud` dans `/usr/bin`) : un dossier vide
+- Tester une alerte sur journaux juste après sa création, ou exiger le composant `beta` « Installed » → silence, refus : attendre quelques minutes ; accepter « Update Available »
 
 ## Blocked on
 
@@ -23,18 +23,18 @@
 
 ## Next (par ordre)
 
-1. **PR n°10** : relecture et fusion (merge commit) ; NEO-18 reste « En cours » (la phase 5 lui appartient aussi)
-2. Avant toute campagne payante (au plus tard T5.1) : coupure automatique de l'ADR-0010, branche à part
-3. **T5.1 (NEO-18)** : `--faux-serveur` (serveur MCP, noms et contrôle de Q2 simulés, nettoyage d'Aura nul dès le départ) ; relever `tool_use_prompt_token_count` et le morceau partiel d'un appel Gemini coupé
-4. **T7.4** avant toute vraie campagne : `transactions.sh` sur Aura Free (TERMINATE permis, en `--access-mode read`) ; sans lui, `banc lancer` ne démarre pas
-5. À trancher et mineurs : un ADR qui précise l'ADR-0009 (plafonds invisibles, instructions ôtées, garde-fou, reprise qui note sans rejouer) ? ; leçon du 2026-10-09 en rule (méthode servie trois fois) ; pre-commit (shellcheck, Prettier, pytest) ; flag des équipes en portée user
+1. **PR n°13** : CI verte, fusion (merge commit) ; NEO-18 → Terminé, après relecture de ses critères
+2. **Phase 7 (NEO-20)** avant la 6 : elle débloque le pilote ; T7.4 (`transactions.sh` et lanceur sur Aura Free) avant toute vraie campagne
+3. Avant le pilote : faire taire le bruit d'ADK sur stderr ; coût réel de `repetition-1` (Console Anthropic ~0,16 $, valide les prix du cache ; export BigQuery ~0,036 $)
+4. À trancher : un ADR qui précise l'ADR-0009 ? ; leçon du 2026-10-09 en rule ; flag des équipes en portée user
+5. NEO-27, début décembre : prolonger ou remplacer le budget de 100 € (la coupure s'éteint le 2026-12-31)
 
 ## Continuation State (machine-readable — grammaire fixe `Clé: valeur`, 1 ligne chacune)
 
 Spec: 002-agent-text-to-cypher
-Task: T5.1
+Task: T7.2
 Fichiers en cours: aucun
 Bloqué sur: rien
-Commande de reprise: gh pr view 10 --json state (fusionnée ?), puis git switch main && git pull && git switch -c feature/002-phase-5
+Commande de reprise: gh pr view 13 --json state (fusionnée ?), puis git switch main && git pull && git switch -c feature/002-phase-7
 
 → **Journal des sessions** (append-only) : [HANDOFF-journal.md](HANDOFF-journal.md) — non auto-chargé.
