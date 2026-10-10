@@ -42,6 +42,9 @@ CONFIGURATION = {
     "NEO4J_MCP_READ_ONLY": "true",
     "NEO4J_MCP_TELEMETRY": "false",
     "NEO4J_MCP_TRANSPORT_MODE": "stdio",
+    # « warning », pas « warn » (internal/logger/logger.go, ValidLogLevels) : ni les requêtes ni
+    # le démarrage au niveau info sur le terminal du banc (relevé au pilote, 2026-10-10).
+    "NEO4J_MCP_LOG_LEVEL": "warning",
 }
 # Les 14 anciens noms encore lus par la v1.6.0 (internal/config/config.go), avec des valeurs
 # hostiles, et des NEO4J_MCP_* hérités qui contrediraient la configuration.

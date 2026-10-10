@@ -38,10 +38,13 @@ trouver_outils gcloud neo4j-mcp perl >&2
 lire_identifiants </dev/null >&2
 
 # Noms du tag v1.6.0 (plan, D1). Booléens en toutes lettres : une valeur invalide prendrait le défaut
-# du serveur, soit l'écriture permise et la télémétrie active.
+# du serveur, soit l'écriture permise et la télémétrie active. Journal au niveau « warning » (pas
+# « warn », invalide, qui retomberait sur « info ») : au niveau info, chaque requête d'un agent
+# s'écrivait en clair sur le terminal du banc, qu'ADK laisse passer (relevé au pilote, plan D1).
 export NEO4J_MCP_URI="$NEO4J_URI" NEO4J_MCP_USERNAME="$NEO4J_USERNAME" \
   NEO4J_MCP_PASSWORD="$NEO4J_PASSWORD" NEO4J_MCP_DATABASE="$NEO4J_DATABASE" \
-  NEO4J_MCP_READ_ONLY=true NEO4J_MCP_TELEMETRY=false NEO4J_MCP_TRANSPORT_MODE=stdio
+  NEO4J_MCP_READ_ONLY=true NEO4J_MCP_TELEMETRY=false NEO4J_MCP_TRANSPORT_MODE=stdio \
+  NEO4J_MCP_LOG_LEVEL=warning
 # Anciens noms hors de l'environnement du serveur, gardés par le shell pour filtrer_flux.
 export -n NEO4J_URI NEO4J_USERNAME NEO4J_PASSWORD NEO4J_DATABASE
 
