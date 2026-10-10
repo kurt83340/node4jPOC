@@ -1182,8 +1182,11 @@ def test_outils_des_agents(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> N
     gcloud = installer(sdk, "gcloud", "")
     monkeypatch.setattr(orchestration, "GCLOUD", gcloud)
     monkeypatch.setattr(orchestration, "NEO4J_MCP", serveur)
-    # gcloud hors du PATH (shell non interactif) : celui du SDK ; neo4j-mcp manquant : refusé.
-    monkeypatch.setenv("PATH", "/usr/bin:/bin")
+    # gcloud hors du PATH (shell non interactif) : celui du SDK ; neo4j-mcp manquant : refusé. Un
+    # PATH vide plutôt que /usr/bin:/bin, où les machines de la CI ont leur propre gcloud.
+    vide = tmp_path / "vide"
+    vide.mkdir()
+    monkeypatch.setenv("PATH", str(vide))
     with pytest.raises(OrchestrationError, match="neo4j-mcp introuvable"):
         outils_des_agents()
     installer(serveur, "neo4j-mcp", "")
@@ -1192,7 +1195,7 @@ def test_outils_des_agents(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> N
     autre = tmp_path / "autre"
     autre.mkdir()
     installer(autre, "gcloud", "")
-    monkeypatch.setenv("PATH", f"{autre}:/usr/bin:/bin")
+    monkeypatch.setenv("PATH", f"{autre}:{vide}")
     assert outils_des_agents() == (autre, serveur)
 
 

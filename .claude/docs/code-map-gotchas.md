@@ -170,3 +170,6 @@
   tests ne parlent qu'à des faux, et un test qui exige un vrai service reste hors CI. Le hook gitleaks du pre-commit ne
   lit que les changements indexés (`--staged`) : la CI scanne tout l'historique avec le binaire de la même version,
   vérifié par son empreinte. GitHub Free et dépôt privé : la CI ne bloque pas une fusion, `gh pr checks` le fait (NEO-25).
+- ⚠️ `banc/tests/` — un test qui veut un outil absent du PATH pointe le PATH vers un dossier vide, jamais vers
+  `/usr/bin:/bin` : les machines de la CI (ubuntu-24.04) y ont leur propre `gcloud`. Vu le 2026-10-10 à la première
+  exécution de la CI (`test_outils_des_agents`), alors que la suite passait sur le poste, même sans HOME ni PATH.
