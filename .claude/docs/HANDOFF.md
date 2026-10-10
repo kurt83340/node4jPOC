@@ -1,21 +1,22 @@
-# HANDOFF — 2026-10-10 18h25
+# HANDOFF — 2026-10-10 23h17
 
 > Court, narratif, versionné. Patterns techniques → auto-memory. Reprise précise → /resume.
 
-**Branche** : `main`, après fusion de la [PR n°14](https://github.com/kurt83340/node4jPOC/pull/14) (phase 7, NEO-20 terminé)
-**Spec en cours** : [002-agent-text-to-cypher](specs/002-agent-text-to-cypher/spec.md) (20/33 tasks : phases 0 à 5 et 7)
-**Goal session** : phase 7 (retour sur la base) avant la 6, puis le bruit d'ADK et le coût réel de la répétition générale
+**Branche** : `main`, après fusion de la [PR n°15](https://github.com/kurt83340/node4jPOC/pull/15) (phase 8, T8.1 validée par Julien)
+**Spec en cours** : [002-agent-text-to-cypher](specs/002-agent-text-to-cypher/spec.md) (21/33 tasks : phases 0 à 5, 7 et 8)
+**Goal session** : le pilote (T8.1) : passe non comptée, revue, coût, cache, seuils du FR/EN, gel du protocole
 
 ## Status
 
-- ✅ Aura Free : index plein texte, 34/34, IDEMPOTENT, 28/28 ; fiche vérifiée et corrigée sur 3 points ; `banc essai-serveur` 12/12 (TERMINATE prouvé en mode lecture) ; renommage : Cypher 25
-- ✅ Bruit d'ADK tu ; coût réel de `repetition-1` : Gemini au jeton près (BigQuery), Claude 0,145 $ (Console) → cache lu à 0,10 $, `prix.toml` corrigé
-- ✅ 1 104 tests et plus, ruff, mypy, shellcheck, Prettier, gitleaks ; CI verte avant fusion
+- ✅ Pilote : 2,51 $ pour 2,36 $ estimés (1,06 fois), 84 conversations sans panne ; revue des 27 cas faite par Claude à la demande de Julien ; scores non comptés 28,0, 26,5 et 18,5 sur 30 (Gemini : 9 échecs « tours »)
+- ✅ Réglés : titres de jeux à l'extraction, journal de neo4j-mcp en `warning` ; cache 5 min, plafond de 10 appels gardé, seuils du FR/EN (plan D8) ; protocole gelé (`banc/mesures/revues.toml`)
+- ✅ 1 113 tests, ruff, mypy, shellcheck, Prettier, gitleaks ; CI verte ; `banc essai-serveur` 12/12
+- ⏳ Coût du pilote à recouper : Console (Claude, environ 1,79 $ le 10 octobre), export BigQuery du 11 (Gemini, 0,87 $)
 
 ## Échecs tentés (à ne pas refaire)
 
-- Filtrer l'avertissement d'ADK dans `main()` → trop tard, il naît à l'import ; prendre un port « libre » avant la fausse API → elle peut le recevoir
-- Laisser la fenêtre du Chrome piloté ouverte des heures en attendant une connexion → l'affichage WSLg gèle : faire lire la page à Julien
+- `tmux send-keys` vers une fenêtre désignée par son nom → Julien y avait relancé Claude Code : touches envoyées comme un message (vérifier `pane_current_command` avant)
+- Script de mutation sans `finally` → arrêté en route, il a laissé le fichier muté : copie d'abord, motif unique vérifié, restauration dans un `finally`
 
 ## Blocked on
 
@@ -23,17 +24,17 @@
 
 ## Next (par ordre)
 
-1. **Phase 8 (NEO-21)** : le pilote sur la vraie base (`banc lancer`, plafond exigé), prérequis tous levés ; NEO-21 → En cours
-2. **Phase 6 (NEO-19)** : schéma anglais, avec `--schema en --explain` repris de T7.5
-3. À trancher : ADR qui précise l'ADR-0009 ? ; leçons du 2026-10-09 et du 2026-10-10 en rules ; flag des équipes en portée user
-4. NEO-27, début décembre : prolonger ou remplacer le budget de 100 € (la coupure s'éteint le 2026-12-31)
+1. **Phase 9 (NEO-21, T9.1)** : 3 passes comptées (`scripts/banc.sh lancer --campagne <id> --passes 3`), sans `--cache-1h` ; plafond à proposer (pilote : 2,51 $ la passe) ; NEO-22 → En cours pour la revue
+2. **T9.2 (NEO-22)** : revue humaine des « à revoir » (environ 80 cas) : pré-analyse par Claude, décision de Julien (ADR-0008)
+3. **T9.3** : coût recoupé (Console, BigQuery) ; puis phase 6 (NEO-19), schéma anglais, avant la phase 10
+4. À trancher : ADR qui précise l'ADR-0009 ? ; leçons du 2026-10-09 et du 2026-10-10 en rules ; flag des équipes en portée user ; NEO-27 début décembre (budget de 100 € au-delà du 2026-12-31)
 
 ## Continuation State (machine-readable — grammaire fixe `Clé: valeur`, 1 ligne chacune)
 
 Spec: 002-agent-text-to-cypher
-Task: T8.1
+Task: T9.1
 Fichiers en cours: aucun
 Bloqué sur: rien
-Commande de reprise: git switch main && git pull && git switch -c feature/002-phase-8
+Commande de reprise: git switch main && git pull && git switch -c feature/002-phase-9
 
 → **Journal des sessions** (append-only) : [HANDOFF-journal.md](HANDOFF-journal.md) — non auto-chargé.

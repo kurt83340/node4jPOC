@@ -267,6 +267,31 @@ def test_faux_positif_restant() -> None:
     assert ESPECES.citees("Gare au Ronflex") == ["Ronflex"]
 
 
+@pytest.mark.parametrize(
+    "texte",
+    [
+        pytest.param("Let’s Go, Pikachu", id="graphie-de-la-base"),
+        pytest.param("Let's Go Pikachu", id="apostrophe-droite-sans-virgule"),
+        pytest.param("(Let's Go, Pikachu / Let's Go, Évoli)", id="les-deux"),
+        pytest.param("let’s go évoli", id="casse"),
+        pytest.param("Légendes : Arceus", id="legendes"),
+        pytest.param("Légendes Pokémon : Arceus", id="legendes-pokemon"),
+    ],
+)
+def test_titre_de_jeu(texte: str) -> None:
+    # Relevé au pilote (2026-10-10) : les agents citent le jeu d'une description ; trois titres
+    # français du commit figé contiennent une espèce (version_names.csv, jeux 31, 32 et 39).
+    assert ESPECES.citees(texte) == []
+
+
+def test_espece_a_cote_d_un_titre_de_jeu() -> None:
+    # Le titre seul est écarté : l'espèce citée hors du titre compte, à sa place dans le texte.
+    texte = "Pikachu, dans Let’s Go, Pikachu ; Léviator (Let's Go, Évoli) et Évoli."
+    assert ESPECES.citees(texte) == ["Pikachu", "Léviator", "Évoli"]
+    situees = [texte[c.debut : c.fin] for c in ESPECES.citations(texte)]
+    assert situees == ["Pikachu", "Léviator", "Évoli"]
+
+
 def test_citations_situees() -> None:
     [citation] = ESPECES.citations("Le Pokémon Porygon-Z")
     assert (citation.nom, citation.debut, citation.fin, citation.forme) == (

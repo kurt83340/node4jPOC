@@ -1,0 +1,318 @@
+gel = 2026-10-10T21:22:40
+pilote = "pilote"
+
+# Décisions de la revue humaine à l'aveugle (plan 002, T3.2) : une table [[revue]] par cas, ajoutée
+# par `banc revoir`, jamais réécrite ; une correction se fait ici, à la main (diff versionné).
+# Le gel du protocole (T8.1) s'inscrit tout en haut, avant toute table : gel = AAAA-MM-JJTHH:MM:SS,
+# sans fuseau, avec la campagne pilote : pilote = "<identifiant>". Seules les décisions datées du
+# gel ou après, hors pilote, se réutilisent, par réponse courte normalisée.
+#
+# Campagne pilote (2026-10-10) : ses 27 décisions sont celles de Claude (Opus 5.5), à la demande de
+# Julien, prises sur les cas tels que `banc revoir` les montre, à l'aveugle (plan 002, D7). Jamais
+# réutilisées ; les passes comptées gardent la revue humaine (ADR-0008, ADR-0009).
+
+[[revue]]
+campagne = "pilote"
+cellule = "adk-claude"
+passe = 1
+question = "Q28"
+essai = 1
+empreinte = "2bf850f0f5d11d0e"
+date = 2026-10-10T20:33:11
+note = "juste"
+source = "oui"
+motif = "electrik-nul-signale"
+
+[[revue]]
+campagne = "pilote"
+cellule = "claude-code"
+passe = 1
+question = "Q21"
+essai = 1
+empreinte = "97568d190af08bc4"
+date = 2026-10-10T20:33:11
+note = "juste"
+motif = "comparaison-juste"
+
+[[revue]]
+campagne = "pilote"
+cellule = "claude-code"
+passe = 1
+question = "Q29"
+essai = 1
+empreinte = "bd329da42082c4ab"
+date = 2026-10-10T20:33:11
+note = "juste"
+source = "oui"
+motif = "premisse-corrigee"
+
+[[revue]]
+campagne = "pilote"
+cellule = "claude-code"
+passe = 1
+question = "Q27"
+essai = 1
+empreinte = "c497561a5a2e60ed"
+date = 2026-10-10T20:33:11
+note = "juste"
+source = "oui"
+motif = "precision-expliquee"
+
+[[revue]]
+campagne = "pilote"
+cellule = "claude-code"
+passe = 1
+question = "Q18"
+essai = 1
+empreinte = "a6698abe4693097a"
+date = 2026-10-10T20:33:11
+note = "juste"
+motif = "comparaison-juste"
+
+[[revue]]
+campagne = "pilote"
+cellule = "adk-gemini"
+passe = 1
+question = "Q21"
+essai = 1
+empreinte = "298824ce9b50e7bf"
+date = 2026-10-10T20:33:11
+note = "juste"
+motif = "comparaison-juste"
+
+[[revue]]
+campagne = "pilote"
+cellule = "claude-code"
+passe = 1
+question = "Q8"
+essai = 1
+empreinte = "1137e6685b14990c"
+date = 2026-10-10T20:33:11
+note = "juste"
+motif = "famille-exclue-citee"
+
+[[revue]]
+campagne = "pilote"
+cellule = "adk-claude"
+passe = 1
+question = "Q1"
+essai = 1
+empreinte = "e58244a9a5b6655f"
+date = 2026-10-10T20:33:11
+note = "partiel"
+motif = "capacite-z-en-tete"
+
+[[revue]]
+campagne = "pilote"
+cellule = "adk-gemini"
+passe = 1
+question = "Q29"
+essai = 1
+empreinte = "614c753cece6c434"
+date = 2026-10-10T20:33:11
+note = "juste"
+source = "oui"
+motif = "premisse-corrigee"
+
+[[revue]]
+campagne = "pilote"
+cellule = "adk-gemini"
+passe = 1
+question = "Q1"
+essai = 1
+empreinte = "90541eb04584f2b0"
+date = 2026-10-10T20:33:11
+note = "partiel"
+motif = "capacites-z-classees"
+
+[[revue]]
+campagne = "pilote"
+cellule = "adk-claude"
+passe = 1
+question = "Q29"
+essai = 1
+empreinte = "f97508568ee2e414"
+date = 2026-10-10T20:33:11
+note = "juste"
+source = "oui"
+motif = "premisse-corrigee"
+
+[[revue]]
+campagne = "pilote"
+cellule = "adk-claude"
+passe = 1
+question = "Q9"
+essai = 1
+empreinte = "a67556fda75bf15f"
+date = 2026-10-10T20:33:11
+note = "partiel"
+motif = "ecartes-cites"
+
+[[revue]]
+campagne = "pilote"
+cellule = "adk-claude"
+passe = 1
+question = "Q13"
+essai = 1
+empreinte = "7f825040e2aceb14"
+date = 2026-10-10T20:33:11
+note = "juste"
+motif = "zenith-en-tete"
+
+[[revue]]
+campagne = "pilote"
+cellule = "claude-code"
+passe = 1
+question = "Q10"
+essai = 1
+empreinte = "3598debace0081f0"
+date = 2026-10-10T20:33:11
+note = "juste"
+motif = "hors-donnees-signale"
+
+[[revue]]
+campagne = "pilote"
+cellule = "claude-code"
+passe = 1
+question = "Q13"
+essai = 1
+empreinte = "15b0f75d9a558c38"
+date = 2026-10-10T20:33:11
+note = "juste"
+motif = "zenith-en-tete"
+
+[[revue]]
+campagne = "pilote"
+cellule = "adk-claude"
+passe = 1
+question = "Q21"
+essai = 1
+empreinte = "208378a6606b283c"
+date = 2026-10-10T20:33:11
+note = "juste"
+motif = "comparaison-juste"
+
+[[revue]]
+campagne = "pilote"
+cellule = "adk-claude"
+passe = 1
+question = "Q30"
+essai = 1
+empreinte = "08907902762967ee"
+date = 2026-10-10T20:33:11
+note = "juste"
+source = "oui"
+motif = "critere-annonce"
+
+[[revue]]
+campagne = "pilote"
+cellule = "adk-claude"
+passe = 1
+question = "Q27"
+essai = 1
+empreinte = "580ca59479c522cd"
+date = 2026-10-10T20:33:11
+note = "juste"
+source = "oui"
+motif = "precision-expliquee"
+
+[[revue]]
+campagne = "pilote"
+cellule = "adk-claude"
+passe = 1
+question = "Q8"
+essai = 1
+empreinte = "94eea3c7a1f99aa7"
+date = 2026-10-10T20:33:11
+note = "juste"
+motif = "famille-exclue-citee"
+
+[[revue]]
+campagne = "pilote"
+cellule = "claude-code"
+passe = 1
+question = "Q17"
+essai = 1
+empreinte = "4cfd84a80dfad35b"
+date = 2026-10-10T20:33:11
+note = "juste"
+motif = "titres-de-jeux"
+
+[[revue]]
+campagne = "pilote"
+cellule = "adk-gemini"
+passe = 1
+question = "Q12"
+essai = 1
+empreinte = "843bf4ebf867a4c9"
+date = 2026-10-10T20:33:11
+note = "juste"
+motif = "forme-signalee"
+
+[[revue]]
+campagne = "pilote"
+cellule = "claude-code"
+passe = 1
+question = "Q9"
+essai = 1
+empreinte = "89f23b45f107b2ab"
+date = 2026-10-10T20:33:11
+note = "partiel"
+motif = "rappel-sous-50"
+
+[[revue]]
+campagne = "pilote"
+cellule = "adk-claude"
+passe = 1
+question = "Q10"
+essai = 1
+empreinte = "bade859e8e20a1ac"
+date = 2026-10-10T20:33:11
+note = "juste"
+motif = "hors-donnees-signale"
+
+[[revue]]
+campagne = "pilote"
+cellule = "adk-claude"
+passe = 1
+question = "Q17"
+essai = 1
+empreinte = "b31f6a80a3c4234b"
+date = 2026-10-10T20:33:11
+note = "juste"
+motif = "titres-de-jeux"
+
+[[revue]]
+campagne = "pilote"
+cellule = "claude-code"
+passe = 1
+question = "Q1"
+essai = 1
+empreinte = "abebf71176e14d5d"
+date = 2026-10-10T20:33:11
+note = "partiel"
+motif = "capacite-z-signalee"
+
+[[revue]]
+campagne = "pilote"
+cellule = "claude-code"
+passe = 1
+question = "Q30"
+essai = 1
+empreinte = "37b763846baeacc6"
+date = 2026-10-10T20:33:11
+note = "juste"
+source = "oui"
+motif = "critere-annonce"
+
+[[revue]]
+campagne = "pilote"
+cellule = "claude-code"
+passe = 1
+question = "Q28"
+essai = 1
+empreinte = "2c10685a909ab324"
+date = 2026-10-10T20:33:11
+note = "juste"
+source = "oui"
+motif = "electrik-nul-signale"

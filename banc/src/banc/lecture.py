@@ -41,6 +41,13 @@ MOT = re.compile(r"(?:[^\W_]|[♀♂])+")
 # Ce qui peut séparer les mots d'un même nom d'espèce : M. Mime, Ho-Oh, Type:0, Mime Jr.
 LIAISON = re.compile(r"[ .:'’-]{1,3}")
 TIRETS = "-‐‑"
+# Titres de jeux qui contiennent une espèce : les trois du commit figé (version_names.csv, jeux 31,
+# 32 et 39). Un agent qui cite le jeu d'une description ne cite pas l'espèce (relevé au pilote,
+# 2026-10-10).
+TITRES_DE_JEUX = re.compile(
+    r"\bLet['’]s\s+Go\s*,?\s*(?:Pikachu|Évoli)\b|\bLégendes\s*(?:Pokémon\s*)?:?\s*Arceus\b",
+    re.IGNORECASE,
+)
 # Un nombre isolé, avec ses milliers séparés par une espace (1 025) et sa décimale (0,541 ou 0.541).
 NOMBRE = re.compile(
     r"(?<![\w.,])(?P<entier>\d{1,3}(?:[ \u00a0\u202f]\d{3})+|\d+)(?:[.,](?P<decimale>\d+))?(?!\w)"
@@ -226,8 +233,10 @@ class Especes:
     def citations(self, texte: str) -> list[Citation]:
         """Espèces citées dans un texte, de gauche à droite, par la plus longue correspondance :
         Porygon-Z avant Porygon. Un nom collé par un tiret au mot suivant n'est pas une citation
-        (Draco-Météore est une attaque)."""
+        (Draco-Météore est une attaque), ni un nom pris dans un titre de jeu (Let’s Go, Pikachu),
+        masqué par autant d'espaces : les autres citations gardent leur place."""
         brut = unicodedata.normalize("NFC", texte)
+        brut = TITRES_DE_JEUX.sub(lambda titre: " " * len(titre[0]), brut)
         liste = jetons(brut)
         trouvees = []
         position = 0
