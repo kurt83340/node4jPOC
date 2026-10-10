@@ -1,0 +1,32 @@
+# Outillage de la fonction coupure-vertex (NEO-26). Le déploiement ne lit que requirements.txt
+# (buildpack Python de Cloud Run) ; ce fichier sert aux tests et aux contrôles :
+# uv run --directory infra/coupure-vertex pytest (puis ruff, mypy).
+[project]
+name = "coupure-vertex"
+version = "1.0.0"
+description = "Fonction Cloud Run qui coupe Vertex quand le budget de dépense est atteint"
+requires-python = ">=3.14"
+# Même version que requirements.txt, préinstallée par Cloud Run pour Python 3.14.
+dependencies = ["functions-framework==3.10.2"]
+
+[dependency-groups]
+dev = ["mypy==2.3.1", "pytest==9.1.1", "pytest-cov==7.1.0", "ruff==0.16.9"]
+
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py314"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM", "RUF", "PL", "PTH", "C4", "PIE", "RET", "PERF", "FURB", "ERA"]
+# Nombres magiques des tests, caractères ambigus (texte français)
+ignore = ["PLR2004", "RUF001", "RUF002", "RUF003"]
+
+[tool.mypy]
+strict = true

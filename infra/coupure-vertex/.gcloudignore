@@ -1,0 +1,12 @@
+# Seuls main.py et requirements.txt partent vers Cloud Build : ni les tests, ni l'outillage local.
+.gcloudignore
+.venv/
+__pycache__/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+tests/
+pyproject.toml
+uv.lock
+deploy.sh
+*.json

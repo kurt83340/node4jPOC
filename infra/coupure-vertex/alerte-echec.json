@@ -1,0 +1,24 @@
+{
+  "displayName": "coupure-vertex : coupure de Vertex en échec",
+  "documentation": {
+    "subject": "coupure-vertex : la coupure automatique de Vertex a échoué",
+    "content": "La fonction Cloud Run `coupure-vertex` n'a pas pu traiter un message du budget « Plafond jleroy-labo 100 EUR (oct-dec 2026) ». Tant qu'elle échoue, Vertex ne sera pas coupé au plafond.\n\n1. Lire l'erreur : bouton VIEW INCIDENT, puis les journaux de la fonction ; ou la commande `gcloud logging read` du RUNBOOK.\n2. « refusée (400) : FAILED_PRECONDITION » : un service activé dépend de Vertex. Si le plafond est atteint, couper Vertex à la main (RUNBOOK).\n3. Eventarc renvoie le message pendant 24 h : vérifier que l'erreur cesse une fois la cause corrigée.\n\nProcédure complète : RUNBOOK.md du dépôt, section « Coupure de Vertex ».",
+    "mimeType": "text/markdown"
+  },
+  "conditions": [
+    {
+      "displayName": "Erreur dans les journaux de la fonction coupure-vertex",
+      "conditionMatchedLog": {
+        "filter": "severity>=ERROR AND resource.type=\"cloud_run_revision\" AND resource.labels.service_name=\"coupure-vertex\""
+      }
+    }
+  ],
+  "combiner": "OR",
+  "alertStrategy": {
+    "notificationRateLimit": {
+      "period": "3600s"
+    },
+    "autoClose": "86400s"
+  },
+  "severity": "ERROR"
+}
