@@ -10,7 +10,7 @@
 // grossir une liste sans changer les comptes.
 // Chaque contrôle agrège dans un WITH sans clé : une base vide donne une ligne à 0, pas une ligne absente.
 
-// Contraintes et index (ARCHITECTURE § 5) : unicité de id et index sur nom, pour 5 labels.
+// Contraintes et index (ARCHITECTURE § 5) : unicité de id et index sur nom, pour 5 labels ; index plein texte.
 SHOW CONSTRAINTS YIELD type, labelsOrTypes, properties
 WHERE type = 'NODE_PROPERTY_UNIQUENESS' AND properties = ['id']
   AND labelsOrTypes[0] IN ['Attaque', 'Forme', 'Pokemon', 'Talent', 'Type']
@@ -22,6 +22,18 @@ WHERE type = 'RANGE' AND entityType = 'NODE' AND properties = ['nom'] AND owning
   AND labelsOrTypes[0] IN ['Attaque', 'Forme', 'Pokemon', 'Talent', 'Type']
 WITH count(*) AS c
 RETURN 'contraintes|index sur nom : Attaque, Forme, Pokemon, Talent, Type|5|' + toString(c) AS ligne;
+
+// Index plein texte (spec 002, D9) : sa définition seulement, lue par SHOW INDEXES ; qu'il trouve un nom approché
+// se vérifie dans scripts/questions.sh --exemples (dracofeu~), pour qu'une base sans index rende un écart et non
+// une erreur. Analyseur et état compris : IF NOT EXISTS garderait sans rien dire un index du même nom réglé autrement.
+SHOW INDEXES YIELD name, type, entityType, labelsOrTypes, properties, options, state
+WHERE name = 'noms_plein_texte' AND type = 'FULLTEXT' AND entityType = 'NODE' AND properties = ['nom']
+  AND size(labelsOrTypes) = 5
+  AND all(label IN labelsOrTypes WHERE label IN ['Attaque', 'Forme', 'Pokemon', 'Talent', 'Type'])
+  AND options.indexConfig.`fulltext.analyzer` = 'standard-folding' AND state = 'ONLINE'
+WITH count(*) AS c
+RETURN 'contraintes|index plein texte noms_plein_texte sur nom (standard-folding, en ligne) : Attaque, Forme, Pokemon, Talent, Type|1|'
+  + toString(c) AS ligne;
 
 // Nœuds, relations par motif, empreintes, noms. $limiteNoeuds et $limiteRelations : limite réelle de
 // l'instance, passée par verifier.sh.

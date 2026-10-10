@@ -96,6 +96,14 @@ go_no_go() {
     "LOAD CSV WITH HEADERS FROM \$base + '/pokemon_abilities.csv' AS ligne RETURN count(toInteger(ligne.slot)) AS slots"
   controler "Label Type sans backticks" "accepté" \
     "EXPLAIN MATCH (t:Type) RETURN count(t) AS types"
+  # Analyseur de l'index plein texte noms_plein_texte (cypher/00-contraintes.cypher, spec 002 D9) : sans lui,
+  # le chargement s'arrêterait sur la création de l'index.
+  controler "Analyseur standard-folding (index plein texte)" "1" \
+    "CALL db.index.fulltext.listAvailableAnalyzers() YIELD analyzer WHERE analyzer = 'standard-folding'
+     RETURN count(*) AS analyseurs"
+  informer "ce qu'il fait" \
+    "CALL db.index.fulltext.listAvailableAnalyzers() YIELD analyzer, description
+     WHERE analyzer = 'standard-folding' RETURN description"
   controler "Langue par défaut de la base" "CYPHER 25" \
     "SHOW DATABASES YIELD name, defaultLanguage WHERE name <> 'system' RETURN defaultLanguage"
   if ((ECARTS > 0)); then

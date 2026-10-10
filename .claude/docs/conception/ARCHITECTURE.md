@@ -126,6 +126,7 @@ Total attendu : **8 859 nœuds et 113 700 relations**.
 
 - Une contrainte d'unicité sur `id` pour `Pokemon`, `Forme`, `Type`, `Attaque` et `Talent`. `Description` n'a pas de clé : un `MERGE` sur le chemin (Pokémon, texte) la rend unique, et `verifier.sh` le contrôle.
 - Un index sur `nom` pour `Pokemon`, `Forme`, `Attaque`, `Talent` et `Type` : c'est la porte d'entrée de presque toutes les questions.
+- Un index plein texte, `noms_plein_texte`, sur `nom` des mêmes 5 labels, analyseur `standard-folding` (sans casse ni accents) : la recherche d'un nom approché (`dracofeu~` trouve Dracaufeu, Q19), enseignée aux agents par la fiche de schéma (spec 002, D9). Ajouté le 2026-10-10 ; `verifier.sh` contrôle sa définition (34e contrôle), `questions.sh --exemples` qu'il trouve.
 
 ## 6. Sécurité
 
@@ -145,7 +146,7 @@ Total attendu : **8 859 nœuds et 113 700 relations**.
 - **Jalon 2** :
   - une **fiche de schéma** commune à toutes les techniques (règles, valeurs possibles, 5 à 10 exemples), donnée à l'identique pour ne pas biaiser la comparaison : `get-schema` de `neo4j/mcp` ne transmet ni les règles ni les valeurs ;
   - une **mesure « schéma français contre anglais »** sur les 30 questions (effet jamais mesuré en text-to-Cypher) ;
-  - un index plein texte sur les noms (recherche approchée, utile à Q19 « Dracofeu »).
+  - un index plein texte sur les noms (recherche approchée, utile à Q19 « Dracofeu ») : fait le 2026-10-10 (§ 5).
 - **Jalon 3** : index vectoriel sur `Description.texte`, avec `gemini-embedding-001` pour qu'un seul index serve aussi à Aura Agent (jalon 4). La fiche de schéma interdira de renvoyer des nœuds `Description` entiers (le vecteur remplirait la réponse).
 - **Propriétés écartées faute de question** (à ajouter si une question en a besoin) : conditions d'évolution (`pokemon_evolution`), génération, légendaire, habitat, taille, poids.
 - **Formes cosmétiques** (`pokemon_forms` sans stats propres, comme les 28 motifs de Zarbi) : non modélisées.
