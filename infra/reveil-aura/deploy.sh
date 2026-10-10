@@ -63,10 +63,14 @@ trouver_outils() {
   # Tester par la liste des composants : appeler « gcloud beta » proposerait de l'installer.
   local beta
   beta="$(gcloud components list --filter=id=beta --format='value(state.name)' 2>/dev/null)"
-  if [[ "$beta" != "Installed" ]]; then
-    erreur "composant beta de gcloud absent (canal e-mail) : gcloud components install beta"
-    exit 2
-  fi
+  # « Update Available » dès qu'une version plus récente de gcloud sort : le composant est là.
+  case "$beta" in
+    Installed | "Update Available") ;;
+    *)
+      erreur "composant beta de gcloud absent (canal e-mail) : gcloud components install beta"
+      exit 2
+      ;;
+  esac
 }
 
 activer_api() {
