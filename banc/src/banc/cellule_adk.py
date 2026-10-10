@@ -37,7 +37,6 @@ import os
 import re
 import signal
 import sys
-import warnings
 from collections.abc import Awaitable, Callable, Iterator, Mapping, Sequence
 from contextlib import aclosing, contextmanager
 from dataclasses import dataclass, field
@@ -117,6 +116,13 @@ UTILISATEUR = "banc"
 # Journal de google-genai, où tenacity écrit chaque reprise (« Retrying … as it raised
 # ClientError: 429 … »), comme la reprise d'une erreur de connexion d'aiohttp.
 JOURNAL_GENAI = "google_genai._api_client"
+# Journaux d'ADK 2.11.0 qui écrivent sur stderr, trace comprise, l'épuisement des appels du modèle
+# (« Node execution failed with exception », « Root node agent failed. ») : la cellule le traite
+# elle-même, issue « tours » (bruit relevé en T5.1).
+JOURNAUX_DES_TOURS = (
+    "google_adk.google.adk.workflow._node_runner",
+    "google_adk.google.adk.runners",
+)
 STATUT_REPRISE = re.compile(r"Error: (\d{3}) ")
 # Plafond de dépense atteint (D13) : type d'erreur de l'API, ou message relevé par Claude Code.
 CREDITS_EPUISES = "billing_error"
@@ -573,7 +579,8 @@ class _Conversation:
         résultats, et la réponse finale (l'usage, lui, se compte dans le rappel d'ADK)."""
         if evenement.partial:
             return
-        if evenement.error_code:
+        # L'épuisement des appels du modèle s'écrit dans la trace (issue « tours »), pas sur stderr.
+        if evenement.error_code and evenement.error_code != LlmCallsLimitExceededError.__name__:
             print(
                 f"cellule {self.entete.cellule} : {evenement.error_code} "
                 f"{evenement.error_message or ''}",
@@ -733,6 +740,16 @@ def _resultat(reponse: Mapping[str, Any]) -> tuple[str, bool]:
     return str(reponse.get("error", reponse)), True
 
 
+class SansLesToursEpuises(logging.Filter):
+    """Retire d'un journal d'ADK les enregistrements dont l'erreur est l'épuisement des appels du
+    modèle (ADK 2.11.0 journalise LlmCallsLimitExceededError elle-même, deux fois) ; tout autre
+    enregistrement passe, vraies erreurs comprises."""
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        erreur = record.exc_info[1] if record.exc_info else None
+        return not isinstance(erreur, LlmCallsLimitExceededError)
+
+
 async def _lancer(client: str, commande: Commande, tarifs: Sequence[Tarif]) -> None:
     """La conversation, qu'un SIGTERM annule : le serveur MCP, dans sa propre session, est alors
     arrêté par son groupe avant la sortie."""
@@ -750,7 +767,8 @@ def main(arguments: Sequence[str] | None = None) -> int:
         print(f"usage : python -m banc.cellule_adk {'|'.join(CLIENTS)}", file=sys.stderr)
         return 2
     client = lus[0]
-    warnings.filterwarnings("ignore", message=r"\[EXPERIMENTAL\]", category=UserWarning)
+    for nom in JOURNAUX_DES_TOURS:
+        logging.getLogger(nom).addFilter(SansLesToursEpuises())
     try:
         commande = lire_commande(sys.stdin.read())
         asyncio.run(_lancer(client, commande, prix.charger()))
