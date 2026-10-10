@@ -1,6 +1,6 @@
 ---
 status: in-progress # draft | validated | in-progress | done | parked
-progress: 16/33 # X/Y tasks (compté depuis tasks.md) — MAJ par /feature-done ou à la main
+progress: 20/33 # X/Y tasks (compté depuis tasks.md) — MAJ par /feature-done ou à la main
 ---
 
 # Spec — Agent text-to-Cypher
@@ -50,8 +50,8 @@ Mesurer la technique 2 du banc d'essai : un agent LLM qui écrit lui-même le Cy
 
 **Critères d'acceptation :**
 
-- [ ] la fiche reprend les règles et cas limites listés sous le jalon 2 de la [ROADMAP](../../ROADMAP.md), avec des valeurs vérifiées dans la base
-- [ ] 6 à 8 exemples qui s'exécutent, dont aucun ne cite une entité des 30 questions ni de leurs réponses (test)
+- [x] la fiche reprend les règles et cas limites listés sous le jalon 2 de la [ROADMAP](../../ROADMAP.md), avec des valeurs vérifiées dans la base (T7.3, 2026-10-10 : `questions/fiche.cypher`)
+- [x] 6 à 8 exemples qui s'exécutent, dont aucun ne cite une entité des 30 questions ni de leurs réponses (test) : 8 exemples exécutés sur la base le 2026-10-10
 
 ### US4 — Mesurer l'effet d'un schéma anglais
 
@@ -73,8 +73,8 @@ Mesurer la technique 2 du banc d'essai : un agent LLM qui écrit lui-même le Cy
 
 **Critères d'acceptation :**
 
-- [ ] index créé par la chaîne de chargement, contrôlé par `verifier.sh` (34 contrôles), idempotence intacte
-- [ ] la recherche approchée `dracofeu~` renvoie Dracaufeu
+- [x] index créé par la chaîne de chargement, contrôlé par `verifier.sh` (34 contrôles), idempotence intacte (T7.2, 2026-10-10)
+- [x] la recherche approchée `dracofeu~` renvoie Dracaufeu (T7.3, 2026-10-10)
 
 ## Scope IN
 

@@ -166,8 +166,26 @@
   driver Go ne voit une annulation qu'au morceau suivant du serveur : une lecture lente survit à sa cellule. SHOW et
   TERMINATE TRANSACTIONS se composent (YIELD aux colonnes nommées, puis RETURN, exigés ; `metaData` ne sort que par
   YIELD) ; TERMINATE est asynchrone, d'où les relectures. Un résultat vide de cypher-shell n'écrit rien, pas même
-  l'en-tête. Mode lecture et droit d'arrêter sur Aura Free : non documentés, à vérifier en T7.4 ; l'orchestration le
-  lance à chaque départ, il doit donc marcher avant toute campagne (doc lue le 2026-10-09).
+  l'en-tête. Mode lecture et droit d'arrêter sur Aura Free : vérifiés le 2026-10-10 (`banc essai-serveur`, T7.4) ; un
+  serveur tué voit sa lecture arrêtée par Aura elle-même, le script reste pour celui qui survit à sa cellule.
+- ⚠️ `banc/src/banc/essai_serveur.py` — `stdio_client` de `mcp` 2.3.0 lance le serveur dans sa propre session sans
+  rendre son processus : son groupe se lit dans `/proc` (`orchestration.descendants`), avant et après l'ouverture, pour
+  ne tuer que lui. anyio regroupe les erreurs de ses tâches (ExceptionGroup), et `return` est interdit dans un
+  `except*`. La lecture lente s'étalonne sur la base : bornée à quelques minutes si l'arrêt échouait (vu le 2026-10-10).
+- ⚠️ `banc/src/banc/__init__.py` — le filtre de l'avertissement `[EXPERIMENTAL]` d'ADK reste ici, avant tout import d'ADK :
+  ADK avertit dès son import (classe expérimentale PLUGGABLE_AUTH créée au chargement) ; posé dans le `main()` d'une
+  cellule, il arrivait trop tard (bruit vu en T5.1, corrigé le 2026-10-10).
+- ⚠️ `banc/src/banc/cellule_adk.py` — ADK 2.11.0 journalise deux fois l'épuisement des appels du modèle, trace comprise
+  (`google_adk.google.adk.workflow._node_runner`, `google_adk.google.adk.runners`), `LlmCallsLimitExceededError` pour
+  erreur : `SansLesToursEpuises` ne retire que ces enregistrements, et la cellule ne recopie plus cet événement. Le
+  vérifier en lançant la cellule comme l'orchestration (sous-processus) : en processus, rien n'est filtré (2026-10-10).
+- ⚠️ `banc/tests/test_cellule_adk.py` — un port « libre » se prend une fois la fausse API lancée (`port_libre()`) : avant,
+  le système peut redonner ce port à la fausse API, et la connexion qu'on voulait refusée aboutit (vu le 2026-10-10).
+- ⚠️ `cypher/00-contraintes.cypher` — `standard-folding` d'Aura Free : analyseur standard anglais qui retire les accents,
+  donc mots vides anglais ôtés (« a », « in », « on »…) et symboles hors ASCII découpés (♀, ’) ; un nom exact se cherche
+  par égalité, pas par l'index plein texte (vu le 2026-10-10).
+- ⚠️ `scripts/charger.sh` — `--sonde-renommage` : l'`EXPLAIN` d'une écriture passe en `--access-mode read` sur Aura Free
+  (planifiée, jamais exécutée) ; Cypher 25 dynamique et `apoc.refactor.rename.*` y sont tous deux planifiés (2026-10-10).
 - ⚠️ `banc/tests/test_orchestration.py` — un test qui envoie un signal au processus de pytest pose d'abord un gestionnaire
   refuge : sinon, une mutation qui retire celui du harnais tue pytest. Une mutation tuée au délai laisse ses fausses
   cellules dormir 600 s dans leur session : les arrêter par leur pid (vu le 2026-10-09).
