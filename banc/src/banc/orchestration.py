@@ -35,6 +35,12 @@ sortie de la cellule et avant toute autre lecture : la durée, fixée par la cel
 n'en compte rien. Chaque lancement commence aussi par là : une campagne interrompue a pu en
 laisser. Une seule campagne à la fois sur le poste (verrou) : elles partagent l'instance Aura.
 
+Répétition générale (--faux-serveur, T5.1) : les vrais LLM, mais un faux serveur MCP
+(banc.faux_serveur) qui rend un résultat neutre à chaque appel ; contrôle de Q2 simulé, aucun
+nettoyage, ni gcloud ni neo4j-mcp dans le PATH des agents : rien ne touche Aura. La paire Q2 → Q18
+de la cellule adk-gemini a un serveur lent, au-delà du délai d'une question : Q2 échoue (délai),
+Q18 compte faux d'office (ADR-0012).
+
 Codes retour : 0 campagne finie · 1 finie, avec une passe invalide · 2 erreur technique · 3 arrêt
 sur un plafond de dépense, à reprendre après décision · 130 interrompue (Ctrl-C, SIGTERM, SIGHUP ;
 SIGHUP reste ignoré sous nohup).
@@ -84,7 +90,14 @@ from banc.mesures import (
     lire_lignes,
     nom_de_trace,
 )
-from banc.notation import Controleur, NotationError, Referentiel, controle_par_script, noter
+from banc.notation import (
+    Controleur,
+    NotationError,
+    Referentiel,
+    controle_par_script,
+    controle_simule,
+    noter,
+)
 from banc.prix import PrixError
 from banc.questions import Banc, BancError, Question
 
@@ -103,7 +116,14 @@ NEO4J_MCP = Path.home() / ".local" / "share" / "neo4j-mcp" / "v1.6.0"
 GCLOUD = Path.home() / "google-cloud-sdk" / "bin" / "gcloud"
 TRANSACTIONS = RACINE / "scripts" / "transactions.sh"
 PARAMETRES = "campagne.json"
-FORMAT = 1
+# 2 : le mode faux serveur (T5.1) entre dans les paramètres d'une campagne.
+FORMAT = 2
+# Répétition générale (T5.1) : faux serveur MCP, lancé par chaque client comme le lanceur.
+FAUX_SERVEUR = (sys.executable, "-I", "-m", "banc.faux_serveur")
+# La conversation au faux serveur lent : sa cellule et son premier tour. adk-gemini, la moins
+# chère ; chaque appel d'outil y attend le délai d'une question et LENTEUR_S de plus.
+LENTE = ("adk-gemini", "Q2")
+LENTEUR_S = 60.0
 # Cause du second tour d'une paire dont le premier a échoué (ADR-0012, banc.mesures.CAUSES).
 PRECEDENT = "precedent"
 # Circuit breaker du plan : 3 pannes de suite sur une même conversation arrêtent la campagne.
@@ -158,6 +178,8 @@ class Campagne:
     # Cache d'une heure des cellules Claude, au lieu de 5 min (D10 : tranché au pilote).
     cache_1h: bool = False
     plafonds: Plafonds = field(default_factory=Plafonds)
+    # Répétition générale (T5.1) : faux serveur MCP, rien ne touche Aura.
+    faux_serveur: bool = False
 
     def __post_init__(self) -> None:
         questions = [question for conversation in self.conversations for question in conversation]
@@ -201,6 +223,8 @@ class Demande:
     questions: tuple[str, ...] = ()
     cellules: tuple[str, ...] = ()
     cache_1h: bool | None = None
+    # Répétition générale (T5.1) : à redonner à la reprise, qui le vérifie.
+    faux_serveur: bool = False
 
 
 def conversations(banc: Banc, demandees: Sequence[str] = ()) -> tuple[tuple[str, ...], ...]:
@@ -249,6 +273,7 @@ def ecrire_campagne(fichier: Path, campagne: Campagne) -> None:
         "cellules": list(campagne.cellules),
         "cache_1h": campagne.cache_1h,
         "plafonds": plafonds,
+        "faux_serveur": campagne.faux_serveur,
     }
     fichier.parent.mkdir(parents=True, exist_ok=True)
     with fichier.open("x", encoding="utf-8") as flux:
@@ -257,15 +282,26 @@ def ecrire_campagne(fichier: Path, campagne: Campagne) -> None:
 
 def lire_campagne(fichier: Path) -> Campagne:
     """Relit les paramètres d'une campagne ; une clé inconnue ou manquante est refusée."""
-    cles = {"format", "campagne", "passes", "conversations", "cellules", "cache_1h", "plafonds"}
+    cles = {
+        "format",
+        "campagne",
+        "passes",
+        "conversations",
+        "cellules",
+        "cache_1h",
+        "plafonds",
+        "faux_serveur",
+    }
     try:
         brut = json.loads(fichier.read_text(encoding="utf-8"))
         if not isinstance(brut, dict) or set(brut) != cles or brut["format"] != FORMAT:
             raise ValueError(f"clés {sorted(brut)} ou format inattendus")
         plafonds = dict(brut["plafonds"])
         plafonds["budget_usd"] = Decimal(plafonds["budget_usd"])
-        if not isinstance(brut["passes"], int) or not isinstance(brut["cache_1h"], bool):
-            raise TypeError("passes : un entier ; cache_1h : vrai ou faux")
+        if not isinstance(brut["passes"], int) or not all(
+            isinstance(brut[cle], bool) for cle in ("cache_1h", "faux_serveur")
+        ):
+            raise TypeError("passes : un entier ; cache_1h, faux_serveur : vrai ou faux")
         return Campagne(
             nom=brut["campagne"],
             passes=brut["passes"],
@@ -273,6 +309,7 @@ def lire_campagne(fichier: Path) -> Campagne:
             cellules=tuple(brut["cellules"]),
             cache_1h=brut["cache_1h"],
             plafonds=Plafonds(**plafonds),
+            faux_serveur=brut["faux_serveur"],
         )
     except (OSError, ValueError, KeyError, TypeError, InvalidOperation) as erreur:
         raise OrchestrationError(f"{fichier} illisible : {erreur}") from erreur
@@ -483,6 +520,8 @@ class Moyens:
     chemins: tuple[Path, ...] = ()
     # Serveur MCP lancé par chaque client : le lanceur, ou un faux serveur.
     serveur: tuple[str, ...] = (str(LANCEUR),)
+    # Répétition générale : le serveur de la conversation LENTE, au-delà du délai d'une question.
+    serveur_lent: tuple[str, ...] | None = None
     # Binaire de Claude Code : None pour celui du SDK.
     cli: Path | None = None
     # Contrôle de Q2 (D6) ; nettoyage d'Aura après une conversation qui ne finit pas proprement.
@@ -490,6 +529,23 @@ class Moyens:
     nettoyer: Callable[[], str] = transactions
     marge_s: float = MARGE_S
     ecrire: Callable[[str], None] = print
+
+
+def moyens_faux_serveur() -> Moyens:
+    """Répétition générale (T5.1) : faux serveur MCP, contrôle de Q2 simulé, aucun nettoyage, ni
+    gcloud ni neo4j-mcp dans le PATH des agents : rien ne touche Aura."""
+    lent_s = Plafonds().delai_s + LENTEUR_S
+    return Moyens(
+        serveur=FAUX_SERVEUR,
+        serveur_lent=(*FAUX_SERVEUR, "--lent-s", f"{lent_s:g}"),
+        controle=controle_simule,
+        nettoyer=_sans_nettoyage,
+    )
+
+
+def _sans_nettoyage() -> str:
+    """Faux serveur : aucune lecture d'agent sur Aura à arrêter."""
+    return ""
 
 
 # --- Campagne ------------------------------------------------------------------------------------
@@ -620,9 +676,14 @@ class Orchestration:
             traces=self.moyens.traces,
             plafonds=self.campagne.plafonds,
             cache_1h=self.campagne.cache_1h,
-            serveur=self.moyens.serveur,
+            serveur=self._serveur(etape),
             cli=self.moyens.cli,
         )
+
+    def _serveur(self, etape: Etape) -> tuple[str, ...]:
+        if self.moyens.serveur_lent is not None and (etape.cellule, etape.questions[0]) == LENTE:
+            return self.moyens.serveur_lent
+        return self.moyens.serveur
 
     def _isoler(self, etape: Etape, dossier: Path) -> tuple[dict[str, str], Path]:
         """La liste blanche de la cellule (D3), avec un HOME, une configuration de Claude Code et
@@ -809,7 +870,12 @@ def commande(demande: Demande, moyens: Moyens | None = None) -> int:
     numeros = (signal.SIGTERM,) if ignore else (signal.SIGTERM, signal.SIGHUP)
     precedents = {numero: signal.signal(numero, _interrompre) for numero in numeros}
     try:
-        moyens = moyens or Moyens(chemins=outils_des_agents())
+        if moyens is None:
+            moyens = (
+                moyens_faux_serveur()
+                if demande.faux_serveur
+                else Moyens(chemins=outils_des_agents())
+            )
         # Avant de créer quoi que ce soit : une campagne refusée n'est pas créée.
         with verrou(moyens.traces):
             return _preparer(demande, moyens).lancer()
@@ -866,6 +932,7 @@ def _preparer(demande: Demande, moyens: Moyens) -> Orchestration:
             conversations=conversations(banc, demande.questions),
             cellules=demande.cellules or CELLULES,
             cache_1h=bool(demande.cache_1h),
+            faux_serveur=demande.faux_serveur,
         )
     if CLAUDE & set(campagne.cellules):
         cle_anthropic()
@@ -886,6 +953,8 @@ def _verifier_la_reprise(campagne: Campagne, demande: Demande, banc: Banc) -> No
         ),
         "cellules": (demande.cellules or None, campagne.cellules),
         "cache_1h": (demande.cache_1h, campagne.cache_1h),
+        # Sans valeur « non précisé » : une reprise redit le mode de sa campagne.
+        "faux_serveur": (demande.faux_serveur, campagne.faux_serveur),
     }
     if ecarts := [nom for nom, (voulu, fixe) in demandes.items() if voulu not in {None, fixe}]:
         raise OrchestrationError(

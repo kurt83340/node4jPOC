@@ -19,6 +19,7 @@ from banc.notation import (
     NotationError,
     Referentiel,
     controle_par_script,
+    controle_simule,
     introspections,
     noter,
 )
@@ -430,6 +431,14 @@ def test_q2_noms_introuvables() -> None:
 def test_q2_sans_controle() -> None:
     note, motifs, _ = noter_q2(", ".join(EQUIPE), None)
     assert (note, motifs) == ("à revoir", ("sans-controle",))
+
+
+def test_q2_controle_simule_du_faux_serveur() -> None:
+    # Répétition générale (T5.1) : les noms passent leur validation, la base n'est pas lue ; une
+    # équipe pourtant valide n'est jamais « juste » sans elle.
+    assert controle_simule(liste_cypher(EQUIPE)) == Controle(0, (), False)
+    notation = noter(Q["Q2"], Tour("Q2", ecrire(", ".join(EQUIPE))), REF, controle_simule)
+    assert (notation.note, notation.motifs) == ("à revoir", ("non-reconnus",))
 
 
 # --- Revue, réponse absente ----------------------------------------------------------------------

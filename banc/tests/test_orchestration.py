@@ -9,6 +9,7 @@ Aucun appel réel, aucun coût. Le nettoyage d'Aura (scripts/transactions.sh) et
 sont remplacés par des faux : on compte leurs appels.
 """
 
+import contextlib
 import json
 import os
 import signal
@@ -28,12 +29,13 @@ import pytest
 from banc import orchestration, revue
 from banc import questions as banc_questions
 from banc.__main__ import main
-from banc.cellule import RACINE, Plafonds
+from banc.cellule import LANCEUR, RACINE, Plafonds
 from banc.isolement import environnement_agent
 from banc.mesures import lire, lire_lignes, nom_de_trace
-from banc.notation import Controle, NotationError
+from banc.notation import Controle, NotationError, controle_simule
 from banc.orchestration import (
     CELLULES,
+    FAUX_SERVEUR,
     PROGRAMMES,
     ArretPlafond,
     Campagne,
@@ -50,6 +52,7 @@ from banc.orchestration import (
     ecrire_campagne,
     lire_campagne,
     message,
+    moyens_faux_serveur,
     outils_des_agents,
     pannes_de_suite,
     transactions,
@@ -283,6 +286,7 @@ def test_campagne_invalide(reglages: dict[str, Any]) -> None:
 
 def test_parametres_relus(tmp_path: Path) -> None:
     fixee = campagne(("Q19",), ("Q2", "Q18"), passes=3, cellules=(AG, CC), cache_1h=True, tours=5)
+    fixee = replace(fixee, faux_serveur=True)
     fichier = tmp_path / "campagne.json"
     ecrire_campagne(fichier, fixee)
     assert lire_campagne(fichier) == fixee
@@ -293,7 +297,13 @@ def test_parametres_relus(tmp_path: Path) -> None:
 
 @pytest.mark.parametrize(
     ("cle", "valeur"),
-    [("format", 2), ("passes", 2.0), ("cache_1h", 1), ("inconnue", True)],
+    [
+        ("format", 1),
+        ("passes", 2.0),
+        ("cache_1h", 1),
+        ("faux_serveur", "oui"),
+        ("inconnue", True),
+    ],
 )
 def test_parametres_illisibles(tmp_path: Path, cle: str, valeur: Any) -> None:
     fichier = tmp_path / "campagne.json"
@@ -910,6 +920,77 @@ def test_nettoyage_en_echec_ne_masque_pas_l_erreur(
     assert "Aura injoignable" in capsys.readouterr().err
 
 
+# --- Répétition générale (T5.1) -----------------------------------------------------------------
+
+
+def test_moyens_du_faux_serveur() -> None:
+    moyens = moyens_faux_serveur()
+    assert moyens.serveur == FAUX_SERVEUR
+    assert moyens.serveur == (sys.executable, "-I", "-m", "banc.faux_serveur")
+    # Au-delà du délai d'une question (180 s), en deçà de l'échéance de la cellule.
+    assert moyens.serveur_lent == (*FAUX_SERVEUR, "--lent-s", "240")
+    assert moyens.controle is controle_simule
+    # Ni gcloud ni neo4j-mcp dans le PATH des agents, rien à nettoyer sur Aura.
+    assert moyens.chemins == ()
+    assert moyens.nettoyer() == ""
+
+
+def test_serveur_lent_pour_la_seule_conversation_lente(bac: Bac) -> None:
+    lent = (*FAUX_SERVEUR, "--lent-s", "240")
+    fixee = campagne(("Q19",), ("Q2", "Q18"))
+    assert bac.orchestrer(fixee, serveur=FAUX_SERVEUR, serveur_lent=lent) == 0
+    serveurs = {note["cle"]: tuple(note["serveur"]) for note in bac.notes()}
+    assert serveurs.pop(f"{AG} p1 Q2+Q18 e1") == lent
+    assert len(serveurs) == 5
+    assert set(serveurs.values()) == {FAUX_SERVEUR}
+
+
+def test_sans_serveur_lent_hors_du_faux_serveur(bac: Bac) -> None:
+    assert bac.orchestrer(campagne(("Q2", "Q18"), cellules=(AG,))) == 0
+    (note,) = bac.notes()
+    assert note["serveur"] == [str(LANCEUR)]
+
+
+def test_faux_serveur_garde_par_la_reprise(bac: Bac) -> None:
+    assert bac.commande(questions=("Q1",), cellules=(AG,), faux_serveur=True) == 0
+    fixee = lire_campagne(bac.racine / "traces" / "essai" / "campagne.json")
+    assert fixee.faux_serveur
+    # Reprise sans l'option, ou campagne réelle reprise en faux serveur : refusées.
+    assert bac.commande(reprendre=True) == 2
+    assert bac.commande(reprendre=True, faux_serveur=True) == 0
+
+
+def test_campagne_reelle_reprise_en_faux_serveur(bac: Bac) -> None:
+    assert bac.commande(questions=("Q1",), cellules=(AG,)) == 0
+    assert bac.commande(reprendre=True, faux_serveur=True) == 2
+
+
+def test_commande_prend_les_moyens_du_faux_serveur(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    vus: list[Moyens] = []
+
+    class Menee:
+        def lancer(self) -> int:
+            return 0
+
+    def preparer(_demande: Demande, moyens: Moyens) -> Menee:
+        vus.append(moyens)
+        return Menee()
+
+    def outils_reels() -> tuple[Path, ...]:
+        raise AssertionError("gcloud et neo4j-mcp cherchés en mode faux serveur")
+
+    monkeypatch.setattr(orchestration, "_preparer", preparer)
+    monkeypatch.setattr(orchestration, "outils_des_agents", outils_reels)
+    # Le verrou vivrait sinon dans le vrai dossier des traces.
+    monkeypatch.setattr(orchestration, "verrou", lambda _racine: contextlib.nullcontext())
+    assert commande(Demande("essai", Decimal(1), faux_serveur=True)) == 0
+    (moyens,) = vus
+    assert moyens.serveur == FAUX_SERVEUR
+    assert moyens.controle is controle_simule
+
+
 # --- La commande ----------------------------------------------------------------------------------
 
 
@@ -981,12 +1062,12 @@ def test_point_d_entree(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(orchestration, "commande", noter)
     complete = [
         "lancer", "--campagne", "pilote", "--plafond-usd", "4.5", "--questions", "Q19, Q2,Q18",
-        "--cellules", "adk-gemini", "--passes", "3", "--cache-1h", "--reprendre",
+        "--cellules", "adk-gemini", "--passes", "3", "--cache-1h", "--reprendre", "--faux-serveur",
     ]  # fmt: skip
     assert main(complete) == 0
     assert main(["lancer", "--campagne", "pilote", "--plafond-usd", "2"]) == 0
     assert recues == [
-        Demande("pilote", Decimal("4.5"), True, 3, ("Q19", "Q2", "Q18"), (AG,), True),
+        Demande("pilote", Decimal("4.5"), True, 3, ("Q19", "Q2", "Q18"), (AG,), True, True),
         Demande("pilote", Decimal(2)),
     ]
 

@@ -17,6 +17,10 @@ set +x
 source "${BASH_SOURCE[0]%/*}/commun.sh"
 
 readonly SECRET_ANTHROPIC="${ANTHROPIC_SECRET:-anthropic-api-banc}"
+# Le harnais reçoit le PATH de l'appelant, tel quel : gcloud, qu'on va chercher dans
+# ~/google-cloud-sdk/bin s'il manque, ne sert ici qu'à lire la clé. Sans lui dans son PATH, le
+# harnais ne peut joindre ni Secret Manager ni la base (répétition générale, T5.1).
+readonly PATH_APPELANT="$PATH"
 RACINE="$(cd "${BASH_SOURCE[0]%/*}/.." && pwd)"
 readonly RACINE
 
@@ -38,4 +42,5 @@ fi
 export ANTHROPIC_API_KEY="$cle"
 unset cle
 
-exec uv run --directory "$RACINE/banc" python -m banc "$@"
+uv_chemin="$(command -v uv)"
+PATH="$PATH_APPELANT" exec "$uv_chemin" run --directory "$RACINE/banc" python -m banc "$@"

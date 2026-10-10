@@ -176,3 +176,17 @@ def test_uv_introuvable(bac: Bac) -> None:
     lancement = bac.lancer("acces")
     assert (lancement.code, lancement.sortie) == (2, "")
     assert "uv introuvable" in lancement.erreurs
+
+
+def test_harnais_sans_gcloud_dans_son_path(bac: Bac) -> None:
+    # gcloud hors du PATH de l'appelant, comme dans un shell non interactif : le script le prend
+    # dans ~/google-cloud-sdk/bin pour lire la clé, mais le harnais reçoit le PATH de l'appelant,
+    # sans lui (répétition générale, T5.1 : rien ne doit pouvoir joindre la base).
+    sdk = bac.racine / "home" / "google-cloud-sdk"
+    (sdk / "bin").mkdir(parents=True)
+    (sdk / "journal").symlink_to(bac.racine / "journal")
+    (bac.racine / "outils" / "gcloud").rename(sdk / "bin" / "gcloud")
+    lancement = bac.lancer("acces")
+    assert lancement.code == 0, lancement.erreurs
+    assert lancement.note("gcloud") is not None
+    assert lancement.harnais()["env"]["PATH"] == str(bac.racine / "outils")
