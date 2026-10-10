@@ -173,3 +173,12 @@
 - ⚠️ `banc/tests/` — un test qui veut un outil absent du PATH pointe le PATH vers un dossier vide, jamais vers
   `/usr/bin:/bin` : les machines de la CI (ubuntu-24.04) y ont leur propre `gcloud`. Vu le 2026-10-10 à la première
   exécution de la CI (`test_outils_des_agents`), alors que la suite passait sur le poste, même sans HOME ni PATH.
+- ⚠️ `infra/coupure-vertex/` — une alerte sur journaux tout juste créée ne voit rien pendant quelques minutes : le
+  premier essai de coupure, 75 s après la création des alertes, n'a envoyé aucun e-mail ; le second, 8 min après, en a
+  envoyé un dans la minute (2026-10-10). Le déclencheur Eventarc est refusé quelques minutes après l'activation de
+  l'API (« Eventarc service agent is not ready ») : `deploy.sh` réessaie. gcloud n'a pas d'option pour détacher un
+  sujet Pub/Sub d'un budget : console. Les tests cherchent le gestionnaire du journal par son format : pytest 9 ajoute
+  ses collecteurs aux journaux qui ne remontent pas à la racine (`propagate = False`).
+- ⚠️ `infra/reveil-aura/deploy.sh` et `infra/coupure-vertex/deploy.sh` — le composant `beta` de gcloud passe à l'état
+  « Update Available » dès qu'une version plus récente de gcloud sort : un test contre « Installed » seul arrêtait le
+  déploiement (vu le 2026-10-10, gcloud 587 face à 588).

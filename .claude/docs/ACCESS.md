@@ -8,20 +8,22 @@
 
 ## Checklist
 
-| Accès                           | État          | 🔒 Où le trouver                                                                                                            |
-| ------------------------------- | ------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| Projet Google Cloud du POC      | ✅            | `jleroy-labo`, facturation active                                                                                           |
-| Console Aura                    | ✅ 2026-09-30 | https://console.neo4j.io, connexion Google avec fr.julienleroy@gmail.com                                                    |
-| Instance AuraDB Free            | ✅ 2026-09-30 | console Aura → Instances → « Free instance »                                                                                |
-| Identifiants de l'instance      | ✅ 2026-09-30 | secret `neo4j-aura-poc` du projet `jleroy-labo`                                                                             |
-| Job de réveil `reveil-aura`     | ✅ 2026-09-30 | projet `jleroy-labo` (`europe-west9`), compte `reveil-aura`, qui ne lit que `neo4j-aura-poc`                                |
-| Vertex AI (Agent Platform)      | ✅ 2026-10-07 | API `aiplatform.googleapis.com` activée sur `jleroy-labo`                                                                   |
-| Claude dans Model Garden        | ✅ 2026-10-07 | Sonnet 5.5, Sonnet 5 et Haiku 4.5 : conditions acceptées (ci-dessous)                                                       |
-| Quota de Claude en `eu`         | ❌ refusé     | 0, hausse refusée le 2026-10-07 ; Claude passe par l'API Anthropic ([ADR-0011](adr/0011-infra-claude-par-api-anthropic.md)) |
-| Budget plafond de 100 €         | ✅ 2026-10-07 | « Plafond jleroy-labo 100 EUR (oct-dec 2026) », [ADR-0010](adr/0010-infra-plafond-de-depense.md)                            |
-| API Anthropic (cellules Claude) | ✅ 2026-10-08 | https://platform.claude.com, workspace `node4jpoc-banc` : crédits sans recharge automatique, limite de 20 $ par mois        |
-| Clé Anthropic du banc           | ✅ 2026-10-08 | secret `anthropic-api-banc` du projet `jleroy-labo` (`europe-west9`), lu par `scripts/banc.sh`                              |
-| `neo4j-mcp` v1.6.0              | ✅ 2026-10-07 | `~/.local/share/neo4j-mcp/v1.6.0/neo4j-mcp`, somme vérifiée (plan 002, D1)                                                  |
+| Accès                           | État          | 🔒 Où le trouver                                                                                                                                              |
+| ------------------------------- | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Projet Google Cloud du POC      | ✅            | `jleroy-labo`, facturation active                                                                                                                             |
+| Console Aura                    | ✅ 2026-09-30 | https://console.neo4j.io, connexion Google avec fr.julienleroy@gmail.com                                                                                      |
+| Instance AuraDB Free            | ✅ 2026-09-30 | console Aura → Instances → « Free instance »                                                                                                                  |
+| Identifiants de l'instance      | ✅ 2026-09-30 | secret `neo4j-aura-poc` du projet `jleroy-labo`                                                                                                               |
+| Job de réveil `reveil-aura`     | ✅ 2026-09-30 | projet `jleroy-labo` (`europe-west9`), compte `reveil-aura`, qui ne lit que `neo4j-aura-poc`                                                                  |
+| Vertex AI (Agent Platform)      | ✅ 2026-10-07 | API `aiplatform.googleapis.com` activée sur `jleroy-labo`                                                                                                     |
+| Claude dans Model Garden        | ✅ 2026-10-07 | Sonnet 5.5, Sonnet 5 et Haiku 4.5 : conditions acceptées (ci-dessous)                                                                                         |
+| Quota de Claude en `eu`         | ❌ refusé     | 0, hausse refusée le 2026-10-07 ; Claude passe par l'API Anthropic ([ADR-0011](adr/0011-infra-claude-par-api-anthropic.md))                                   |
+| Budget plafond de 100 €         | ✅ 2026-10-07 | « Plafond jleroy-labo 100 EUR (oct-dec 2026) », [ADR-0010](adr/0010-infra-plafond-de-depense.md)                                                              |
+| Coupure de Vertex à 100 €       | ✅ 2026-10-10 | fonction `coupure-vertex` (`europe-west9`), compte `coupure-vertex` au rôle `coupureVertex` (lire l'état d'un service, le désactiver) ; [RUNBOOK](RUNBOOK.md) |
+| Plafond natif de Vertex         | ✅ 2026-10-10 | budget « Plafond natif Vertex jleroy-labo (mensuel) », 30 € par mois, Preview ; [ADR-0013](adr/0013-infra-plafond-natif-de-vertex.md)                         |
+| API Anthropic (cellules Claude) | ✅ 2026-10-08 | https://platform.claude.com, workspace `node4jpoc-banc` : crédits sans recharge automatique, limite de 20 $ par mois                                          |
+| Clé Anthropic du banc           | ✅ 2026-10-08 | secret `anthropic-api-banc` du projet `jleroy-labo` (`europe-west9`), lu par `scripts/banc.sh`                                                                |
+| `neo4j-mcp` v1.6.0              | ✅ 2026-10-07 | `~/.local/share/neo4j-mcp/v1.6.0/neo4j-mcp`, somme vérifiée (plan 002, D1)                                                                                    |
 
 ## Instance AuraDB Free (NEO-6)
 
@@ -115,8 +117,11 @@ Ouverts le 2026-10-07 pour la spec 002 ; appels par l'ADC de fr.julienleroy@gmai
   relevé de T0.2.
 - **Budget** « Plafond jleroy-labo 100 EUR (oct-dec 2026) » ([ADR-0010](adr/0010-infra-plafond-de-depense.md)) :
   100 € cumulés du 2026-10-01 au 2026-12-31, filtré sur `jleroy-labo`, e-mails à 25, 50, 75, 90 et 100 % aux
-  administrateurs de la facturation (compte `019774-B0D77F-72CED7`). Vue : `/google-facture`. Coupure
-  automatique de Vertex : à construire.
+  administrateurs de la facturation (compte `019774-B0D77F-72CED7`). Vue : `/google-facture`. Relié au sujet
+  Pub/Sub `coupure-vertex` : à 100 %, la fonction du même nom désactive Vertex (2026-10-10, [RUNBOOK](RUNBOOK.md)).
+  Il expire le 2026-12-31 : le prolonger ou le remplacer avant. En plus, plafond natif de 30 € par mois sur Vertex
+  ([ADR-0013](adr/0013-infra-plafond-natif-de-vertex.md)). Les appels à l'API Budget passent par le projet de
+  quota `jleroy-outils`, où elle est activée.
 
 ⚠️ **Pièges**
 

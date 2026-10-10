@@ -1,0 +1,3 @@
+# Dépendances de la fonction, lues par le buildpack Python de Cloud Run (prioritaire sur
+# pyproject.toml, que .gcloudignore n'envoie pas). Version figée, celle de pyproject.toml.
+functions-framework==3.10.2

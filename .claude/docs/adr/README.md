@@ -44,11 +44,12 @@
 
 ### 🚀 infra — Hébergement & deploy
 
-| #                                               | Titre                                                                 | Statut   |
-| ----------------------------------------------- | --------------------------------------------------------------------- | -------- |
-| [0007](0007-infra-secrets-et-services-geres.md) | Secrets dans Secret Manager, services gérés, poste local client       | Accepted |
-| [0010](0010-infra-plafond-de-depense.md)        | Plafond de dépense : budget de 100 € et coupure automatique de Vertex | Accepted |
-| [0011](0011-infra-claude-par-api-anthropic.md)  | Claude par l'API Anthropic, plafonné par des crédits prépayés         | Accepted |
+| #                                               | Titre                                                                 | Statut                                                                    |
+| ----------------------------------------------- | --------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| [0007](0007-infra-secrets-et-services-geres.md) | Secrets dans Secret Manager, services gérés, poste local client       | Accepted                                                                  |
+| [0010](0010-infra-plafond-de-depense.md)        | Plafond de dépense : budget de 100 € et coupure automatique de Vertex | Accepted (point amendé par [0013](0013-infra-plafond-natif-de-vertex.md)) |
+| [0011](0011-infra-claude-par-api-anthropic.md)  | Claude par l'API Anthropic, plafonné par des crédits prépayés         | Accepted                                                                  |
+| [0013](0013-infra-plafond-natif-de-vertex.md)   | Plafond natif mensuel de Vertex, en plus de la coupure de l'option C  | Accepted                                                                  |
 
 ### 🛠️ operations — Post-prod & incidents
 

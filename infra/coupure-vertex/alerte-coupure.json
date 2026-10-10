@@ -1,0 +1,24 @@
+{
+  "displayName": "coupure-vertex : Vertex coupé au plafond",
+  "documentation": {
+    "subject": "coupure-vertex : Vertex est coupé, le plafond de dépense est atteint",
+    "content": "Le budget « Plafond jleroy-labo 100 EUR (oct-dec 2026) » est atteint : la fonction `coupure-vertex` a désactivé `aiplatform.googleapis.com` sur `jleroy-labo`. Gemini ne répond plus ; Claude passe par l'API Anthropic et n'est pas concerné.\n\n1. Relire la facture : `/google-facture`, ou la console de facturation.\n2. Décider : relever le budget, ou laisser Vertex coupé.\n3. Réactiver seulement après cette décision : commande du RUNBOOK, section « Coupure de Vertex ».",
+    "mimeType": "text/markdown"
+  },
+  "conditions": [
+    {
+      "displayName": "Entrée « Vertex coupé » de la fonction coupure-vertex",
+      "conditionMatchedLog": {
+        "filter": "resource.type=\"cloud_run_revision\" AND resource.labels.service_name=\"coupure-vertex\" AND jsonPayload.evenement=\"vertex-coupe\""
+      }
+    }
+  ],
+  "combiner": "OR",
+  "alertStrategy": {
+    "notificationRateLimit": {
+      "period": "3600s"
+    },
+    "autoClose": "86400s"
+  },
+  "severity": "CRITICAL"
+}
