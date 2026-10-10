@@ -77,6 +77,7 @@ def principal() -> int:
         "messages": [message for _, message in commande.questions],
         "cache_1h": commande.cache_1h,
         "plafonds": {"delai_s": commande.plafonds.delai_s, "tours": commande.plafonds.tours},
+        "serveur": list(commande.serveur),
     }
     attente = [sys.executable, "-c", "import time; time.sleep(600)"]
     if conduite.get("enfant"):

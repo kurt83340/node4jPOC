@@ -224,6 +224,14 @@ def controle_par_script(
     return Controle(reconnues, tuple(str(t) for t in non_couverts), valide)
 
 
+def controle_simule(liste: str) -> Controle:
+    """Contrôle de Q2 en répétition générale (mode faux serveur, T5.1) : la liste des noms a passé
+    leur validation (banc.lecture.liste_cypher), mais aucune base n'est lue. Comme sur une base
+    vide, aucune espèce n'est reconnue : Q2 passe « à revoir »."""
+    del liste
+    return Controle(0, (), False)
+
+
 # --- Modes de notation ---------------------------------------------------------------------------
 
 

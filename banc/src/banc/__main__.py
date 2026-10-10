@@ -42,6 +42,11 @@ def main(arguments: Sequence[str] | None = None) -> int:
         help="cache d'une heure pour les cellules Claude, au lieu de 5 min (plan, D10)",
     )
     lancer.add_argument(
+        "--faux-serveur",
+        action="store_true",
+        help="répétition générale (T5.1) : vrais LLM, faux serveur MCP, rien ne touche Aura",
+    )
+    lancer.add_argument(
         "--reprendre",
         action="store_true",
         help="continue la campagne : rejoue pannes, arrêts et conversations coupées",
@@ -63,6 +68,7 @@ def main(arguments: Sequence[str] | None = None) -> int:
             questions=lus.questions,
             cellules=lus.cellules,
             cache_1h=lus.cache_1h,
+            faux_serveur=lus.faux_serveur,
         )
         return orchestration.commande(demande)
     if lus.commande == "revoir":
