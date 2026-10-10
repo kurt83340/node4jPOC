@@ -79,11 +79,26 @@ source = "google"
 modele = "claude-sonnet-5-5"
 acces = "api"
 du = 2026-10-07
+au = 2026-10-09
 entree = 2.00
 sortie = 10.00
 cache_ecriture_5m = 2.50
 cache_ecriture_1h = 4.00
 cache_lecture = 0.20
+source = "anthropic"
+
+# Lecture du cache de Sonnet 5.5 vérifiée sur la Console Anthropic le 2026-10-10 : 0,10 $ (multiplicateur
+# 0,05, celui de la page de prix). La répétition générale du jour y coûte 0,145 $ environ, ce que donne ce
+# prix (0,1457 $), quand 0,20 $ en donnerait 0,1596 (plan 002, D10).
+[[tarif]]
+modele = "claude-sonnet-5-5"
+acces = "api"
+du = 2026-10-10
+entree = 2.00
+sortie = 10.00
+cache_ecriture_5m = 2.50
+cache_ecriture_1h = 4.00
+cache_lecture = 0.10
 source = "anthropic"
 
 # Repli des deux cellules Claude (plan, D2) ; 2 $ / 10 $ est devenu son prix standard.
