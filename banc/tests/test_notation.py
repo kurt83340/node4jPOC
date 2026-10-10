@@ -332,6 +332,16 @@ def test_semantique_au_pluriel(court: str, note: str, rappel: float, precision: 
     assert (notation.note, notation.rappel, notation.precision) == (note, rappel, precision)
 
 
+def test_titre_de_jeu_hors_table() -> None:
+    # Pilote (2026-10-10) : le jeu cité avec une description n'est pas une espèce hors table.
+    court = (
+        "Léviator (Let’s Go, Pikachu / Let's Go, Évoli), Moyade, Kaiminus, Carvanha, Hypocéan et "
+        "Tentacool."
+    )
+    notation = noter(Q["Q17"], Tour("Q17", ecrire(court)), REF)
+    assert (notation.note, notation.rappel, notation.precision) == ("juste", 1.0, 1.0)
+
+
 def test_les_acceptables_ne_comptent_pas_au_rappel() -> None:
     notation = noter(Q["Q17"], Tour("Q17", ecrire("Carvanha, Moyade, Gamblast, Sharpedo")), REF)
     assert (notation.note, notation.rappel, notation.precision) == ("partiel", 2 / 6, 1.0)
