@@ -1,21 +1,21 @@
-# HANDOFF — 2026-10-10 05h38
+# HANDOFF — 2026-10-10 18h25
 
 > Court, narratif, versionné. Patterns techniques → auto-memory. Reprise précise → /resume.
 
-**Branche** : `feature/002-phase-5` (phase 5 finie ; [PR n°13](https://github.com/kurt83340/node4jPOC/pull/13) ouverte)
-**Spec en cours** : [002-agent-text-to-cypher](specs/002-agent-text-to-cypher/spec.md) (16/33 tasks : phases 0 à 5, T7.1)
-**Goal session** : fusionner la phase 4, construire la coupure de Vertex (ADR-0010), puis T5.1
+**Branche** : `main`, après fusion de la [PR n°14](https://github.com/kurt83340/node4jPOC/pull/14) (phase 7, NEO-20 terminé)
+**Spec en cours** : [002-agent-text-to-cypher](specs/002-agent-text-to-cypher/spec.md) (20/33 tasks : phases 0 à 5 et 7)
+**Goal session** : phase 7 (retour sur la base) avant la 6, puis le bruit d'ADK et le coût réel de la répétition générale
 
 ## Status
 
-- ✅ Fusionnées : PR n°10 (phase 4, réserve du plafond de campagne à 1 $), n°11 (CI sans secret ni CD, NEO-25), n°12 (coupure de Vertex essayée pour de vrai, plafond natif 30 €/mois, NEO-26, ADR-0013)
-- ✅ T5.1 : `banc lancer --faux-serveur`, campagne `repetition-1` à 0,195 $, issues attendues, leurre de `cypher-shell` jamais appelé
-- ✅ 1 042 tests, ruff, mypy, shellcheck, Prettier, gitleaks propres ; CI verte sur `main` ; fusion seulement avec `gh pr checks` vert
+- ✅ Aura Free : index plein texte, 34/34, IDEMPOTENT, 28/28 ; fiche vérifiée et corrigée sur 3 points ; `banc essai-serveur` 12/12 (TERMINATE prouvé en mode lecture) ; renommage : Cypher 25
+- ✅ Bruit d'ADK tu ; coût réel de `repetition-1` : Gemini au jeton près (BigQuery), Claude 0,145 $ (Console) → cache lu à 0,10 $, `prix.toml` corrigé
+- ✅ 1 104 tests et plus, ruff, mypy, shellcheck, Prettier, gitleaks ; CI verte avant fusion
 
 ## Échecs tentés (à ne pas refaire)
 
-- Simuler un outil absent avec `PATH=/usr/bin:/bin` → faux sur la CI (son image a `gcloud` dans `/usr/bin`) : un dossier vide
-- Tester une alerte sur journaux juste après sa création, ou exiger le composant `beta` « Installed » → silence, refus : attendre quelques minutes ; accepter « Update Available »
+- Filtrer l'avertissement d'ADK dans `main()` → trop tard, il naît à l'import ; prendre un port « libre » avant la fausse API → elle peut le recevoir
+- Laisser la fenêtre du Chrome piloté ouverte des heures en attendant une connexion → l'affichage WSLg gèle : faire lire la page à Julien
 
 ## Blocked on
 
@@ -23,18 +23,17 @@
 
 ## Next (par ordre)
 
-1. **PR n°13** : CI verte, fusion (merge commit) ; NEO-18 → Terminé, après relecture de ses critères
-2. **Phase 7 (NEO-20)** avant la 6 : elle débloque le pilote ; T7.4 (`transactions.sh` et lanceur sur Aura Free) avant toute vraie campagne
-3. Avant le pilote : faire taire le bruit d'ADK sur stderr ; coût réel de `repetition-1` (Console Anthropic ~0,16 $, valide les prix du cache ; export BigQuery ~0,036 $)
-4. À trancher : un ADR qui précise l'ADR-0009 ? ; leçon du 2026-10-09 en rule ; flag des équipes en portée user
-5. NEO-27, début décembre : prolonger ou remplacer le budget de 100 € (la coupure s'éteint le 2026-12-31)
+1. **Phase 8 (NEO-21)** : le pilote sur la vraie base (`banc lancer`, plafond exigé), prérequis tous levés ; NEO-21 → En cours
+2. **Phase 6 (NEO-19)** : schéma anglais, avec `--schema en --explain` repris de T7.5
+3. À trancher : ADR qui précise l'ADR-0009 ? ; leçons du 2026-10-09 et du 2026-10-10 en rules ; flag des équipes en portée user
+4. NEO-27, début décembre : prolonger ou remplacer le budget de 100 € (la coupure s'éteint le 2026-12-31)
 
 ## Continuation State (machine-readable — grammaire fixe `Clé: valeur`, 1 ligne chacune)
 
 Spec: 002-agent-text-to-cypher
-Task: T7.2
+Task: T8.1
 Fichiers en cours: aucun
 Bloqué sur: rien
-Commande de reprise: gh pr view 13 --json state (fusionnée ?), puis git switch main && git pull && git switch -c feature/002-phase-7
+Commande de reprise: git switch main && git pull && git switch -c feature/002-phase-8
 
 → **Journal des sessions** (append-only) : [HANDOFF-journal.md](HANDOFF-journal.md) — non auto-chargé.
