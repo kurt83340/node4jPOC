@@ -7,7 +7,7 @@
 >
 > ⚠️ Avant d'éditer un fichier, vérifie les **règles de couplage** ci-dessous.
 
-**Dernière MAJ :** 2026-10-09
+**Dernière MAJ :** 2026-10-10
 
 ## Vue d'ensemble (macro — sous-systèmes, pas fichiers)
 
@@ -19,12 +19,13 @@ Secret Manager ─┬─► scripts/ ─► cypher-shell ─► AuraDB Free ◄�
                 │      ├─ transactions.sh ─► AuraDB Free (lectures d'agents orphelines)
                 │      └─ banc.sh ─► banc/ (clé Anthropic par l'environnement) ─► API Anthropic (Claude) · Vertex eu (Gemini)
                 └─► infra/reveil-aura/ ─► Query API ─► AuraDB Free (RETURN 1 quotidien, alerte e-mail)
+Budget 100 € ─► Pub/Sub ─► infra/coupure-vertex/ ─► Service Usage (coupe Vertex)
 ```
 
 → Orientation rapide : chargement → `cypher/NN-*.cypher` (ordre fixe : [ARCHITECTURE § 3](conception/ARCHITECTURE.md)) ;
-identifiants, purge, codes retour → `scripts/` (fonctions partagées : `scripts/commun.sh`) ; banc d'essai → `questions/` ; réveil quotidien d'Aura et
-son alerte → `infra/reveil-aura/` (job Cloud Run, [RUNBOOK](RUNBOOK.md)). Réponses de référence : `questions/attendu/`, rejouées par `scripts/questions.sh`.
-Harnais du banc d'essai (cellules, orchestration, notation, mesures) → `banc/` ([plan 002](specs/002-agent-text-to-cypher/plan.md)).
+identifiants, purge, codes retour → `scripts/` (fonctions partagées : `scripts/commun.sh`) ; banc d'essai → `questions/` ; services
+Google Cloud → `infra/` ([RUNBOOK](RUNBOOK.md)). Réponses de référence : `questions/attendu/`, rejouées par `scripts/questions.sh`.
+Harnais du banc d'essai → `banc/` ([plan 002](specs/002-agent-text-to-cypher/plan.md)).
 
 ## Règles de couplage (⭐ le cœur — non déductible du code)
 

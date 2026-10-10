@@ -16,6 +16,7 @@ Format : [Keep a Changelog](https://keepachangelog.com/). Versionning : `vYYYY.M
 - Suivi Jira du jalon 2 sous l'epic [NEO-2](https://frjulienleroy.atlassian.net/browse/NEO-2) : NEO-14 à NEO-24, un ticket par phase de la [spec 002](specs/002-agent-text-to-cypher/tasks.md) (les plus petites regroupées), une story (NEO-21, la mesure) et deux actions de Julien (NEO-15, NEO-22) (2026-10-01)
 - Tests du socle : `verifier.sh` 33 contrôles conformes ; `charger.sh --idempotence` IDEMPOTENT (chargement sur base vide en 37 s, second chargement sans aucune création) ; `questions.sh --verifier` 27 questions conformes ; `shellcheck` propre sur `scripts/`
 - CI GitHub Actions (`.github/workflows/ci.yml`, NEO-25) : à chaque PR et push sur `main`, banc et `reveil-aura` (ruff, mypy strict, pytest), shellcheck, Prettier 3.9.8 et gitleaks sur tout l'historique ; aucun secret ni accès au cloud ; pas de CD (2026-10-10)
+- Coupure automatique de Vertex ([`infra/coupure-vertex/`](../../infra/coupure-vertex/), NEO-26, ADR-0010 et ADR-0013) : le budget de 100 € publie dans le sujet Pub/Sub `coupure-vertex`, et la fonction Cloud Run du même nom désactive `aiplatform.googleapis.com` dès 100 % ; rôle personnalisé `coupureVertex` (lire l'état d'un service, le désactiver) ; alertes par e-mail (coupure, échec) ; plafond natif de 30 € par mois sur Vertex (Preview). Essai réel : Vertex coupé en moins d'une minute, e-mail reçu, réactivé ([RUNBOOK](RUNBOOK.md)) (2026-10-10)
 
 ### Changed
 
@@ -38,6 +39,7 @@ Format : [Keep a Changelog](https://keepachangelog.com/). Versionning : `vYYYY.M
 - Plafond de dépense : budget de 100 € sur `jleroy-labo` jusqu'au 2026-12-31, alertes par palier, coupure automatique de l'API Vertex à construire avant toute campagne ([ADR-0010](adr/0010-infra-plafond-de-depense.md))
 - Claude par l'API Anthropic pour les deux cellules Claude, Gemini sur Vertex `eu` ; crédits prépayés sans recharge automatique comme plafond ([ADR-0011](adr/0011-infra-claude-par-api-anthropic.md))
 - Second tour d'une paire après un échec du premier : faux d'office, sans relance ni nouvelle session ([ADR-0012](adr/0012-mvp-second-tour-apres-echec.md))
+- Plafond natif de 30 € par mois sur Vertex, en plus de la coupure de l'option C ; retard réel d'un budget (jusqu'à un jour, parfois plus), rôle personnalisé, expiration du budget de 100 € au 2026-12-31 ([ADR-0013](adr/0013-infra-plafond-natif-de-vertex.md), amende l'ADR-0010)
 
 ---
 
