@@ -55,14 +55,25 @@ for regle in regles:
         sys.exit(regle["code"])
 if "dbms.components" in requete:
     print('aura\\n"Neo4j 2026.01 (enterprise)"')
+elif fichier and Path(fichier).name == "fiche.cypher":
+    print(FICHE_CONFORME, end="")
 elif fichier:
     attendu = Path({str(QUESTIONS / "attendu")!r}) / (Path(fichier).stem + ".txt")
     print(attendu.read_text().split("\\n", 1)[1], end="")
 elif "dracofeu~" in requete:
     print('nom\\n"Dracaufeu"\\n"Dracolosse"')
+elif "'ELECTRIK'" in requete:
+    print('nom\\n"Électrik"')
 else:
     print('nom\\n"Exemple"')
 """
+# Ce que questions/fiche.cypher rend sur une base conforme : deux vérifications et une information.
+FICHE_CONFORME = (
+    'ligne\n"labels des nœuds|Attaque, Type|Attaque, Type"\n'
+    'ligne\n"méthodes rares (relations)||Boîte (3)"\n'
+    'ligne\n"Type.nom|Eau, Feu|Eau, Feu"\n'
+)
+FAUX_CYPHER_SHELL = f"FICHE_CONFORME = {FICHE_CONFORME!r}\n" + FAUX_CYPHER_SHELL
 
 
 @dataclass
@@ -193,10 +204,59 @@ def test_exemples_de_la_fiche(bac: Bac) -> None:
     lancement = bac.lancer("--exemples")
     assert lancement.code == 0, lancement.sortie + lancement.erreurs
     requetes = [a["requete"] for a in lancement.requetes()]
-    assert requetes[:-1] == exemples_de_la_fiche()
-    assert "'noms_plein_texte', 'dracofeu~'" in requetes[-1]
-    assert all("--access-mode" in a["argv"] for a in lancement.requetes())
-    assert f"CONFORME : {len(requetes)} exemples." in lancement.sortie
+    # D'abord ce que la fiche affirme (T7.3), puis ses exemples et les deux recherches dans l'index.
+    assert requetes[0] == (QUESTIONS / "fiche.cypher").read_text()
+    assert requetes[1:-2] == exemples_de_la_fiche()
+    assert "'noms_plein_texte', 'dracofeu~'" in requetes[-2]
+    assert "'noms_plein_texte', 'ELECTRIK'" in requetes[-1]
+    assert all(
+        a["argv"][a["argv"].index("--access-mode") + 1] == "read" for a in lancement.requetes()
+    )
+    assert f"CONFORME : 2 valeurs de la fiche, {len(requetes) - 1} exemples." in lancement.sortie
+
+
+def test_valeurs_de_la_fiche_jugees(bac: Bac) -> None:
+    ecart = 'ligne\n"Type.nom|Eau, Feu|Eau"\nligne\n"labels des nœuds|Type|Type"'
+    bac.regles(("valeurFiche", ecart, 0))
+    lancement = bac.lancer("--exemples")
+    assert lancement.code == 1
+    assert "✗ Type.nom : Eau, attendu Eau, Feu" in lancement.sortie
+    assert "✓ labels des nœuds : Type" in lancement.sortie
+    # Les exemples passent quand même : l'écart vient des seules valeurs.
+    assert "✓ dracofeu~" in lancement.sortie
+    assert "ÉCART : valeurs de la fiche, 1 écart(s) ; exemples, 0 sur 10." in lancement.sortie
+
+
+def test_information_sans_verdict(bac: Bac) -> None:
+    lancement = bac.lancer("--exemples")
+    assert lancement.code == 0
+    assert "  · méthodes rares (relations) : Boîte (3)" in lancement.sortie
+    assert "2 valeurs de la fiche" in lancement.sortie
+
+
+def test_valeurs_de_la_fiche_en_echec_est_un_ecart(bac: Bac) -> None:
+    # Comme un exemple : Aura a répondu à ping_aura, la fiche ne se vérifie pas.
+    bac.regles(("valeurFiche", "Invalid input 'MATCH'", 1))
+    lancement = bac.lancer("--exemples")
+    assert lancement.code == 1
+    assert "✗ fiche.cypher : Invalid input 'MATCH'" in lancement.sortie
+    assert "✓ exemple 1 de la fiche" in lancement.sortie
+
+
+def test_aucune_valeur_lue_est_une_erreur(bac: Bac) -> None:
+    bac.regles(("valeurFiche", "ligne", 0))
+    lancement = bac.lancer("--exemples")
+    assert lancement.code == 2
+    assert "aucune valeur de la fiche lue" in lancement.erreurs
+
+
+def test_electrik_doit_trouver_electrik(bac: Bac) -> None:
+    # La fiche promet une recherche sans casse ni accents (analyseur standard-folding).
+    bac.regles(("'ELECTRIK'", 'nom\n"Électrode"', 0))
+    lancement = bac.lancer("--exemples")
+    assert lancement.code == 1
+    assert "✗ ELECTRIK : Électrik absent du résultat" in lancement.sortie
+    assert "✓ dracofeu~" in lancement.sortie
 
 
 def test_exemple_sans_ligne(bac: Bac) -> None:
@@ -214,6 +274,7 @@ def test_index_absent_est_un_ecart(bac: Bac) -> None:
     assert lancement.code == 1
     assert f"✗ exemple 6 de la fiche : {absent}" in lancement.sortie
     assert f"✗ dracofeu~ : {absent}" in lancement.sortie
+    assert f"✗ ELECTRIK : {absent}" in lancement.sortie
 
 
 def test_dracofeu_doit_trouver_dracaufeu(bac: Bac) -> None:
@@ -235,6 +296,27 @@ def test_exemples_du_dossier(bac: Bac, tmp_path: Path) -> None:
         "MATCH (n:Species) RETURN n.name AS name LIMIT 1",
         dracofeu,
     ]
+    assert (
+        f"  · valeurs de la fiche : pas de fiche.cypher dans {exemples.parent}" in lancement.sortie
+    )
+
+
+def test_valeurs_de_la_fiche_du_dossier(bac: Bac, tmp_path: Path) -> None:
+    # Schéma anglais (T10.1) : la traduction de fiche.cypher se lit dans le dossier, comme les
+    # exemples.
+    traduites = tmp_path / "traduites"
+    (traduites / "exemples").mkdir(parents=True)
+    (traduites / "fiche.cypher").write_text("MATCH (t:Type) RETURN 'Type.name|18|18' AS ligne")
+    electrik = "CALL db.index.fulltext.queryNodes('names', 'ELECTRIK') YIELD node RETURN node.name"
+    (traduites / "exemples" / "electrik.cypher").write_text(electrik)
+    bac.regles(("'names', 'ELECTRIK'", 'name\n"Électrik"', 0))
+    lancement = bac.lancer("--dossier", str(traduites), "--exemples")
+    assert lancement.code == 0, lancement.sortie + lancement.erreurs
+    fichiers = [
+        a["argv"][a["argv"].index("--file") + 1] for a in lancement.appels if "--file" in a["argv"]
+    ]
+    assert fichiers == [str(traduites / "fiche.cypher")]
+    assert "✓ electrik.cypher" in lancement.sortie
 
 
 # --- Liste des espèces et contrôle de Q2 (T2.1, plan D4 et D6) --------------------------------
