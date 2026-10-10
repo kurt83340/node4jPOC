@@ -8,7 +8,7 @@
 > il « perd le fil » (échecs ×4 constatés en télémétrie, Morph 2026) → découper la phase.
 
 **Date :** 2026-10-01
-**Status :** [~] 15/33 tasks → MAJ au fil de l'eau
+**Status :** [~] 20/33 tasks → MAJ au fil de l'eau
 
 > Phases 0 à 6 : sans la base (prévues pendant la période creuse de NEO-13, close le 2026-10-07). Phases 7 à 11 : sur la base.
 > Les tests n'appellent aucun outil réel : PATH réduit aux faux outils, HOME temporaire.
@@ -66,8 +66,8 @@
 ## Phase 6 — Schéma anglais, partie sans base (NEO-19)
 
 - [ ] **T6.1** : `cypher/anglais/correspondance.toml` (table unique, liste relue des identifiants communs aux deux langues) ; carte `correspondance.cypher` produite par `banc` et versionnée ; `renommer.cypher` (relations recréées par lots, contraintes et index de la langue visée) ; `charger.sh --schema fr|en` et `--explain`, sans Python au chargement, qui refuse `--tout` sur une base anglaise ; règle de couplage de `--schema` dans la code-map
-  - DoD : `command_passes: bash -n scripts/charger.sh && uv run --directory banc pytest tests/test_correspondance.py -q` (carte à jour avec la table)
-- [ ] **T6.2** : traducteur du Cypher, en TDD, et `banc traduire --vers <dossier>` : les 27 requêtes (dont la q02) et `especes.cypher`, les exemples de la fiche (dont `dracofeu~`) et une requête de balayage avec sa réponse attendue ; identifiants traduits ; littéraux, alias et expressions régulières inchangés
+  - DoD : `command_passes: bash -n scripts/charger.sh && uv run --directory banc pytest tests/test_correspondance.py -q` (carte à jour avec la table), puis, sur la base, `command_passes: scripts/charger.sh --schema en --explain` (repris de T7.5, la phase 6 venant après la 7 ; mécanisme : Cypher 25, plan D8)
+- [ ] **T6.2** : traducteur du Cypher, en TDD, et `banc traduire --vers <dossier>` : les 27 requêtes (dont la q02) et `especes.cypher`, `fiche.cypher` (T7.3), les exemples de la fiche (dont `dracofeu~` et `ELECTRIK`, sous `exemples/dracofeu.cypher` et `exemples/electrik.cypher`) et une requête de balayage avec sa réponse attendue ; identifiants traduits ; littéraux, alias et expressions régulières inchangés
   - DoD : `command_passes: uv run --directory banc pytest tests/test_traduction.py -q` (contrôle contre une liste française tirée d'ARCHITECTURE § 5, indépendante de la table, identifiants communs écartés)
 - [ ] **T6.3** : `questions/fiche-schema.en.md` produite par la table (et produite de nouveau après le gel du protocole)
   - DoD : `command_passes: uv run --directory banc pytest tests/test_fiche_anglaise.py -q` (aucun identifiant de la liste française indépendante, hors identifiants communs)
@@ -76,14 +76,14 @@
 
 - [x] **T7.1** : NEO-13 : instance toujours « Running » après 72 h sans requête humaine — fait le 2026-10-07 : aucune requête humaine depuis le 2026-10-01, `reveil-aura` réussi 7 fois sur 7, NEO-13 « Terminé »
   - DoD : `manual: console Aura « Running », NEO-13 passé à « Terminé »`
-- [ ] **T7.2** : index plein texte (analyseur vérifié d'abord par `listAvailableAnalyzers()`) dans `cypher/00-contraintes.cypher`, 34e contrôle (présence de l'index) dans `cypher/90-verification.cypher`, rechargement complet, `$proposee` par défaut
+- [x] **T7.2** : index plein texte (analyseur vérifié d'abord par `listAvailableAnalyzers()`) dans `cypher/00-contraintes.cypher`, 34e contrôle (présence de l'index) dans `cypher/90-verification.cypher`, rechargement complet, `$proposee` par défaut — fait le 2026-10-10 : `standard-folding` proposé par Aura Free (retire les accents, sinon analyseur standard anglais), contrôlé par `charger.sh --go-no-go` ; index `noms_plein_texte` sur `nom` des 5 labels ; 34e contrôle : sa définition par `SHOW INDEXES`, analyseur et état ONLINE compris (`IF NOT EXISTS` garderait sans rien dire un index réglé autrement) ; `--tout` (Added 1 index, le reste en SET), 34/34, `--idempotence` IDEMPOTENT (purge, deux chargements, empreintes identiques), `questions.sh --verifier` 28/28
   - DoD : `command_passes: scripts/charger.sh --tout && scripts/verifier.sh && scripts/charger.sh --idempotence && scripts/questions.sh --verifier`
-- [ ] **T7.3** : valeurs de la fiche vérifiées dans la base (une requête par liste) ; exemples et `dracofeu~` exécutés en lecture, chacun avec un résultat non vide
+- [x] **T7.3** : valeurs de la fiche vérifiées dans la base (une requête par liste) ; exemples et `dracofeu~` exécutés en lecture, chacun avec un résultat non vide — fait le 2026-10-10 : `questions/fiche.cypher`, une requête par liste ou chiffre de la fiche (23 vérifications : labels, propriétés, motifs des relations, valeurs possibles et leur type, chiffres), chacune citant sa phrase, jouée par `--exemples` avant les exemples ; recherche `ELECTRIK` (sans casse ni accents) ; trois écarts trouvés et corrigés dans la fiche, données inchangées (choix délégué par Julien) : 4 méthodes rares et non 6 (10 en tout), 18 attaques récentes qui portent 0 au lieu de n'avoir pas la propriété (17 puissances, 3 précisions), 2 noms à l'apostrophe droite ; `banc/tests/test_fiche_cypher.py` tient la fiche et ses requêtes ensemble ; 23 valeurs et 10 exemples conformes ; 12 fautes injectées (fiche et requêtes) et 10 (`questions.sh`), toutes détectées
   - DoD : `command_passes: scripts/questions.sh --exemples`
-- [ ] **T7.4** : lanceur sur la vraie base : `read-cypher` répond, une écriture est refusée, les agents ne voient que `read-cypher` ; une lecture lente est arrêtée côté Aura par `scripts/transactions.sh`
+- [x] **T7.4** : lanceur sur la vraie base : `read-cypher` répond, une écriture est refusée, les agents ne voient que `read-cypher` ; une lecture lente est arrêtée côté Aura par `scripts/transactions.sh` — fait le 2026-10-10 : `banc essai-serveur` (12 contrôles, aucun modèle appelé) : neo4j-mcp v1.6.0 sans instructions, `read-cypher` et `get-schema` seuls (`read-cypher` seul vu d'une cellule ADK), 18 types lus, identifiant masqué, trois écritures refusées par read-cypher (`CREATE`, dans un `CALL`, procédure APOC), aucun nœud témoin ; lecture lente (produit cartésien étalonné : 34 M lignes en 9,8 s) arrêtée par `transactions.sh` en mode lecture, et read-cypher reçoit `Neo.ClientError.Transaction.Terminated` ; serveur tué en pleine lecture : Aura l'arrête d'elle-même ; 21 tests, 15 fautes injectées, toutes détectées. Avec elle, avant le pilote : le bruit d'ADK sur stderr tu (avertissement `[EXPERIMENTAL]` à l'import, traces de l'épuisement des appels du modèle), 4 tests lancés comme l'orchestration lance la cellule ; 6 fautes injectées, 5 détectées, la 6e a montré du code inutile, retiré
   - DoD : `command_passes: uv run --directory banc python -m banc essai-serveur`
-- [ ] **T7.5** : mécanisme de renommage choisi sur la vraie base, sans rien écrire : labels et types dynamiques de Cypher 25, sinon `apoc.refactor.rename.*`
-  - DoD : `command_passes: scripts/charger.sh --schema en --explain`
+- [x] **T7.5** : mécanisme de renommage choisi sur la vraie base, sans rien écrire : labels et types dynamiques de Cypher 25, sinon `apoc.refactor.rename.*` — fait le 2026-10-10 : `charger.sh --sonde-renommage`, `EXPLAIN` en lecture seule de quatre gestes (renommer un label, recréer les relations d'un type, renommer une propriété de nœud et une de relation, par lots), planifiés en Cypher 25 dynamique comme par `apoc.refactor.rename.*` ; retenu : Cypher 25 (Cypher pur, ADR-0003), repli APOC disponible ; `--schema en --explain`, qui naît en T6.1, passe au DoD de T6.1 (choix délégué par Julien, la phase 6 venant après la 7) ; 5 tests, 6 fautes injectées, toutes détectées
+  - DoD : `command_passes: scripts/charger.sh --sonde-renommage`
 
 ## Phase 8 — Pilote (NEO-21)
 
@@ -135,6 +135,6 @@ La feature est livrée quand :
 - NEO-13 clos le 2026-10-07 : la base est de nouveau utilisable.
 - Quotas Claude à 0 sur `jleroy-labo` : hausse demandée le 2026-10-07 et refusée automatiquement ; Claude injoignable par Vertex, parking et décision de Julien (prix et reprises internes relevés). Tranché le 2026-10-08 : API Anthropic ([ADR-0011](../../adr/0011-infra-claude-par-api-anthropic.md)).
 - Compatibilité de Python 3.14 avec ADK et l'Agent SDK : vérifiée le 2026-10-07 (T0.1).
-- `TERMINATE TRANSACTIONS` permis sur Aura Free, et en `--access-mode read` ? (T7.4 ; `transactions.sh` tourne au départ de chaque campagne : sans lui, aucune ne démarre)
+- `TERMINATE TRANSACTIONS` permis sur Aura Free, et en `--access-mode read` ? (T7.4 ; `transactions.sh` tourne au départ de chaque campagne : sans lui, aucune ne démarre). Vérifié le 2026-10-10 (`banc essai-serveur`) : oui ; et Aura arrête d'elle-même la lecture d'un client tué.
 - Q18 (ou Q28) quand Q2 (ou Q27) échoue : la session est arrêtée, le second tour n'est jamais posé. Tranché le 2026-10-09 (Julien, [ADR-0012](../../adr/0012-mvp-second-tour-apres-echec.md)) : fausse d'office, ligne « echec » à 0 s, cause `precedent` ; codé en T4.3 (plan, D13).
 - Noms de propriétés orphelins après la bascule (`db.propertyKeys()`) : à vérifier au jalon 4, avant qu'Aura Agent ne lise le schéma.

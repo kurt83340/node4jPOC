@@ -8,10 +8,13 @@ recevrait celui du poste, secrets compris. Scénario : {"attente_s": délai
 avant de répondre à initialize, "relance_s": délai de plus quand le serveur est relancé (le journal
 note déjà un lancement), "version": version annoncée, "outils": noms des outils annoncés (défaut :
 ceux de la v1.6.0), "appels": [une entrée par tools/call, dans l'ordre : {"texte", "erreur",
-"lent_s", "mort", "quitter", "quitter_apres_s"}]}. « mort » : le serveur sort au lieu de
-répondre ; « quitter » : il sort juste après avoir répondu (serveur perdu entre deux appels) ;
-« quitter_apres_s » : il sort ce délai après avoir répondu. Au-delà des appels prévus : un résultat
-type.
+"lent_s", "mort", "quitter", "quitter_apres_s"}], "par_requete": [[motif, réponse], …],
+"instructions": texte}. « mort » : le serveur sort au lieu de répondre ; « quitter » : il sort juste
+après avoir répondu (serveur perdu entre deux appels) ; « quitter_apres_s » : il sort ce délai après
+avoir répondu. « par_requete » (tests/test_essai_serveur.py) : la première réponse dont le motif
+figure dans la requête de read-cypher passe avant les appels prévus. « instructions » : ajoutées à
+la réponse à initialize, comme les annonce le vrai serveur. « outils » peut nommer write-cypher
+(lecture seule ignorée). Au-delà des appels prévus : un résultat type.
 """
 
 import json
@@ -42,7 +45,14 @@ OUTILS = [
             "required": ["query"],
         },
     },
+    {
+        "name": "write-cypher",
+        "description": "write-cypher executes any arbitrary Cypher query.",
+        "inputSchema": {"type": "object", "properties": {"query": {"type": "string"}}},
+    },
 ]
+# Les outils de la v1.6.0 en lecture seule : write-cypher n'est annoncé que si le scénario le nomme.
+LECTURE_SEULE = ["get-schema", "read-cypher"]
 RESULTAT_TYPE = '[\n  {\n    "n": 42\n  }\n]'
 
 
@@ -74,15 +84,18 @@ def principal() -> None:
             version = message["params"].get("protocolVersion", "2025-06-18")
             info = {"name": "neo4j-mcp", "version": SCENARIO.get("version", "v1.6.0")}
             capacites = {"tools": {"listChanged": True}}
-            repondre(
-                ident, {"protocolVersion": version, "capabilities": capacites, "serverInfo": info}
-            )
+            initiale = {"protocolVersion": version, "capabilities": capacites, "serverInfo": info}
+            if "instructions" in SCENARIO:
+                initiale["instructions"] = SCENARIO["instructions"]
+            repondre(ident, initiale)
         elif methode == "tools/list":
-            noms = SCENARIO.get("outils")
-            annonces = [outil for outil in OUTILS if noms is None or outil["name"] in noms]
+            noms = SCENARIO.get("outils", LECTURE_SEULE)
+            annonces = [outil for outil in OUTILS if outil["name"] in noms]
             repondre(ident, {"tools": annonces})
         elif methode == "tools/call":
-            appel = appels.pop(0) if appels else {}
+            requete = message["params"].get("arguments", {}).get("query", "")
+            choisies = [r for motif, r in SCENARIO.get("par_requete", []) if motif in requete]
+            appel = choisies[0] if choisies else (appels.pop(0) if appels else {})
             if appel.get("mort"):
                 noter({"mort": True})
                 sys.exit(3)

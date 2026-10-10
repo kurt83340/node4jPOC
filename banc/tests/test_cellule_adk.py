@@ -673,6 +673,57 @@ def test_tours_epuises(bac: Bac, client: str) -> None:
     assert len(bac.requetes()) == 2
 
 
+def lancer_comme_l_orchestration(
+    bac: Bac, client: str, etapes: list[dict[str, Any]], commande: Commande
+) -> subprocess.CompletedProcess[str]:
+    """La cellule dans son propre processus, la liste blanche pour seul environnement, comme
+    l'orchestration la lance : sa sortie d'erreur est celle que le terminal affiche."""
+    with bac.api(client, etapes) as adresse:
+        env = environnement_agent(client, bac.racine / "home", bac.racine / "claude")
+        env |= {"ANTHROPIC_BASE_URL" if client == CLAUDE else "GOOGLE_VERTEX_BASE_URL": adresse}
+        return subprocess.run(
+            [sys.executable, "-m", "banc.cellule_adk", client],
+            input=commande_json(commande),
+            cwd=bac.racine / "travail",
+            env=env,
+            capture_output=True,
+            text=True,
+            timeout=60,
+            check=False,
+        )
+
+
+@pytest.mark.parametrize("client", CLIENTS)
+def test_stderr_sans_bruit_d_adk(bac: Bac, client: str) -> None:
+    # Relevé de T5.1 : à chaque lancement, ADK écrivait sur stderr « [EXPERIMENTAL] feature
+    # FeatureName.PLUGGABLE_AUTH is enabled. », puis la trace de LlmCallsLimitExceededError quand
+    # les appels du modèle étaient épuisés, alors que l'issue restait juste (« tours »).
+    etapes = [lecture(), lecture(), reponse()]
+    fini = lancer_comme_l_orchestration(bac, client, etapes, bac.commande(tours=2))
+    assert fini.returncode == 0, fini.stderr
+    (tour,) = bac.trace().tours
+    assert (tour.issue, tour.cause) == ("echec", "tours")
+    assert "EXPERIMENTAL" not in fini.stderr, fini.stderr
+    assert "LlmCallsLimitExceededError" not in fini.stderr, fini.stderr
+    assert "Traceback" not in fini.stderr, fini.stderr
+
+
+@pytest.mark.parametrize(
+    ("client", "statut", "genre"),
+    [(CLAUDE, 400, "invalid_request_error"), (GEMINI, 400, "invalid_argument")],
+)
+def test_stderr_garde_les_vraies_erreurs(bac: Bac, client: str, statut: int, genre: str) -> None:
+    # Le silence ne vise que l'épuisement des appels : un refus de l'API reste écrit, par ADK (ses
+    # deux journaux, trace comprise) comme par la cellule (l'événement d'erreur, puis la cause).
+    etapes = [erreur(statut, genre, "refusé")]
+    fini = lancer_comme_l_orchestration(bac, client, etapes, bac.commande())
+    assert fini.returncode == 2
+    assert "Node execution failed with exception" in fini.stderr, fini.stderr
+    assert "Root node agent failed." in fini.stderr, fini.stderr
+    assert fini.stderr.count(f"cellule {client} : ") == 2, fini.stderr
+    assert "refus de l'API" in fini.stderr
+
+
 @pytest.mark.parametrize("client", CLIENTS)
 def test_reprise_puis_reponse(bac: Bac, client: str) -> None:
     (tour,) = bac.converser(client, [erreur(429, "rate_limit_error"), reponse()]).tours
@@ -698,14 +749,19 @@ def test_panne_de_l_api(bac: Bac, client: str, statuts: list[int]) -> None:
     assert len(bac.requetes()) == 3
 
 
-def test_api_injoignable(bac: Bac) -> None:
-    # Connexion refusée à chaque tentative : 2 reprises sans statut, puis une panne (D13).
+def port_libre() -> int:
+    """Un port où rien n'écoute. À prendre une fois la fausse API lancée : avant, le système peut
+    lui redonner ce port, et la connexion qu'on voulait refusée aboutit (vu le 2026-10-10)."""
     with socket.socket() as libre:
         libre.bind(("127.0.0.1", 0))
-        port = libre.getsockname()[1]
+        return int(libre.getsockname()[1])
+
+
+def test_api_injoignable(bac: Bac) -> None:
+    # Connexion refusée à chaque tentative : 2 reprises sans statut, puis une panne (D13).
     commande = bac.commande()
     with bac.api(CLAUDE, TOUR_TYPE):
-        bac.monkeypatch.setenv("ANTHROPIC_BASE_URL", f"http://127.0.0.1:{port}")
+        bac.monkeypatch.setenv("ANTHROPIC_BASE_URL", f"http://127.0.0.1:{port_libre()}")
         asyncio.run(converser(CLAUDE, commande, prix.charger()))
     (tour,) = bac.trace().tours
     assert (tour.issue, tour.cause, tour.reprises) == ("panne", "api", 2)
@@ -734,12 +790,9 @@ def test_vertex_injoignable(bac: Bac, monkeypatch: pytest.MonkeyPatch) -> None:
     # Connexion refusée : google-genai la reprend une fois de lui-même (aiohttp, attente tirée au
     # hasard, ici fixée), puis une panne (D13).
     monkeypatch.setattr("google.genai._api_client.random.randint", lambda _a, _b: 0)
-    with socket.socket() as libre:
-        libre.bind(("127.0.0.1", 0))
-        port = libre.getsockname()[1]
     commande = bac.commande()
     with bac.api(GEMINI, TOUR_TYPE):
-        bac.monkeypatch.setenv("GOOGLE_VERTEX_BASE_URL", f"http://127.0.0.1:{port}")
+        bac.monkeypatch.setenv("GOOGLE_VERTEX_BASE_URL", f"http://127.0.0.1:{port_libre()}")
         asyncio.run(converser(GEMINI, commande, prix.charger()))
     (tour,) = bac.trace().tours
     assert (tour.issue, tour.cause, tour.reprises) == ("panne", "api", 1)
@@ -760,14 +813,12 @@ def test_flux_coupe(bac: Bac) -> None:
 
 def test_jeton_injoignable(bac: Bac) -> None:
     # Le point de jeton de l'ADC ne répond pas : une panne, avant tout appel du modèle.
-    with socket.socket() as libre:
-        libre.bind(("127.0.0.1", 0))
-        port = libre.getsockname()[1]
     commande = bac.commande()
     with bac.api(GEMINI, TOUR_TYPE):
         fichier = bac.racine / "gcloud" / "application_default_credentials.json"
         adc = json.loads(fichier.read_text())
-        fichier.write_text(json.dumps(adc | {"token_uri": f"http://127.0.0.1:{port}/token"}))
+        jeton = f"http://127.0.0.1:{port_libre()}/token"
+        fichier.write_text(json.dumps(adc | {"token_uri": jeton}))
         asyncio.run(converser(GEMINI, commande, prix.charger()))
     (tour,) = bac.trace().tours
     assert (tour.issue, tour.cause) == ("panne", "api")

@@ -32,7 +32,7 @@ NOMS=()
 
 usage() {
   cat <<'EOF'
-Usage : scripts/charger.sh --tout | --idempotence | --ping | --go-no-go | --purge
+Usage : scripts/charger.sh --tout | --idempotence | --ping | --go-no-go | --purge | --sonde-renommage
 
   --tout         exécute dans l'ordre les fichiers de chargement de cypher/ (00 à 89) ; une relance ne crée
                  rien ; journal dans logs/, à suivre avec tail -f quand le chargement tourne en arrière-plan
@@ -41,6 +41,9 @@ Usage : scripts/charger.sh --tout | --idempotence | --ping | --go-no-go | --purg
   --ping         vérifie qu'Aura répond, avec les identifiants lus dans Secret Manager
   --go-no-go     contrôles en lecture seule avant tout chargement (T2.2)
   --purge        efface tout le graphe, ses contraintes et ses index, pour repartir d'une base vide
+  --sonde-renommage
+                 choisit le mécanisme de renommage du schéma anglais (spec 002, T7.5) : EXPLAIN de chaque
+                 candidat, Cypher 25 dynamique puis APOC, en lecture seule ; rien n'est exécuté ni écrit
 
 Variables : NEO4J_SECRET (défaut neo4j-aura-poc), GCP_PROJET (défaut jleroy-labo),
 POKEAPI_BASE (défaut : CSV PokéAPI au commit 168b1e8).
@@ -96,6 +99,14 @@ go_no_go() {
     "LOAD CSV WITH HEADERS FROM \$base + '/pokemon_abilities.csv' AS ligne RETURN count(toInteger(ligne.slot)) AS slots"
   controler "Label Type sans backticks" "accepté" \
     "EXPLAIN MATCH (t:Type) RETURN count(t) AS types"
+  # Analyseur de l'index plein texte noms_plein_texte (cypher/00-contraintes.cypher, spec 002 D9) : sans lui,
+  # le chargement s'arrêterait sur la création de l'index.
+  controler "Analyseur standard-folding (index plein texte)" "1" \
+    "CALL db.index.fulltext.listAvailableAnalyzers() YIELD analyzer WHERE analyzer = 'standard-folding'
+     RETURN count(*) AS analyseurs"
+  informer "ce qu'il fait" \
+    "CALL db.index.fulltext.listAvailableAnalyzers() YIELD analyzer, description
+     WHERE analyzer = 'standard-folding' RETURN description"
   controler "Langue par défaut de la base" "CYPHER 25" \
     "SHOW DATABASES YIELD name, defaultLanguage WHERE name <> 'system' RETURN defaultLanguage"
   if ((ECARTS > 0)); then
@@ -106,6 +117,61 @@ go_no_go() {
     exit 1
   fi
   printf 'GO : tous les contrôles passent.\n'
+}
+
+# Sonde des mécanismes de renommage (spec 002, T7.5 ; plan D8), avant d'écrire cypher/anglais/renommer.cypher (T6.1) :
+# EXPLAIN planifie chaque requête sans l'exécuter, en lecture seule ; rien n'est écrit. Un mécanisme convient si ses
+# quatre gestes passent : renommer un label, recréer les relations d'un type sous un autre nom (un type ne se renomme
+# pas en place), renommer une propriété de nœud et une de relation, par lots pour ménager la mémoire d'Aura Free.
+# Paramètres : un vrai couple de la future table (Attaque → Move, APPREND → LEARNS, nom → name, niveau → level).
+readonly PARAMETRES_SONDE="{label: 'Attaque', nouveauLabel: 'Move', type: 'APPREND', nouveauType: 'LEARNS',
+  cle: 'nom', nouvelleCle: 'name', cleRelation: 'niveau', nouvelleCleRelation: 'level'}"
+readonly SONDE_CYPHER_25=(
+  "label|MATCH (n:\$(\$label)) CALL (n) { SET n:\$(\$nouveauLabel) REMOVE n:\$(\$label) } IN TRANSACTIONS OF 10000 ROWS"
+  "type de relation|MATCH (a)-[r:\$(\$type)]->(b) CALL (a, r, b) { CREATE (a)-[s:\$(\$nouveauType)]->(b) SET s = properties(r) DELETE r } IN TRANSACTIONS OF 10000 ROWS"
+  "propriété de nœud|MATCH (n:\$(\$label)) WHERE n[\$cle] IS NOT NULL CALL (n) { SET n[\$nouvelleCle] = n[\$cle] REMOVE n[\$cle] } IN TRANSACTIONS OF 10000 ROWS"
+  "propriété de relation|MATCH ()-[r:\$(\$type)]->() WHERE r[\$cleRelation] IS NOT NULL CALL (r) { SET r[\$nouvelleCleRelation] = r[\$cleRelation] REMOVE r[\$cleRelation] } IN TRANSACTIONS OF 10000 ROWS"
+)
+readonly SONDE_APOC=(
+  "label|CALL apoc.refactor.rename.label(\$label, \$nouveauLabel)"
+  "type de relation|CALL apoc.refactor.rename.type(\$type, \$nouveauType)"
+  "propriété de nœud|CALL apoc.refactor.rename.nodeProperty(\$cle, \$nouvelleCle)"
+  "propriété de relation|CALL apoc.refactor.rename.typeProperty(\$cleRelation, \$nouvelleCleRelation)"
+)
+
+# Un mécanisme : chaque geste passe par EXPLAIN ; rend 0 si tous sont planifiés.
+sonder() {
+  local mecanisme="$1" geste libelle requete planifies=0
+  shift
+  printf '── %s\n' "$mecanisme"
+  for geste in "$@"; do
+    libelle="${geste%%|*}"
+    requete="${geste#*|}"
+    if cypher "EXPLAIN $requete" --access-mode read -P "$PARAMETRES_SONDE"; then
+      printf '✓ %s : planifié\n' "$libelle"
+      planifies=$((planifies + 1))
+    else
+      printf '✗ %s : %s\n' "$libelle" "${SORTIE%%$'\n'*}"
+    fi
+  done
+  ((planifies == $#))
+}
+
+# Les deux mécanismes sont sondés, le repli compris ; le retenu : Cypher 25 s'il passe en entier (Cypher pur, sans
+# dépendre d'APOC, ADR-0003), sinon APOC.
+sonde_renommage() {
+  local cypher_25=0 apoc=0
+  sonder "Cypher 25 : labels, types et clés dynamiques" "${SONDE_CYPHER_25[@]}" || cypher_25=$?
+  sonder "APOC : apoc.refactor.rename.*" "${SONDE_APOC[@]}" || apoc=$?
+  if ((cypher_25 == 0)); then
+    printf 'MÉCANISME : Cypher 25 (labels, types et clés dynamiques, par lots) ; repli APOC %s.\n' \
+      "$( ((apoc == 0)) && printf 'disponible' || printf 'indisponible')"
+  elif ((apoc == 0)); then
+    printf 'MÉCANISME : APOC (apoc.refactor.rename.*).\n'
+  else
+    printf 'AUCUN MÉCANISME : ni Cypher 25 ni APOC ne planifient les quatre gestes.\n'
+    exit 1
+  fi
 }
 
 # NOMS reçoit les valeurs de SORTIE (une entre guillemets par ligne, après l'en-tête). La boucle tourne
@@ -295,6 +361,12 @@ main() {
       lire_identifiants
       ping_aura
       purger
+      ;;
+    --sonde-renommage)
+      trouver_outils
+      lire_identifiants
+      ping_aura
+      sonde_renommage
       ;;
     -h | --help)
       usage

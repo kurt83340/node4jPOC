@@ -31,6 +31,10 @@ readonly FORME_EQUIPE="^\\['[^'\\\\[:cntrl:]]+'(, '[^'\\\\[:cntrl:]]+'){5}]$"
 # erreur (2). Sur le schéma anglais, sa traduction vient du dossier (exemples/dracofeu.cypher).
 readonly DRACOFEU="CALL db.index.fulltext.queryNodes('noms_plein_texte', 'dracofeu~') YIELD node
 RETURN node.nom AS nom"
+# Recherche sans casse ni accents, que la fiche promet (analyseur standard-folding, T7.3) : ELECTRIK trouve Électrik.
+# Sur le schéma anglais : exemples/electrik.cypher.
+readonly ELECTRIK="CALL db.index.fulltext.queryNodes('noms_plein_texte', 'ELECTRIK') YIELD node
+RETURN node.nom AS nom"
 
 usage() {
   cat <<'EOF'
@@ -43,13 +47,15 @@ en lecture seule.
   --verifier     compare chaque réponse à celle enregistrée dans questions/attendu/ (qNN.txt, especes.txt)
   --enregistrer  écrit les réponses de la base actuelle dans questions/attendu/, toutes ou celles nommées
                  (qNN, especes) ; à relire avant de commiter : ce sont les réponses de référence
-  --exemples     exécute les exemples de questions/fiche-schema.md et la recherche approchée dracofeu~ :
-                 chacun doit rendre au moins une ligne, et dracofeu~ trouver Dracaufeu
+  --exemples     vérifie la fiche de schéma sur la base : ce qu'elle affirme (questions/fiche.cypher, une
+                 requête par liste ou chiffre), puis ses exemples et deux recherches dans l'index plein texte ;
+                 chaque exemple doit rendre au moins une ligne, dracofeu~ trouver Dracaufeu et ELECTRIK Électrik
   --controle E   contrôle de Q2 sur l'équipe E proposée par un agent : q02.cypher avec $proposee = E ;
                  E : 6 noms entre apostrophes droites, séparés par « , », sans apostrophe ni antislash ;
                  stdout ne porte que la réponse, au format de questions/attendu/
   --dossier D    lit les requêtes dans D plutôt que dans questions/ : D/qNN.cypher (et D/especes.cypher
-                 s'il existe), et pour --exemples D/exemples/*.cypher, dont D/exemples/dracofeu.cypher ;
+                 s'il existe), et pour --exemples D/fiche.cypher s'il existe et D/exemples/*.cypher, dont
+                 D/exemples/dracofeu.cypher et D/exemples/electrik.cypher ;
                  les réponses attendues restent celles de questions/attendu/ ; refusé avec --enregistrer
 
 Chaque requête reçoit $proposee, l'équipe que contrôle q02.cypher : une équipe valide par défaut, celle
@@ -185,35 +191,89 @@ lire_exemples() {
     erreur "aucun exemple dans questions/fiche-schema.md"
     exit 2
   fi
-  EXEMPLES+=("$DRACOFEU")
-  NOMS_EXEMPLES+=("dracofeu~")
+  EXEMPLES+=("$DRACOFEU" "$ELECTRIK")
+  NOMS_EXEMPLES+=("dracofeu~" "ELECTRIK")
+}
+
+# Nom qu'une recherche dans l'index plein texte doit trouver, d'après le nom de l'exemple : dracofeu~ (faute
+# d'orthographe), ELECTRIK (casse et accent) ; rien pour un autre exemple.
+nom_attendu() {
+  case "$1" in
+    dracofeu*) printf 'Dracaufeu' ;;
+    ELECTRIK | electrik*) printf 'Électrik' ;;
+  esac
+}
+
+# Ce que la fiche affirme (questions/fiche.cypher, spec 002 T7.3) : chaque ligne « affirmation|attendu|obtenu » est
+# jugée comme celles de verifier.sh ; un attendu vide est une information. Avec --dossier, D/fiche.cypher s'il
+# existe. VALEURS et ECARTS_VALEURS comptent les vérifications et leurs écarts. Une requête en échec est un écart de
+# la fiche, comme un exemple : Aura a déjà répondu à ping_aura.
+VALEURS=0
+ECARTS_VALEURS=0
+valeurs_de_la_fiche() {
+  local fichier="$DOSSIER_REQUETES/fiche.cypher" affirmation attendu obtenu
+  if [[ ! -f "$fichier" ]]; then
+    if ((PAR_DOSSIER)); then
+      printf '  · valeurs de la fiche : pas de fiche.cypher dans %s\n' "$DOSSIER_REQUETES"
+      return
+    fi
+    erreur "questions/fiche.cypher introuvable"
+    exit 2
+  fi
+  printf '── valeurs de la fiche\n'
+  if ! cypher_fichier "$fichier" --access-mode read; then
+    printf '✗ fiche.cypher : %s\n' "${SORTIE%%$'\n'*}"
+    ECARTS_VALEURS=1
+    return
+  fi
+  while IFS='|' read -r affirmation attendu obtenu; do
+    if [[ -z "$attendu" ]]; then
+      printf '  · %s : %s\n' "$affirmation" "$obtenu"
+      continue
+    fi
+    VALEURS=$((VALEURS + 1))
+    if [[ "$obtenu" == "$attendu" ]]; then
+      printf '✓ %s : %s\n' "$affirmation" "$obtenu"
+    else
+      printf '✗ %s : %s, attendu %s\n' "$affirmation" "$obtenu" "$attendu"
+      ECARTS_VALEURS=$((ECARTS_VALEURS + 1))
+    fi
+  done < <(printf '%s\n' "$SORTIE" | sed -n 's/^"\(.*\)"$/\1/p')
+  if ((VALEURS == 0)); then
+    erreur "aucune valeur de la fiche lue : sortie de cypher-shell inattendue"
+    exit 2
+  fi
 }
 
 # Un exemple qui échoue (index absent compris) ou ne rend aucune ligne est un écart de la fiche, pas une
 # erreur technique : Aura a déjà répondu à ping_aura.
 exemples() {
-  local i nom ecarts=0
+  local i nom attendu ecarts=0
+  valeurs_de_la_fiche
   lire_exemples
+  printf '── exemples\n'
   for i in "${!EXEMPLES[@]}"; do
     nom="${NOMS_EXEMPLES[i]}"
+    attendu="$(nom_attendu "$nom")"
     if ! cypher "${EXEMPLES[i]}" --access-mode read; then
       printf '✗ %s : %s\n' "$nom" "${SORTIE%%$'\n'*}"
       ecarts=$((ecarts + 1))
     elif [[ "$SORTIE" != *$'\n'* ]]; then
       printf '✗ %s : aucune ligne\n' "$nom"
       ecarts=$((ecarts + 1))
-    elif [[ "$nom" == dracofeu* && $'\n'"$SORTIE"$'\n' != *$'\n"Dracaufeu"\n'* ]]; then
-      printf '✗ %s : Dracaufeu absent du résultat\n' "$nom"
+    elif [[ -n "$attendu" && $'\n'"$SORTIE"$'\n' != *$'\n'\""$attendu"\"$'\n'* ]]; then
+      printf '✗ %s : %s absent du résultat\n' "$nom" "$attendu"
       ecarts=$((ecarts + 1))
     else
       printf '✓ %s\n' "$nom"
     fi
   done
-  if ((ecarts > 0)); then
-    printf 'ÉCART : %d exemple(s) sur %d.\n' "$ecarts" "${#EXEMPLES[@]}"
+  if ((ecarts + ECARTS_VALEURS > 0)); then
+    printf 'ÉCART : valeurs de la fiche, %d écart(s) ; exemples, %d sur %d.\n' "$ECARTS_VALEURS" "$ecarts" \
+      "${#EXEMPLES[@]}"
     exit 1
   fi
-  printf 'CONFORME : %d exemples.\n' "${#EXEMPLES[@]}"
+  printf 'CONFORME : %d valeurs de la fiche, %d exemples.\n' "$VALEURS" "${#EXEMPLES[@]}"
 }
 
 main() {

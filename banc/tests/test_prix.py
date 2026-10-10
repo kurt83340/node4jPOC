@@ -67,11 +67,28 @@ def test_gemini_change_de_prix_au_1er_janvier() -> None:
     )
 
 
+def test_lecture_du_cache_verifiee_sur_la_console() -> None:
+    # Sonnet 5.5 par l'API : 0,20 $ par prudence jusqu'au 2026-10-09, puis 0,10 $, le prix que la
+    # Console Anthropic a facturé à la répétition générale du 2026-10-10 (plan 002, D10).
+    avant = tarif(TARIFS, "claude-sonnet-5-5", date(2026, 10, 9), "api")
+    apres = tarif(TARIFS, "claude-sonnet-5-5", date(2026, 10, 10), "api")
+    assert (avant.cache_lecture, apres.cache_lecture) == (Decimal("0.2"), Decimal("0.1"))
+    assert (apres.entree, apres.sortie) == (avant.entree, avant.sortie)
+    assert (apres.cache_ecriture_5m, apres.cache_ecriture_1h) == (
+        avant.cache_ecriture_5m,
+        avant.cache_ecriture_1h,
+    )
+
+
 def test_multiplicateurs_du_cache() -> None:
-    # Contrôle de saisie : lecture au dixième de l'entrée ; écriture à 1,25 (5 min) et 2 fois (1 h)
-    # pour Claude, sans objet pour Gemini (cache implicite).
+    # Contrôle de saisie : lecture au dixième de l'entrée, sauf Sonnet 5.5 par l'API depuis sa
+    # vérification sur la Console (au vingtième) ; écriture à 1,25 (5 min) et 2 fois (1 h) pour
+    # Claude, sans objet pour Gemini (cache implicite).
     for t in TARIFS:
-        assert t.cache_lecture * 10 == t.entree, t.modele
+        verifie = (
+            t.modele == "claude-sonnet-5-5" and t.acces == "api" and t.du >= date(2026, 10, 10)
+        )
+        assert t.cache_lecture * (20 if verifie else 10) == t.entree, t.modele
         if t.modele.startswith("claude-"):
             assert t.cache_ecriture_5m == t.entree * Decimal("1.25"), t.modele
             assert t.cache_ecriture_1h == t.entree * 2, t.modele

@@ -31,14 +31,14 @@ Données de PokéAPI, noms en français. Lecture seule, par l'outil `read-cypher
 - **Apprendre une attaque**, c'est l'apprendre dans au moins un jeu, par n'importe quelle méthode : `APPREND` réunit tous les jeux. `methodes` liste les méthodes ; `niveau` est le plus petit niveau d'apprentissage par montée de niveau, tous jeux confondus (0 : appris en évoluant), et manque si l'attaque ne s'apprend pas ainsi.
 - **Efficacité** : seules les relations non neutres existent. Sans relation entre deux types, le facteur vaut ×1. Contre une forme à deux types, les facteurs des deux types se multiplient (de ×0 à ×4).
 - **`categorie` a deux sens** : sur un `Pokemon`, sa catégorie d'espèce (« Pokémon Ombre »), écrite sans le mot « Pokémon » pour les 120 espèces de la 9e génération (« Chat Plante ») ; sur une `Attaque`, « physique », « spéciale » ou « statut ».
-- **Noms** : 62 noms portent l'apostrophe typographique ’ (« Écras’Face ») ; une égalité écrite avec l'apostrophe droite ' ne les trouve pas. Quelques noms désignent deux nœuds (les 18 attaques Z génériques, en variante physique et spéciale ; le talent « Osmose Équine » ; deux noms de formes) : `id` les distingue.
-- **Propriétés absentes** : une attaque sans puissance fixe (attaque de statut, puissance variable) ou sans précision n'a pas la propriété.
+- **Noms** : 62 noms portent l'apostrophe typographique ’ (« Écras’Face ») et 2 l'apostrophe droite ' ; une égalité écrite avec l'autre apostrophe ne les trouve pas. Quelques noms désignent deux nœuds (les 18 attaques Z génériques, en variante physique et spéciale ; le talent « Osmose Équine » ; deux noms de formes) : `id` les distingue.
+- **Propriétés absentes** : une attaque sans puissance fixe (attaque de statut, puissance variable) ou sans précision n'a pas la propriété, sauf 18 attaques récentes, qui portent 0 à la place (17 puissances et 3 précisions).
 
 ## Valeurs possibles
 
 - `Type.nom` : Acier, Combat, Dragon, Eau, Électrik, Fée, Feu, Glace, Insecte, Normal, Plante, Poison, Psy, Roche, Sol, Spectre, Ténèbres, Vol.
 - `Attaque.categorie` : physique, spéciale, statut.
-- `APPREND.methodes` : « Montée de niveau », « Œuf », « Enseigné », « Capsule », « Changement de Forme », « train » (sans nom français), et 6 méthodes rares, propres à un jeu ou à un événement.
+- `APPREND.methodes` : « Montée de niveau », « Œuf », « Enseigné », « Capsule », « Changement de Forme », « train » (sans nom français), et 4 méthodes rares, propres à un jeu ou à un événement.
 - `facteur` : 2.0 (`SUPER_EFFICACE_CONTRE`), 0.5 (`PEU_EFFICACE_CONTRE`), 0.0 (`SANS_EFFET_CONTRE`).
 - `A_LE_TYPE.rang` : 1 ou 2. `A_LE_TALENT.cache` et `Forme.parDefaut` : vrai ou faux.
 

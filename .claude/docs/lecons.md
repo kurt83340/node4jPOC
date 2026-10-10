@@ -48,6 +48,14 @@ Archive 📦 au bout de N mois (entries promues stables)
 
 ---
 
+## 2026-10-10 — Une fiche rédigée depuis les CSV, sans la base, portait trois écarts
+
+**scope:** feature-002 | **status:** 🆕 new
+
+T1.2 a écrit la fiche de schéma des agents depuis les CSV et le plan 001 ; vérifiée sur le graphe en T7.3, elle avait 3 écarts : 4 méthodes rares et non 6 (10 employées en tout), 18 attaques à 0 au lieu de n'avoir pas la propriété (le CSV écrit 0), 2 noms à l'apostrophe droite tus.
+Corrigée ; `questions/fiche.cypher` rejoue chaque affirmation (`questions.sh --exemples`) et `banc/tests/test_fiche_cypher.py` tient fiche et requêtes ensemble.
+→ Piste : 🔧 rule « une affirmation sur les données, donnée à un agent, a sa requête sur le graphe chargé, jamais sur la source » ; à décider par Julien.
+
 ## 2026-10-09 — Le vrai client, contre une fausse API, montre ce que sa doc tait
 
 **scope:** feature-002 | **status:** 🆕 new
