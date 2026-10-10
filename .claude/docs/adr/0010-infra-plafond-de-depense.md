@@ -5,6 +5,8 @@ phase: 2026-Q4
 supersedes: null
 ---
 
+> ⚠️ **Point remplacé** (2026-10-10) : « Option C » → [ADR-0013](0013-infra-plafond-natif-de-vertex.md) : l'option C, complétée par un plafond natif de 30 € par mois sur Vertex (spend cap, Preview). Le reste de cet ADR reste en vigueur.
+
 # 0010 — Plafond de dépense : budget de 100 € et coupure automatique de Vertex
 
 **Statut :** Accepted
