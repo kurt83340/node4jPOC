@@ -87,7 +87,7 @@
 
 ## Phase 8 — Pilote (NEO-21)
 
-- [ ] **T8.1** : passe pilote (3 cellules × 30 questions, non comptée) ; revue ; coût comparé à l'estimation (arrêt au-delà de 1,5 fois) ; seuls l'extraction, la notation et le coût sont réglés, tout autre changement justifié sans question du banc et noté dans `plan.md` ; seuils du FR/EN fixés ; gel du protocole (commit)
+- [ ] **T8.1** : passe pilote (3 cellules × 30 questions, non comptée) ; revue ; coût comparé à l'estimation (arrêt au-delà de 1,5 fois) ; seuls l'extraction, la notation et le coût sont réglés, tout autre changement justifié sans question du banc et noté dans `plan.md` ; seuils du FR/EN fixés ; gel du protocole (commit) — fait le 2026-10-10 : campagne `pilote` (`--plafond-usd 4.5`, choix de Julien), 84 conversations sans panne, 2,51 $ pour 2,36 $ estimés (1,06 fois) ; revue des 27 cas faite par Claude à la demande de Julien, à l'aveugle et par `banc.revue` (22 justes, 5 partielles ; jamais réutilisée) ; réglés : titres de jeux masqués à la reconnaissance des espèces (8 tests, 6 fautes injectées, toutes détectées), journal de neo4j-mcp au niveau `warning` (`banc essai-serveur` 12/12) ; cache 5 min (1 h : 0,34 $ de plus) ; plafond de 10 appels gardé (choix de Julien) ; seuils du FR/EN fixés (plan, D8) ; gel posé ; rapport : plan, D7 ; reste la validation de Julien
   - DoD : `manual: Julien valide le rapport du pilote, les seuils et le gel`
 
 ## Phase 9 — Campagne (NEO-21 ; T9.2 : NEO-22)

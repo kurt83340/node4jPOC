@@ -67,7 +67,10 @@
   (Draco-Météore) ; restent « Ronflex » dans « Gare au Ronflex » et « Épine-de-Fer » dans le talent « Épine de Fer »,
   que la notation envoie « à revoir ». `♀` et `♂` restent dans le mot, sinon Nidoran♀ et Nidoran♂ se confondent.
   Les positions des citations sont celles du texte mis en NFC (`prose`, `citations`). L'espace fine U+202F d'une
-  regex s'écrit par sa séquence d'échappement, sinon Write la rend invisible (vu encore le 2026-10-08).
+  regex s'écrit par sa séquence d'échappement, sinon Write la rend invisible (vu encore le 2026-10-08). Un titre de
+  jeu qui contient une espèce (« Let’s Go, Pikachu », graphie de la base ; les agents la recopient sans virgule ou
+  avec l'apostrophe droite) est masqué par autant d'espaces, pour que les autres citations gardent leur place (pilote,
+  2026-10-10).
 - ⚠️ `banc/src/banc/notation.py` — tout doute mène à « à revoir », jamais à « juste » : un « juste » à tort gonfle
   un score en silence (revue adverse du 2026-10-08 : 12 constats). La notation ne lit que `banc/src/banc/trace.py`,
   jamais le JSONL ni le format d'un client. Un message d'erreur de Neo4j recopie la requête, noms compris : un appel
@@ -92,6 +95,8 @@
   permise et la télémétrie active ; ses options passent avant l'environnement ; un `NEO4J_MCP_*` vide retombe sur
   l'ancien nom ; un échec de connexion au démarrage sort avec le code 0 (lire le statut MCP). stdout est le canal
   MCP : rien n'y passe avant l'`exec` ([plan 002, D1](specs/002-agent-text-to-cypher/plan.md), vu le 2026-10-07).
+  `NEO4J_MCP_LOG_LEVEL` vaut `warning`, pas `warn` (invalide : retour à `info`, qui écrit chaque requête en clair
+  sur stderr, et ADK le laisse passer jusqu'au terminal du banc ; vu au pilote, 2026-10-10).
 - ⚠️ `scripts/mcp-neo4j.sh` — son stdout masqué est le canal MCP, un message JSON par ligne : le filtre rend chaque
   ligne aussitôt (`$| = 1` de perl), sinon le client attend sa réponse sans fin ; il ne peut pas non plus retirer
   une ligne (même blocage) ; l'identifiant lui arrive par l'environnement, jamais en argument (`ps`) (vu le 2026-10-08).
