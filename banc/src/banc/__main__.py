@@ -5,7 +5,7 @@ import sys
 from collections.abc import Sequence
 from decimal import Decimal, InvalidOperation
 
-from banc import orchestration, revue
+from banc import essai_serveur, orchestration, revue
 from banc.acces import acces
 
 
@@ -51,6 +51,11 @@ def main(arguments: Sequence[str] | None = None) -> int:
         action="store_true",
         help="continue la campagne : rejoue pannes, arrêts et conversations coupées",
     )
+    commandes.add_parser(
+        "essai-serveur",
+        help="le lanceur sur la vraie base (T7.4) : outils, lecture, écritures refusées, lecture "
+        "lente arrêtée par transactions.sh ; sans modèle (0 $), sans la clé Anthropic",
+    )
     revoir = commandes.add_parser(
         "revoir", help="revue humaine à l'aveugle des cas « à revoir » d'une campagne (T3.2)"
     )
@@ -73,6 +78,8 @@ def main(arguments: Sequence[str] | None = None) -> int:
         return orchestration.commande(demande)
     if lus.commande == "revoir":
         return revue.commande(lus.campagne, seulement_verifier=lus.verifier)
+    if lus.commande == "essai-serveur":
+        return essai_serveur.commande()
     return acces()
 
 
