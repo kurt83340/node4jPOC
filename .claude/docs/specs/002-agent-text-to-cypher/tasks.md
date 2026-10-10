@@ -92,7 +92,7 @@
 
 ## Phase 9 — Campagne (NEO-21 ; T9.2 : NEO-22)
 
-- [ ] **T9.1** : 3 passes comptées, cellules alternées question par question, reprise possible
+- [ ] **T9.1** : 3 passes comptées, cellules alternées question par question, reprise possible — en cours le 2026-10-11 : `banc rapport` écrit pour la DoD (plan, D10 ; complet sur le pilote) ; campagne `fr-1` à lancer après le feu vert de Julien sur le coût et le plafond
   - DoD : `command_passes: uv run --directory banc python -m banc rapport --campagne <id> --complet` (9 séries, aucune panne non relancée)
 - [ ] **T9.2** : revue humaine des « à revoir »
   - DoD : `command_passes: uv run --directory banc python -m banc revoir --campagne <id> --verifier` (aucun cas restant)
