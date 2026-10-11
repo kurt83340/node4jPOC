@@ -11,7 +11,7 @@
 - ✅ Campagne `fr-1` : 3 passes, 7,60 $, aucune panne, `banc rapport --complet` complète ; scores 27,5, 27,8 et 20,7 sur 30 (claude-code, adk-claude, adk-gemini), écarts 0, 0,5 et 2,5
 - ✅ Revue (T9.2) : 95 cas, décisions de Julien validées en bloc sur la pré-analyse de Claude, écart à l'ADR-0008 noté au plan (D7)
 - ✅ `banc rapport` (TDD, 17 tests) ; 1 130 tests, ruff, mypy, shellcheck, Prettier, gitleaks
-- ⏳ T9.3 : Console vérifiée pour le pilote (1,79 $ = calcul) ; export BigQuery encore sans le pilote le 2026-10-11 à 0 h 35
+- ⏳ T9.3 : Console = calcul au centime jusqu'à minuit UTC (3,71 $ = 1,792 + 1,916) ; restent les 2,742 $ de `fr-1` d'après minuit et l'export BigQuery (Gemini)
 
 ## Échecs tentés (à ne pas refaire)
 
@@ -24,7 +24,7 @@
 
 ## Next (par ordre)
 
-1. **T9.3** : coût recoupé (Console pour Claude, 4,66 $ de `fr-1` ; `/google-facture` pour Gemini), écart noté au plan (D7), puis fusion de la PR et NEO-21 au format de clôture (critères 2 et 3)
+1. **T9.3** : coût recoupé (Console pour Claude : 6,45 $ attendus sur trente jours ; `/google-facture` pour Gemini), écart noté au plan (D7), puis fusion de la PR et NEO-21 au format de clôture (critères 2 et 3)
 2. **Phase 6 (NEO-19)** : schéma anglais sans base (T6.1 à T6.3), puis phase 10 (NEO-23) ; NEO-22 reste ouvert pour les revues des passes anglaises et de contrôle
 3. À trancher : ADR qui amende l'ADR-0008 (revue assistée) ? ; Poissirène dans la table de Q9 (écarté, eau douce) ; ADR qui précise l'ADR-0009 ? ; leçons en rules ; flag des équipes ; NEO-27 début décembre
 
