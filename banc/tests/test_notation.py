@@ -765,3 +765,48 @@ def test_reponse_de_reference_de_q02_lisible() -> None:
     # Le contrôle de l'équipe par défaut (attendu/q02.txt) se relit comme celui d'un agent.
     controle = attendu.lire("q02")[-1]
     assert controle.colonnes == ("especesReconnues", "typesNonCouverts", "equipeValide")
+
+
+# --- Source d'un second tour (ADR-0015, T11.0) ---------------------------------------------------
+
+REQUETE_EQUIPE = (
+    "MATCH (p:Pokemon)-[:A_POUR_FORME_PAR_DEFAUT]->(f:Forme)\n"
+    "WHERE p.nom IN ['Dracaufeu', 'Lokhlass']\n"
+    "RETURN p.nom AS pokemon, f.statDefense AS defense"
+)
+DEFENSES = [{"pokemon": "Dracaufeu", "defense": 78}, {"pokemon": "Lokhlass", "defense": 80}]
+
+
+def tour_q2(*appels: Appel) -> Tour:
+    return Tour("Q2", ecrire("Lokhlass, Dracaufeu"), appels)
+
+
+def source_q18(precedent: Tour | None, *appels: Appel) -> str:
+    q18 = Tour("Q18", ecrire("Dracaufeu", bloc(REQUETE_EQUIPE)), appels)
+    return noter(Q["Q18"], q18, REF, precedent=precedent).source
+
+
+def test_source_au_tour_precedent() -> None:
+    # La requête citée par Q18 n'a tourné qu'au tour de Q2, dans la même conversation.
+    assert source_q18(tour_q2(lecture(REQUETE_EQUIPE, DEFENSES))) == "oui"
+
+
+def test_source_sans_le_tour_precedent() -> None:
+    # Sans le tour précédent, la même requête n'est pas trouvée : l'ancienne règle de l'ADR-0009.
+    assert source_q18(None) == "non"
+
+
+def test_source_au_tour_precedent_sans_la_reponse() -> None:
+    # Le tour précédent compte comme le tour courant : son résultat doit porter la réponse.
+    sans = [{"pokemon": "Lokhlass", "defense": 80}]
+    assert source_q18(tour_q2(lecture(REQUETE_EQUIPE, sans))) == "non"
+
+
+@pytest.mark.parametrize(
+    ("ident", "precedent"),
+    [("Q18", "Q27"), ("Q21", "Q2")],
+    ids=["mauvais-tour-precedent", "question-sans-second-tour"],
+)
+def test_tour_precedent_refuse(ident: str, precedent: str) -> None:
+    with pytest.raises(NotationError, match=f"tour précédent de {precedent}, attendu"):
+        noter(Q[ident], Tour(ident, ecrire("Dracaufeu")), REF, precedent=Tour(precedent, "?"))

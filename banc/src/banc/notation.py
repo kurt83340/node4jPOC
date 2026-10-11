@@ -140,19 +140,31 @@ class _Jugement:
 
 
 def noter(
-    question: Question, tour: Tour, referentiel: Referentiel, controle: Controleur | None = None
+    question: Question,
+    tour: Tour,
+    referentiel: Referentiel,
+    controle: Controleur | None = None,
+    precedent: Tour | None = None,
 ) -> Notation:
     """Pré-note la réponse d'un tour ; controle fait le contrôle de Q2 (controle_par_script sur la
-    base, ou sa simulation en mode faux serveur) : sans lui, Q2 passe « à revoir »."""
+    base, ou sa simulation en mode faux serveur) : sans lui, Q2 passe « à revoir ». precedent : le
+    tour précédent d'un second tour (Q2 pour Q18) ; ses lectures comptent aussi pour la source
+    citée (ADR-0015)."""
     if tour.question != question.id:
         raise NotationError(f"tour de {tour.question}, noté comme {question.id}")
+    if precedent is not None and precedent.question != question.tour_precedent:
+        raise NotationError(
+            f"tour précédent de {precedent.question}, attendu {question.tour_precedent} pour "
+            f"{question.id}"
+        )
+    tours = (tour,) if precedent is None else (precedent, tour)
     lues = sections(tour.reponse)
     compte = introspections(tour)
     if question.notation == "revue":
         source: Source = "exempte" if question.id in SANS_SOURCE else "à revoir"
         return Notation("à revoir", ("regle",), source, compte)
     if lues.reponse is None:
-        return Notation("à revoir", ("sans-reponse",), _source(lues, tour, ()), compte)
+        return Notation("à revoir", ("sans-reponse",), _source(lues, tours, ()), compte)
     # Le code recopié dans la réponse ne compte pas comme dit (revue adverse du 2026-10-08).
     texte = prose(lues.reponse)
     jugement = _juger(question, texte, referentiel, controle)
@@ -163,7 +175,7 @@ def noter(
         note, motifs = "à revoir", (*motifs, "incomplete")
     # Sans valeur juste, la réponse se juge sur ce qu'elle affirme : toutes les espèces avancées.
     avancees = tuple(referentiel.especes.citees(texte))
-    source = _source(lues, tour, jugement.valeurs or avancees)
+    source = _source(lues, tours, jugement.valeurs or avancees)
     return Notation(note, motifs, source, compte, jugement.rappel, jugement.precision)
 
 
@@ -447,8 +459,9 @@ def _noms(citations: Sequence[Citation]) -> list[str]:
     return list(dict.fromkeys(citation.nom for citation in citations))
 
 
-def _source(lues: Sections, tour: Tour, valeurs: Sequence[Valeur]) -> Source:
-    """Source citée (plan, D4), vérifiée sur les lectures sans erreur du tour.
+def _source(lues: Sections, tours: Sequence[Tour], valeurs: Sequence[Valeur]) -> Source:
+    """Source citée (plan, D4), vérifiée sur les lectures sans erreur du tour, et du tour précédent
+    pour un second tour (ADR-0015).
 
     Les valeurs à retrouver : les valeurs justes de la réponse ; à défaut, les espèces qu'elle
     avance (une réponse fausse se juge sur ce qu'elle affirme). Une requête citée porte la réponse
@@ -459,7 +472,7 @@ def _source(lues: Sections, tour: Tour, valeurs: Sequence[Valeur]) -> Source:
     """
     if lues.sources is None:
         return "non"
-    lectures = [a for a in tour.appels if a.outil == LECTURE and not a.erreur]
+    lectures = [a for t in tours for a in t.appels if a.outil == LECTURE and not a.erreur]
     enregistrements = [e for a in lectures for e in _enregistrements(a.resultat)]
     inventee = pertinente = False
     for description in descriptions_citees(lues.sources):

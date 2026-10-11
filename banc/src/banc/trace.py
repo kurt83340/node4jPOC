@@ -30,7 +30,8 @@ class Appel:
 class Tour:
     """Un tour : la question posée, la réponse finale de l'agent, les appels de ce tour seul.
 
-    Q18 et Q28 sont des seconds tours : les appels du tour de Q2 ou de Q27 n'y figurent pas.
+    Q18 et Q28 sont des seconds tours : les appels du tour de Q2 ou de Q27 n'y figurent pas ; la
+    notation reçoit ce tour à part, pour la source citée (ADR-0015).
     """
 
     question: str

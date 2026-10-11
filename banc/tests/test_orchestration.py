@@ -34,7 +34,7 @@ from banc.__main__ import main
 from banc.cellule import LANCEUR, RACINE, Plafonds, empreinte_prompt
 from banc.isolement import environnement_agent
 from banc.mesures import lire, lire_lignes, nom_de_trace
-from banc.notation import Controle, NotationError, controle_par_script, controle_simule
+from banc.notation import Controle, NotationError, controle_par_script, controle_simule, noter
 from banc.orchestration import (
     CELLULES,
     CONTROLE_EN,
@@ -1683,3 +1683,21 @@ def test_controle_anglais_par_defaut() -> None:
     defaut = inspect.signature(verifier_la_base).parameters["traduction"].default
     assert defaut == anglais.TRADUCTION
     assert moyens.verifier_la_base is verifier_la_base
+
+
+def test_second_tour_note_avec_son_tour_precedent(
+    bac: Bac, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # ADR-0015 : la notation de Q18 reçoit le tour de Q2 de la même conversation ; Q2, aucun.
+    recus: list[tuple[str, str | None]] = []
+    vrai = noter
+
+    def espion(question: Any, tour: Any, *args: Any) -> Any:
+        precedent = args[2] if len(args) > 2 else None
+        recus.append((question.id, None if precedent is None else precedent.question))
+        return vrai(question, tour, *args)
+
+    monkeypatch.setattr(orchestration, "noter", espion)
+    repondre_une_equipe(bac)
+    assert bac.commande(questions=("Q2", "Q18", "Q1"), cellules=(AG,)) == 0
+    assert recus == [("Q2", None), ("Q18", "Q2"), ("Q1", None)]

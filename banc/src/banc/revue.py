@@ -331,6 +331,9 @@ def presenter(
     blocs.append(f"Réponse de l'agent :\n{_retrait(_masquer(tour.reponse))}")
     if ligne["source"] == A_REVOIR:
         blocs.append(_lectures(tour))
+        if precedent is not None:
+            # La source d'un second tour peut venir du tour précédent (ADR-0015).
+            blocs.append(_lectures(precedent, "Lectures du tour précédent"))
     return "\n\n".join(blocs)
 
 
@@ -505,13 +508,13 @@ def _demander(besoins: Sequence[str], console: Console) -> Saisie:
         )
 
 
-def _lectures(tour: TourMesure) -> str:
-    lignes = ["Lectures du tour :"]
+def _lectures(tour: TourMesure, titre: str = "Lectures du tour") -> str:
+    lignes = [f"{titre} :"]
     for rang, appel in enumerate(tour.appels, start=1):
         etat = " (en erreur)" if appel.erreur else ""
         lignes += [f"  [{rang}] {appel.outil}{etat}", _retrait(_masquer(appel.requete), 6)]
         lignes += ["      →", _retrait(_masquer(_tronquer(appel.resultat)), 6)]
-    return "\n".join(lignes) if tour.appels else "Lectures du tour : aucune"
+    return "\n".join(lignes) if tour.appels else f"{titre} : aucune"
 
 
 def _tronquer(texte: str) -> str:
