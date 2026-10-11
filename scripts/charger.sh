@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Charge le graphe Pokémon dans AuraDB Free (spec 001) : --tout exécute les fichiers de cypher/ dans
 # l'ordre (depuis T4.1), --idempotence prouve que le chargement est rejouable (T6.1). Autour : --ping
-# (T2.1), --go-no-go (T2.2) et --purge (T3.1).
+# (T2.1), --go-no-go (T2.2) et --purge (T3.1). Spec 002 : --schema bascule le schéma en anglais ou le
+# ramène en français (D8), --sonde-renommage a choisi son mécanisme (T7.5).
 #
 # Identifiants, garde-fou de sortie et codes retour communs (0 = succès · 1 = écart constaté ·
 # 2 = erreur technique) : voir commun.sh (ADR-0007).
@@ -27,12 +28,23 @@ STATISTIQUES=""
 # Vérification en lecture seule, appelée par --idempotence pour prendre l'empreinte du graphe.
 VERIFIER="$(dirname "${BASH_SOURCE[0]}")/verifier.sh"
 readonly VERIFIER
+# Schéma anglais (spec 002, D8) : la carte de paramètres produite par banc depuis correspondance.toml,
+# le renommage, et les contraintes et index de chaque langue. Aucun Python au chargement (ADR-0003).
+readonly CARTE="$DOSSIER_CYPHER/anglais/correspondance.cypher"
+readonly RENOMMER="$DOSSIER_CYPHER/anglais/renommer.cypher"
+readonly CONTRAINTES_FR="$DOSSIER_CYPHER/00-contraintes.cypher"
+readonly CONTRAINTES_EN="$DOSSIER_CYPHER/anglais/contraintes.cypher"
+# La carte, en une ligne, sans ses commentaires : passée à cypher-shell par -P (voir lire_carte).
+CARTES=""
+# Requêtes d'un fichier .cypher, une par case (voir lire_requetes).
+REQUETES=()
 ECARTS=0
 NOMS=()
 
 usage() {
   cat <<'EOF'
 Usage : scripts/charger.sh --tout | --idempotence | --ping | --go-no-go | --purge | --sonde-renommage
+       scripts/charger.sh --schema en|fr [--explain]
 
   --tout         exécute dans l'ordre les fichiers de chargement de cypher/ (00 à 89) ; une relance ne crée
                  rien ; journal dans logs/, à suivre avec tail -f quand le chargement tourne en arrière-plan
@@ -44,6 +56,12 @@ Usage : scripts/charger.sh --tout | --idempotence | --ping | --go-no-go | --purg
   --sonde-renommage
                  choisit le mécanisme de renommage du schéma anglais (spec 002, T7.5) : EXPLAIN de chaque
                  candidat, Cypher 25 dynamique puis APOC, en lecture seule ; rien n'est exécuté ni écrit
+  --schema en|fr bascule le schéma en anglais, ou le ramène en français (spec 002, D8) : contraintes et
+                 index supprimés, labels, types et clés renommés (cypher/anglais/renommer.cypher, d'après
+                 la carte correspondance.cypher), contraintes et index de la langue visée recréés ; les
+                 valeurs ne changent pas. --tout est refusé tant que la base est en anglais
+  --explain      avec --schema : EXPLAIN de chaque requête du renommage et des contraintes, en lecture
+                 seule, et liste de ce qui serait supprimé ; rien n'est exécuté ni écrit
 
 Variables : NEO4J_SECRET (défaut neo4j-aura-poc), GCP_PROJET (défaut jleroy-labo),
 POKEAPI_BASE (défaut : CSV PokéAPI au commit 168b1e8).
@@ -188,25 +206,11 @@ lire_noms() {
   done < <(printf '%s\n' "$SORTIE" | sed -n 's/^"\(.*\)"$/\1/p')
 }
 
-# Écrire : seul mode de charger.sh qui détruit (plan, étape 0). Relations d'abord, par lots, pour ménager
-# la mémoire d'Aura Free, puis nœuds ; enfin contraintes (leurs index partent avec elles) et index
-# restants, sauf les deux index LOOKUP qu'Aura crée d'office.
-purger() {
-  local nom avant contraintes=0 index=0
-  cypher "CALL () { MATCH (n) RETURN count(n) AS n } CALL () { MATCH ()-[r]->() RETURN count(r) AS r }
-    RETURN toString(n) + ' nœuds et ' + toString(r) + ' relations' AS avant" || {
-    erreur "comptage impossible : ${SORTIE%%$'\n'*}"
-    exit 2
-  }
-  avant="$(valeur)"
-  local requete
-  for requete in "MATCH ()-[r]->() CALL (r) { DELETE r } IN TRANSACTIONS OF 10000 ROWS" \
-    "MATCH (n) CALL (n) { DELETE n } IN TRANSACTIONS OF 10000 ROWS"; do
-    if ! cypher "$requete"; then
-      erreur "purge interrompue : ${SORTIE%%$'\n'*}"
-      exit 2
-    fi
-  done
+# Supprime les contraintes (leurs index partent avec elles), puis les index restants, sauf les deux index
+# LOOKUP qu'Aura crée d'office : avant une purge, ou avant de renommer le schéma (--schema).
+SUPPRIMES=""
+supprimer_schema() {
+  local nom contraintes=0 index=0
   cypher "SHOW CONSTRAINTS YIELD name RETURN name" || {
     erreur "liste des contraintes illisible : ${SORTIE%%$'\n'*}"
     exit 2
@@ -232,7 +236,222 @@ purger() {
     }
     index=$((index + 1))
   done
-  printf '✓ Purge : %s supprimés, puis %d contrainte(s) et %d index.\n' "$avant" "$contraintes" "$index"
+  SUPPRIMES="$contraintes contrainte(s) et $index index"
+}
+
+# Écrire : seul mode de charger.sh qui détruit (plan, étape 0). Relations d'abord, par lots, pour ménager
+# la mémoire d'Aura Free, puis nœuds ; enfin contraintes et index (supprimer_schema).
+purger() {
+  local avant requete
+  compter
+  avant="$COMPTE"
+  for requete in "MATCH ()-[r]->() CALL (r) { DELETE r } IN TRANSACTIONS OF 10000 ROWS" \
+    "MATCH (n) CALL (n) { DELETE n } IN TRANSACTIONS OF 10000 ROWS"; do
+    if ! cypher "$requete"; then
+      erreur "purge interrompue : ${SORTIE%%$'\n'*}"
+      exit 2
+    fi
+  done
+  supprimer_schema
+  printf '✓ Purge : %s supprimés, puis %s.\n' "$avant" "$SUPPRIMES"
+}
+
+# COMPTE reçoit les nœuds et relations du graphe, en un texte : avant une purge, avant et après un renommage.
+COMPTE=""
+compter() {
+  cypher "CALL () { MATCH (n) RETURN count(n) AS n } CALL () { MATCH ()-[r]->() RETURN count(r) AS r }
+    RETURN toString(n) + ' nœuds et ' + toString(r) + ' relations' AS compte" --access-mode read || {
+    erreur "comptage impossible : ${SORTIE%%$'\n'*}"
+    exit 2
+  }
+  COMPTE="$(valeur)"
+}
+
+# CARTES reçoit la carte de paramètres du renommage (spec 002, D8), produite par banc depuis
+# correspondance.toml : sans ses lignes « // », en une ligne, pour -P. Une carte sans « {cartes: » arrête tout.
+lire_carte() {
+  if [[ ! -f "$CARTE" ]]; then
+    erreur "carte introuvable : cypher/anglais/correspondance.cypher (uv run --directory banc python -m banc anglais)"
+    exit 2
+  fi
+  CARTES="$(sed '/^[[:space:]]*\/\//d' "$CARTE" | tr '\n' ' ')"
+  if [[ "$CARTES" != "{cartes: "* ]]; then
+    erreur "carte illisible : cypher/anglais/correspondance.cypher"
+    exit 2
+  fi
+}
+
+# RESTES reçoit ce qui porte encore un nom de l'autre langue, vers la langue visée : les nœuds des labels et
+# les relations des types à renommer. Vers fr, ce sont les noms anglais : « 0 nœuds, 0 relations » dit une base
+# en français, ou vide.
+RESTES=""
+restes() {
+  local langue="$1"
+  cypher "WITH \$cartes[\$langue] AS carte
+    CALL (carte) {
+      UNWIND keys(carte.labels) AS label
+      CALL (label) { MATCH (n:\$(label)) RETURN count(n) AS n }
+      RETURN sum(n) AS noeuds
+    }
+    CALL (carte) {
+      UNWIND keys(carte.types) AS nomType
+      CALL (nomType) { MATCH ()-[r:\$(nomType)]->() RETURN count(r) AS r }
+      RETURN sum(r) AS relations
+    }
+    RETURN toString(noeuds) + ' nœuds, ' + toString(relations) + ' relations' AS restes" \
+    --access-mode read -P "$CARTES" -P "{langue: '$langue'}" || {
+    erreur "noms de l'autre langue non comptés : ${SORTIE%%$'\n'*}"
+    exit 2
+  }
+  RESTES="$(valeur)"
+}
+
+# --tout sur une base anglaise y mêlerait le schéma français (spec 002, D8) : refusé, comme une erreur de garde.
+refuser_si_anglais() {
+  lire_carte
+  restes fr
+  if [[ "$RESTES" != "0 nœuds, 0 relations" ]]; then
+    erreur "base en anglais ($RESTES) : scripts/charger.sh --schema fr d'abord"
+    exit 2
+  fi
+}
+
+# REQUETES reçoit les requêtes d'un fichier .cypher, une par case, et LIBELLES le nom de chacune : le commentaire
+# qui la précède sans ligne vide, sinon le début de sa première ligne. Une requête finit à une ligne terminée par « ; »
+# (convention de cypher/) ; ses commentaires et son « ; » sont ôtés. Pas de sous-shell, comme lire_noms.
+LIBELLES=()
+lire_requetes() {
+  local ligne requete="" libelle=""
+  REQUETES=()
+  LIBELLES=()
+  while IFS= read -r ligne || [[ -n "$ligne" ]]; do
+    if [[ "$ligne" =~ ^[[:space:]]*//[[:space:]]*(.*)$ ]]; then
+      [[ -z "$requete" ]] && libelle="${BASH_REMATCH[1]}"
+      continue
+    fi
+    if [[ -z "$requete" && -z "${ligne//[[:space:]]/}" ]]; then
+      libelle="" # un commentaire suivi d'une ligne vide ne nomme pas la requête qui vient
+      continue
+    fi
+    [[ -z "$requete" && -z "$libelle" ]] && libelle="${ligne:0:70}"
+    requete+="$ligne"$'\n'
+    if [[ "$ligne" =~ \;[[:space:]]*$ ]]; then
+      REQUETES+=("${requete%;*}")
+      LIBELLES+=("$libelle")
+      requete=""
+      libelle=""
+    fi
+  done <"$1"
+  if [[ -n "${requete//[[:space:]]/}" ]]; then
+    REQUETES+=("$requete")
+    LIBELLES+=("$libelle")
+  fi
+}
+
+# Contraintes et index de la langue visée : 00-contraintes.cypher en français, sa traduction par la table
+# (cypher/anglais/contraintes.cypher, produite par banc) en anglais.
+contraintes_de() {
+  if [[ "$1" == en ]]; then
+    printf '%s' "$CONTRAINTES_EN"
+  else
+    printf '%s' "$CONTRAINTES_FR"
+  fi
+}
+
+# Bascule du schéma (spec 002, D8) : contraintes et index supprimés, labels, types et clés renommés
+# (renommer.cypher, d'après la carte), contraintes et index de la langue visée recréés, puis attendus en
+# ligne. Écrit, comme le chargement (code-map). Conforme si le graphe garde ses nœuds et ses relations et que
+# plus rien ne porte un nom de l'autre langue. Après une coupure, on relance : rien ne se fait deux fois.
+changer_schema() {
+  local langue="$1" contraintes avant debut dixiemes stats ecarts=0
+  contraintes="$(contraintes_de "$langue")"
+  lire_carte
+  compter
+  avant="$COMPTE"
+  printf '── schéma vers %s : %s\n' "$langue" "$avant"
+  debut="$(centiemes)"
+  supprimer_schema
+  printf '✓ supprimés : %s\n' "$SUPPRIMES"
+  if ! cypher_fichier "$RENOMMER" --format verbose -P "$CARTES" -P "{langue: '$langue'}"; then
+    erreur "renommage interrompu, à relancer : ${SORTIE%%$'\n'*}"
+    exit 2
+  fi
+  stats="$(printf '%s\n' "$SORTIE" | sed -nE 's/^(Added|Created|Set|Deleted|Removed) .*/    &/p')"
+  printf '✓ renommés (anglais/renommer.cypher)\n%s\n' "$stats"
+  if ! cypher_fichier "$contraintes" --format verbose; then
+    erreur "contraintes et index non recréés : ${SORTIE%%$'\n'*}"
+    exit 2
+  fi
+  if ! cypher "CALL db.awaitIndexes(300)"; then
+    erreur "index pas en ligne après 300 s : ${SORTIE%%$'\n'*}"
+    exit 2
+  fi
+  printf '✓ contraintes et index recréés, en ligne (%s)\n' "${contraintes#"$DOSSIER_CYPHER"/}"
+  compter
+  restes "$langue"
+  dixiemes=$((($(centiemes) - debut) / 10))
+  if [[ "$COMPTE" != "$avant" ]]; then
+    printf '✗ graphe changé : %s, avant %s\n' "$COMPTE" "$avant"
+    ecarts=$((ecarts + 1))
+  fi
+  if [[ "$RESTES" != "0 nœuds, 0 relations" ]]; then
+    printf '✗ noms de l'"'"'autre langue restants : %s\n' "$RESTES"
+    ecarts=$((ecarts + 1))
+  fi
+  if ((ecarts > 0)); then
+    printf 'ÉCART : %d contrôle(s) sur 2.\n' "$ecarts"
+    exit 1
+  fi
+  printf 'SCHÉMA %s : %s, plus aucun nom de l'"'"'autre langue (%d,%d s).\n' "$langue" "$COMPTE" \
+    $((dixiemes / 10)) $((dixiemes % 10))
+}
+
+# --explain (spec 002, D8 ; repris de T7.5) : ce que la bascule supprimerait et renommerait, puis EXPLAIN de
+# chaque requête du renommage, avec la carte, de chaque commande des contraintes et index de la langue visée,
+# et de l'attente des index ; en lecture seule, rien n'est exécuté ni écrit.
+expliquer_schema() {
+  local langue="$1" contraintes fichier i planifiees=0 total=0
+  contraintes="$(contraintes_de "$langue")"
+  lire_carte
+  compter
+  printf '── schéma vers %s, à blanc : %s\n' "$langue" "$COMPTE"
+  restes "$langue"
+  printf '  · à renommer : %s\n' "$RESTES"
+  cypher "SHOW CONSTRAINTS YIELD name RETURN name" --access-mode read || {
+    erreur "liste des contraintes illisible : ${SORTIE%%$'\n'*}"
+    exit 2
+  }
+  lire_noms
+  printf '  · contraintes à supprimer : %s\n' "${NOMS[*]:-aucune}"
+  cypher "SHOW INDEXES YIELD name, type, owningConstraint WHERE type <> 'LOOKUP' AND owningConstraint IS NULL
+    RETURN name" --access-mode read || {
+    erreur "liste des index illisible : ${SORTIE%%$'\n'*}"
+    exit 2
+  }
+  lire_noms
+  printf '  · index à supprimer : %s\n' "${NOMS[*]:-aucun}"
+  for fichier in "$RENOMMER" "$contraintes"; do
+    printf '── %s\n' "${fichier#"$DOSSIER_CYPHER"/}"
+    lire_requetes "$fichier"
+    if [[ "$fichier" == "$contraintes" ]]; then
+      REQUETES+=("CALL db.awaitIndexes(300)")
+      LIBELLES+=("attente des index en ligne")
+    fi
+    for i in "${!REQUETES[@]}"; do
+      total=$((total + 1))
+      if cypher "EXPLAIN ${REQUETES[i]}" --access-mode read -P "$CARTES" -P "{langue: '$langue'}"; then
+        printf '✓ %s : planifiée\n' "${LIBELLES[i]}"
+        planifiees=$((planifiees + 1))
+      else
+        printf '✗ %s : %s\n' "${LIBELLES[i]}" "${SORTIE%%$'\n'*}"
+      fi
+    done
+  done
+  if ((planifiees < total)); then
+    printf 'NON PLANIFIÉ : %d requête(s) sur %d.\n' $((total - planifiees)) "$total"
+    exit 1
+  fi
+  printf 'PLANIFIÉ : %d requêtes, rien d'"'"'exécuté.\n' "$total"
 }
 
 # Journal (plan, § Observabilité) : chaque ligne s'affiche et s'ajoute au fichier du lancement. L'heure murale
@@ -338,6 +557,7 @@ main() {
       trouver_outils
       lire_identifiants
       ping_aura
+      refuser_si_anglais
       charger
       ;;
     --idempotence)
@@ -367,6 +587,20 @@ main() {
       lire_identifiants
       ping_aura
       sonde_renommage
+      ;;
+    --schema)
+      if [[ "${2:-}" != en && "${2:-}" != fr ]] || (($# > 3)) || [[ $# -eq 3 && "$3" != --explain ]]; then
+        usage >&2
+        exit 2
+      fi
+      trouver_outils
+      lire_identifiants
+      ping_aura
+      if (($# == 3)); then
+        expliquer_schema "$2"
+      else
+        changer_schema "$2"
+      fi
       ;;
     -h | --help)
       usage

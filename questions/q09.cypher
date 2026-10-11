@@ -7,6 +7,8 @@
 //                 autrefois (fossile) ;
 //   écarté      : eaux peu profondes, profondeur hors de la mer, origine plutôt qu'habitat, autre sens.
 // Types de la forme par défaut (exacts). Les raisons résument, sans recopier les descriptions (ADR-0001).
+// Hors filet (horsFilet) : une espèce que le filet ne trouve pas, classée sur preuve, datée ; la requête la rend
+// avec son ensemble, sans la chercher. Poissirène (2026-10-11, revue de fr-1) : « dans les profondeurs », sans mer.
 WITH [
     {pokemon: 'Aquali', ensemble: 'obligatoire', raison: 'peut vivre dans les fonds marins'},
     {pokemon: 'Crustabri', ensemble: 'obligatoire', raison: 'se déplace dans les fonds marins'},
@@ -36,6 +38,8 @@ WITH [
     {pokemon: 'Écayon', ensemble: 'acceptable', raison: 'se retire dans les abysses la nuit'},
     {pokemon: 'Concombaffe', ensemble: 'écarté', raison: 'eaux peu profondes'},
     {pokemon: 'Lovdisc', ensemble: 'écarté', raison: 'mers peu profondes'},
+    {pokemon: 'Poissirène', ensemble: 'écarté', raison: 'poisson d’eau douce : profondeurs hors de la mer',
+      horsFilet: true},
     {pokemon: 'Sinistrail', ensemble: 'écarté', raison: 'né d’algues du fond de l’océan : une origine'},
     {pokemon: 'Tadmorv', ensemble: 'écarté', raison: 'né de la vase des fonds marins : une origine'}
   ] AS classement
@@ -52,7 +56,8 @@ UNWIND trouves + [c IN classement WHERE NOT c.pokemon IN trouves | c.pokemon] AS
 WITH nom, nom IN trouves AS trouve, [c IN classement WHERE c.pokemon = nom][0] AS c
 OPTIONAL MATCH (:Pokemon {nom: nom})-[:A_POUR_FORME_PAR_DEFAUT]->(f:Forme)
 RETURN nom AS pokemon,
-  CASE WHEN NOT trouve THEN 'plus trouvée' WHEN c IS NULL THEN 'à classer' ELSE c.ensemble END AS ensemble,
+  CASE WHEN NOT trouve AND NOT coalesce(c.horsFilet, false) THEN 'plus trouvée' WHEN c IS NULL THEN 'à classer'
+    ELSE c.ensemble END AS ensemble,
   COLLECT { MATCH (f)-[r:A_LE_TYPE]->(t:Type) RETURN t.nom ORDER BY r.rang } AS types,
   coalesce(c.raison, '') AS raison
 ORDER BY CASE ensemble

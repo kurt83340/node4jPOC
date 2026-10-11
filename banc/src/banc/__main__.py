@@ -2,10 +2,11 @@
 
 import argparse
 import sys
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from decimal import Decimal, InvalidOperation
+from pathlib import Path
 
-from banc import essai_serveur, orchestration, rapport, revue
+from banc import anglais, essai_serveur, orchestration, rapport, revue
 from banc.acces import acces
 
 
@@ -73,6 +74,18 @@ def main(arguments: Sequence[str] | None = None) -> int:
         action="store_true",
         help="code 0 si chaque série est complète, sans panne à rejouer ni passe invalide, 1 sinon",
     )
+    commandes.add_parser(
+        "anglais",
+        help="écrit les fichiers du schéma anglais tirés de cypher/anglais/correspondance.toml "
+        "(T6.1) : carte de paramètres, contraintes et index ; sans la base",
+    )
+    traduire = commandes.add_parser(
+        "traduire",
+        help="traduit vers le schéma anglais les 27 requêtes, la liste des espèces, les "
+        "vérifications et les exemples de la fiche (T6.2), pour scripts/questions.sh --dossier ; "
+        "sans la base",
+    )
+    traduire.add_argument("--vers", required=True, type=Path, help="dossier (logs/anglais)")
     lus = parseur.parse_args(arguments)
     if lus.commande == "lancer":
         demande = orchestration.Demande(
@@ -86,13 +99,15 @@ def main(arguments: Sequence[str] | None = None) -> int:
             faux_serveur=lus.faux_serveur,
         )
         return orchestration.commande(demande)
-    if lus.commande == "revoir":
-        return revue.commande(lus.campagne, seulement_verifier=lus.verifier)
-    if lus.commande == "rapport":
-        return rapport.commande(lus.campagne, complet=lus.complet)
-    if lus.commande == "essai-serveur":
-        return essai_serveur.commande()
-    return acces()
+    actions: dict[str, Callable[[], int]] = {
+        "revoir": lambda: revue.commande(lus.campagne, seulement_verifier=lus.verifier),
+        "rapport": lambda: rapport.commande(lus.campagne, complet=lus.complet),
+        "essai-serveur": essai_serveur.commande,
+        "anglais": anglais.commande,
+        "traduire": lambda: anglais.commande_traduire(lus.vers),
+        "acces": acces,
+    }
+    return actions[lus.commande]()
 
 
 def _dollars(texte: str) -> Decimal:

@@ -20,7 +20,7 @@ RACINE = Path(__file__).resolve().parents[2]
 FICHE = (RACINE / "questions" / "fiche-schema.md").read_text(encoding="utf-8")
 CYPHER = (RACINE / "questions" / "fiche.cypher").read_text(encoding="utf-8")
 
-type Valeur = str | int | bool
+type Valeur = str | int | float | bool | list[str | float]
 
 
 @dataclass(frozen=True)
@@ -113,7 +113,7 @@ def facteurs(phrase: str, fiche: str) -> Attendu | None:
     """« `facteur` : 2.0 (`SUPER_EFFICACE_CONTRE`)… » : chaque type de relation et son facteur."""
     if not phrase.startswith("`facteur`"):
         return None
-    return tuple(f"{t} {f}" for f, t in re.findall(r"(\d\.\d) \(`(\w+)`\)", phrase)), None
+    return tuple([t, float(f)] for f, t in re.findall(r"(\d\.\d) \(`(\w+)`\)", phrase)), None
 
 
 def rangs(phrase: str, fiche: str) -> Attendu | None:
@@ -138,16 +138,17 @@ def labels(phrase: str, fiche: str) -> Attendu | None:
 
 
 def motifs(phrase: str, fiche: str) -> Attendu | None:
-    """La section Relations : chaque motif, une ligne par type quand la fiche en réunit plusieurs
-    (A|B|C)."""
+    """La section Relations : chaque motif en liste (label de départ, type, label d'arrivée, puis
+    les clés), une par type quand la fiche en réunit plusieurs (A|B|C)."""
     if phrase != "## Relations":
         return None
-    resultat = []
+    resultat: list[Valeur] = []
     for motif in re.findall(r"`(\(:\w+\)-\[:[^`]+\]->\(:\w+\))`", section("Relations", fiche)):
-        decoupe = re.fullmatch(r"\(:(\w+)\)-\[:([\w|]+)( \{[^}]*\})?\]->\(:(\w+)\)", motif)
+        decoupe = re.fullmatch(r"\(:(\w+)\)-\[:([\w|]+)(?: \{([^}]*)\})?\]->\(:(\w+)\)", motif)
         assert decoupe is not None, motif
         de, types, proprietes, vers = decoupe.groups()
-        resultat += [f"(:{de})-[:{t}{proprietes or ''}]->(:{vers})" for t in types.split("|")]
+        cles: list[str | float] = list(re.findall(r"\w+", proprietes or ""))
+        resultat += [[de, t, vers, *cles] for t in types.split("|")]
     return tuple(resultat), None
 
 
