@@ -1386,3 +1386,189 @@ date = 2026-10-11T03:37:44
 note = "juste"
 source = "oui"
 motif = "premisse-corrigee"
+
+# Campagne en-1 (2026-10-11, schéma anglais, T10.2) : décisions de Julien, sur la pré-analyse de Claude, revue
+# assistée de l'ADR-0014. Contre-épreuve : 8 cas sur 16 tirés au sort (graine 98dcbd7d875aff90, SHA-256 du CSV
+# de la campagne finie), revus seul par Julien avant de voir les propositions, d'après la référence (« je connais
+# pas assez pokemon pour juger ») ; pré-analyse scellée avant (SHA-256 516eff3327a8e335…) ; accord 7/8 sur les
+# notes, 2/2 sur les sources ; désaccord : Q1 (capacité Z en tête), tranché par Julien en partiel, comme dans fr-1.
+
+[[revue]]
+campagne = "en-1"
+cellule = "adk-gemini"
+passe = 3
+question = "Q1"
+essai = 1
+empreinte = "5c8e2c4e3779f4e4"
+date = 2026-10-11T21:12:03
+note = "partiel"
+motif = "capacite-z-en-tete"
+
+[[revue]]
+campagne = "en-1"
+cellule = "adk-gemini"
+passe = 1
+question = "Q27"
+essai = 1
+empreinte = "6b45f3cb70a6df8f"
+date = 2026-10-11T21:12:03
+note = "juste"
+source = "oui"
+motif = "precision-expliquee"
+
+[[revue]]
+campagne = "en-1"
+cellule = "adk-gemini"
+passe = 2
+question = "Q29"
+essai = 1
+empreinte = "1f7cf7b6a7c2f7c4"
+date = 2026-10-11T21:12:03
+note = "juste"
+source = "oui"
+motif = "premisse-corrigee"
+
+[[revue]]
+campagne = "en-1"
+cellule = "adk-gemini"
+passe = 2
+question = "Q13"
+essai = 1
+empreinte = "90ad4a98e6ef0bb3"
+date = 2026-10-11T21:12:03
+note = "juste"
+motif = "zenith-en-tete"
+
+[[revue]]
+campagne = "en-1"
+cellule = "adk-gemini"
+passe = 2
+question = "Q8"
+essai = 1
+empreinte = "24c10eb790161258"
+date = 2026-10-11T21:12:03
+note = "juste"
+motif = "mesure-alternative-signalee"
+
+[[revue]]
+campagne = "en-1"
+cellule = "adk-gemini"
+passe = 1
+question = "Q29"
+essai = 1
+empreinte = "4410ea3d40763258"
+date = 2026-10-11T21:12:03
+note = "juste"
+source = "oui"
+motif = "premisse-corrigee"
+
+[[revue]]
+campagne = "en-1"
+cellule = "adk-gemini"
+passe = 1
+question = "Q1"
+essai = 1
+empreinte = "679647e77b271c53"
+date = 2026-10-11T21:12:03
+note = "partiel"
+motif = "capacite-z-en-tete"
+
+[[revue]]
+campagne = "en-1"
+cellule = "adk-gemini"
+passe = 1
+question = "Q13"
+essai = 1
+empreinte = "490a316a34ba34bf"
+date = 2026-10-11T21:12:03
+note = "juste"
+motif = "zenith-en-tete"
+
+[[revue]]
+campagne = "en-1"
+cellule = "adk-gemini"
+passe = 2
+question = "Q1"
+essai = 1
+empreinte = "8b9bc7a92d9de473"
+date = 2026-10-11T21:12:03
+note = "partiel"
+motif = "capacite-z-en-tete"
+
+[[revue]]
+campagne = "en-1"
+cellule = "adk-gemini"
+passe = 2
+question = "Q12"
+essai = 1
+empreinte = "eb08dff0ce9e6417"
+date = 2026-10-11T21:12:03
+note = "juste"
+motif = "forme-signalee"
+
+[[revue]]
+campagne = "en-1"
+cellule = "adk-gemini"
+passe = 3
+question = "Q12"
+essai = 1
+empreinte = "4696c1b1ad2e8a51"
+date = 2026-10-11T21:12:03
+note = "juste"
+motif = "forme-signalee"
+
+[[revue]]
+campagne = "en-1"
+cellule = "adk-gemini"
+passe = 1
+question = "Q12"
+essai = 1
+empreinte = "1d141f468544c726"
+date = 2026-10-11T21:12:03
+note = "juste"
+motif = "forme-signalee"
+
+[[revue]]
+campagne = "en-1"
+cellule = "adk-gemini"
+passe = 1
+question = "Q14"
+essai = 1
+empreinte = "8d63b4875f3a623f"
+date = 2026-10-11T21:12:03
+note = "juste"
+motif = "liste-complete"
+
+[[revue]]
+campagne = "en-1"
+cellule = "adk-gemini"
+passe = 3
+question = "Q29"
+essai = 1
+empreinte = "2d70d2e4dc2b5955"
+date = 2026-10-11T21:12:03
+note = "juste"
+source = "oui"
+motif = "premisse-corrigee"
+
+[[revue]]
+campagne = "en-1"
+cellule = "adk-gemini"
+passe = 3
+question = "Q13"
+essai = 1
+empreinte = "8d2e75682599dd29"
+date = 2026-10-11T21:12:03
+note = "juste"
+motif = "zenith-en-tete"
+
+[[revue]]
+campagne = "en-1"
+cellule = "adk-gemini"
+passe = 3
+question = "Q21"
+essai = 1
+empreinte = "f99e40b455dbf8c0"
+date = 2026-10-11T21:12:03
+note = "juste"
+motif = "comparaison-juste"
