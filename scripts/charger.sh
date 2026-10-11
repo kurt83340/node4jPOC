@@ -64,7 +64,7 @@ Usage : scripts/charger.sh --tout | --idempotence | --ping | --go-no-go | --purg
                  seule, et liste de ce qui serait supprimé ; rien n'est exécuté ni écrit
   --langue       langue du schéma de la base, en lecture seule : fr ou en (noms, contraintes et index de la
                  langue en place), vide, mixte ou incomplète (bascule interrompue, code 1) ; banc lancer la
-                 vérifie avant une campagne (spec 002, T10.0)
+                 vérifie avant une campagne (spec 002, T10.0) ; relève aussi db.propertyKeys() par langue
 
 Variables : NEO4J_SECRET (défaut neo4j-aura-poc), GCP_PROJET (défaut jleroy-labo),
 POKEAPI_BASE (défaut : CSV PokéAPI au commit 168b1e8).
@@ -369,6 +369,24 @@ schema_en_place() {
   [[ "$presentes" == "${#contraintes[@]}" && "$etat" == "$total index, $total en ligne" ]]
 }
 
+# CLES_CONNUES reçoit ce que montre db.propertyKeys(), en lecture seule : toutes les clés que la base a connues, par
+# langue. Neo4j garde le nom d'une clé que plus rien ne porte (D8) : après une bascule, les deux langues y restent.
+# Relevé de T10.1 et T10.3.
+CLES_CONNUES=""
+cles_connues() {
+  cypher "WITH \$cartes AS cartes
+    CALL db.propertyKeys() YIELD propertyKey
+    WITH cartes, collect(propertyKey) AS cles
+    RETURN toString(size(cles)) + ' clés, dont '
+      + toString(size([cle IN cles WHERE cle IN keys(cartes.en.cles)])) + ' françaises et '
+      + toString(size([cle IN cles WHERE cle IN keys(cartes.fr.cles)])) + ' anglaises' AS connues" \
+    --access-mode read -P "$CARTES" || {
+    erreur "db.propertyKeys() illisible : ${SORTIE%%$'\n'*}"
+    exit 2
+  }
+  CLES_CONNUES="$(valeur)"
+}
+
 # --langue (spec 002, D8 ; T10.0) : la langue du schéma de la base, en lecture seule, que banc lancer vérifie
 # avant une campagne. fr ou en : plus aucun nom de l'autre langue, et les contraintes et index de la langue en place
 # (schema_en_place) ; vide : aucun nom de l'une ni de l'autre ; mixte : les deux, bascule interrompue ; incomplète :
@@ -391,6 +409,8 @@ langue_de_la_base() {
     langue=mixte
   fi
   printf 'noms français : %s\nnoms anglais : %s\n' "$francais" "$anglais"
+  cles_connues
+  printf 'db.propertyKeys() : %s\n' "$CLES_CONNUES"
   if [[ "$langue" == fr || "$langue" == en ]]; then
     if ! schema_en_place "$langue"; then
       langue=incomplète

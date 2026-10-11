@@ -502,3 +502,16 @@ def test_langue_sans_contraintes_lues(bac: Bac) -> None:
     )
     assert fini.returncode == 2
     assert "aucune contrainte ou aucun index lu dans 00-contraintes.cypher" in fini.stderr
+
+
+def test_langue_releve_les_cles_connues(bac: Bac) -> None:
+    # db.propertyKeys() garde les clés orphelines (D8) : relevé par langue, en lecture seule.
+    connues = ("AS connues", 'connues\n"58 clés, dont 29 françaises et 29 anglaises"', 0)
+    bac.regles(("AS restes", SANS_RESTE, 0, 1), ("AS restes", FRANCAIS, 0, 1), *EN_PLACE, connues)
+    lancement = bac.lancer("--langue")
+    assert lancement.code == 0, lancement.sortie
+    assert "db.propertyKeys() : 58 clés, dont 29 françaises et 29 anglaises" in lancement.sortie
+    [appel] = [a for a in lancement.requetes if "AS connues" in a["requete"]]
+    assert "CALL db.propertyKeys()" in appel["requete"]
+    assert appel["argv"][appel["argv"].index("--access-mode") + 1] == "read"
+    assert parametres(appel)[0].startswith("{cartes: ")
