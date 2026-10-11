@@ -24,6 +24,7 @@ Format : [Keep a Changelog](https://keepachangelog.com/). Versionning : `vYYYY.M
 - [Règles git](../rules/git-workflow.md) : clé du ticket Jira à la fin du sujet des commits, clé de l'epic du jalon à la fin du titre des PR, aucune clé dans le nom des branches, commits et PR au seul nom de Julien (2026-09-30)
 - [Règles git](../rules/git-workflow.md) : une branche et une PR par phase, fusion en merge commit (seul mode permis par le dépôt, branche supprimée à la fusion), tag `jalon-N` à la livraison d'un jalon ; le titre d'une PR finit par la clé du ticket de sa phase (2026-10-01)
 - [Règles git](../rules/git-workflow.md) : on ne fusionne qu'une PR dont `gh pr checks` est vert, GitHub Free ne protégeant aucune branche d'un dépôt privé ; branches `chore/` pour l'outillage du dépôt (2026-10-10)
+- Méthode : template claude-Setup 1.5.0 → 1.6.1 (2026-10-07), puis 1.7.0 (2026-10-09)
 
 ### Decided
 

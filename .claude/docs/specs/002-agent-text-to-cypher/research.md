@@ -149,4 +149,4 @@ Second agent `reviewer`, sur le plan corrigé, l'ADR-0009, la méthode git et le
 
 ## Liens externes
 
-- {{Lien doc / blog / RFC pertinents}}
+- Cités dans le texte, au fil des sections.

@@ -3,7 +3,7 @@
 > Vocabulaire du banc d'essai, une ligne par terme. Le pourquoi vit dans les ADR et dans le
 > [plan 002](specs/002-agent-text-to-cypher/plan.md) (D1 à D13).
 
-**Dernière MAJ :** 2026-10-09
+**Dernière MAJ :** 2026-10-11
 
 ## Banc d'essai
 
@@ -38,3 +38,13 @@
 - **Source citée** : une requête de « Sources » exécutée pendant le tour, dont le résultat contient la réponse, ou une description renvoyée pendant le tour ([ADR-0009](adr/0009-mvp-protocole-mesure-techniques.md)).
 - **Revue à l'aveugle** : `banc revoir`, qui présente les cas « à revoir » sans cellule, modèle, passe, essai, durée ni coût (D4).
 - **Réutilisation** : la note d'une revue reprise pour la même question et la même réponse courte normalisée, à partir du gel ; jamais pour les 13 questions dont la note dépend d'autre chose (D4).
+- **Revue assistée** (depuis le 2026-10-11) : Claude pré-analyse chaque cas « à revoir », à l'aveugle, vérifie par script ce qui se vérifie et propose une note, une source et un motif ; Julien décide ([ADR-0014](adr/0014-mvp-revue-assistee.md)).
+- **Contre-épreuve** : deux sens. En revue : 8 cas tirés au sort par campagne, que Julien revoit seul, à l'aveugle, avant de voir les propositions ; le taux d'accord va au relevé de la campagne ([ADR-0014](adr/0014-mvp-revue-assistee.md)). Au schéma anglais : le balayage joué sur la base française, où il doit lister les identifiants français (T10.0).
+
+## Schéma anglais
+
+- **Table de correspondance** : `cypher/anglais/correspondance.toml`, seule source des noms anglais (labels, types, clés, index ; valeurs inchangées), avec la liste relue des identifiants communs aux deux langues (D8, T6.1).
+- **Bascule** : le renommage du schéma de l'instance, du français vers l'anglais ou retour, par `scripts/charger.sh --schema en|fr` ; `--tout` est refusé tant que la base est en anglais (D8).
+- **Traducteur** : `banc.traduction`, qui traduit chaque identifiant d'une requête Cypher selon sa place ; un littéral ne change que s'il est en entier un identifiant ; alias et expressions régulières inchangés ; `banc traduire --vers <dossier>` (T6.2).
+- **Balayage** : la requête jointe à `fiche.cypher` traduit, qui cherche les labels, types et clés hors du schéma anglais ; attendu « aucun » (T6.2).
+- **Fiche anglaise** : `questions/fiche-schema.en.md`, produite de la table par `python -m banc anglais` : identifiants traduits ; prose, valeurs et alias inchangés (T6.3).
