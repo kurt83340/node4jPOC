@@ -29,6 +29,11 @@ JETON = re.compile(
     |(?P<symbole>::|\.\.|->|<-|=~|<>|<=|>=|\+=|.)""",
     re.VERBOSE | re.DOTALL,
 )
+# Fiche de schéma (Markdown) : ses blocs ```cypher, capturés sans leurs clôtures, son code en ligne.
+BLOC = re.compile(r"(?<=^```cypher\n)(.*?)(?=^```$)", re.MULTILINE | re.DOTALL)
+EN_LIGNE = re.compile(r"`([^`\n]+)`")
+NOM = re.compile(r"[^\W\d]\w*")
+POINTE = re.compile(r"([^\W\d]\w*)\.([^\W\d]\w*)")
 # Mots qui ouvrent une sous-requête entre accolades, et non une map.
 BLOCS = frozenset({"CALL", "COLLECT", "COUNT", "EXISTS"})
 # Le nom d'une contrainte ou d'un index suit CONSTRAINT ou INDEX, eux-mêmes après CREATE, DROP ou le
@@ -70,6 +75,35 @@ def jetons(cypher: str) -> list[Jeton]:
 def traduire(cypher: str, table: Correspondance, langue: str) -> str:
     """Le texte Cypher avec les identifiants du schéma dans cette langue (en ou fr)."""
     return _Traducteur(table, langue).traduire(jetons(cypher))
+
+
+def traduire_fiche(fiche: str, table: Correspondance, langue: str) -> str:
+    """La fiche de schéma (Markdown) avec les identifiants du schéma dans cette langue : ses blocs
+    ```cypher par traduire, son code en ligne selon sa forme (identifiant seul, Label.clé, motif) ;
+    la prose ne change pas."""
+    morceaux = BLOC.split(fiche)
+    for rang in range(1, len(morceaux), 2):  # les blocs, capturés entre la prose
+        morceaux[rang] = traduire(morceaux[rang], table, langue)
+    for rang in range(0, len(morceaux), 2):
+        morceaux[rang] = EN_LIGNE.sub(
+            lambda code: f"`{_en_ligne(code.group(1), table, langue)}`", morceaux[rang]
+        )
+    return "".join(morceaux)
+
+
+def _en_ligne(code: str, table: Correspondance, langue: str) -> str:
+    """Le code en ligne d'une fiche : un identifiant seul (de tout genre), un Label.clé ou
+    TYPE.clé, un motif ; le reste (une valeur, un nom d'outil) tel quel."""
+    if NOM.fullmatch(code):
+        noms = (table.nom(genre, code, langue) for genre in GENRES)
+        return next((nom for nom in noms if nom is not None), code)
+    if (pointe := POINTE.fullmatch(code)) is not None:
+        schema, cle = pointe.groups()
+        traduit = table.nom("labels", schema, langue) or table.nom("relations", schema, langue)
+        if traduit is None:
+            raise TraductionError(f"label ou type inconnu : {schema!r}")
+        return f"{traduit}.{table.nom('proprietes', cle, langue) or cle}"
+    return traduire(code, table, langue) if code.startswith("(") else code
 
 
 def sans_commentaires(cypher: str) -> str:

@@ -16,6 +16,8 @@ RACINE = Path(__file__).resolve().parents[3]
 QUESTIONS = RACINE / "questions"
 QUESTIONS_SH = RACINE / "scripts" / "questions.sh"
 CONTRAINTES_FR = RACINE / "cypher" / "00-contraintes.cypher"
+FICHE_FR = QUESTIONS / "fiche-schema.md"
+FICHE_EN = QUESTIONS / "fiche-schema.en.md"
 CONTRAINTES_EN = correspondance.DOSSIER / "contraintes.cypher"
 PRODUIT = "uv run --directory banc python -m banc anglais"
 
@@ -33,11 +35,18 @@ def contraintes(table: Correspondance) -> str:
     return entete + "\n" + traduction.traduire(francais, table, "en")
 
 
+def fiche(table: Correspondance) -> str:
+    """La fiche de schéma anglaise : la fiche française, identifiants traduits, sans rien d'autre
+    (elle va telle quelle dans le prompt des passes anglaises : pas d'en-tête)."""
+    return traduction.traduire_fiche(FICHE_FR.read_text(), table, "en")
+
+
 def produits(table: Correspondance) -> dict[Path, str]:
     """Les fichiers tirés de la table, avec leur contenu attendu."""
     return {
         correspondance.CARTE: correspondance.carte(table),
         CONTRAINTES_EN: contraintes(table),
+        FICHE_EN: fiche(table),
     }
 
 
@@ -82,7 +91,7 @@ def corpus() -> dict[str, str]:
     textes = {f.name: f.read_text() for f in sorted(QUESTIONS.glob("q[0-9][0-9].cypher"))}
     for nom in ("especes.cypher", "fiche.cypher"):
         textes[nom] = (QUESTIONS / nom).read_text()
-    exemples = exemples_de_la_fiche((QUESTIONS / "fiche-schema.md").read_text())
+    exemples = exemples_de_la_fiche(FICHE_FR.read_text())
     for rang, exemple in enumerate(exemples, start=1):
         textes[f"exemples/exemple-{rang}.cypher"] = exemple
     for nom, variable in RECHERCHES.items():

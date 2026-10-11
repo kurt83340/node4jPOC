@@ -8,7 +8,7 @@
 > il « perd le fil » (échecs ×4 constatés en télémétrie, Morph 2026) → découper la phase.
 
 **Date :** 2026-10-01
-**Status :** [~] 25/33 tasks → MAJ au fil de l'eau
+**Status :** [~] 26/33 tasks → MAJ au fil de l'eau
 
 > Phases 0 à 6 : sans la base (prévues pendant la période creuse de NEO-13, close le 2026-10-07). Phases 7 à 11 : sur la base.
 > Les tests n'appellent aucun outil réel : PATH réduit aux faux outils, HOME temporaire.
@@ -69,7 +69,7 @@
   - DoD : `command_passes: bash -n scripts/charger.sh && uv run --directory banc pytest tests/test_correspondance.py -q` (carte à jour avec la table), puis, sur la base, `command_passes: scripts/charger.sh --schema en --explain` (repris de T7.5, la phase 6 venant après la 7 ; mécanisme : Cypher 25, plan D8)
 - [x] **T6.2** : traducteur du Cypher, en TDD, et `banc traduire --vers <dossier>` : les 27 requêtes (dont la q02) et `especes.cypher`, `fiche.cypher` (T7.3), les exemples de la fiche (dont `dracofeu~` et `ELECTRIK`, sous `exemples/dracofeu.cypher` et `exemples/electrik.cypher`) et une requête de balayage avec sa réponse attendue ; identifiants traduits ; littéraux, alias et expressions régulières inchangés — fait le 2026-10-11 : avant elle, Poissirène entre dans la table de Q9, hors filet (choix de Julien, plan D4) ; `banc.traduction` découpe en jetons, puis juge chaque nom par sa place (label ou type après « : » ou « | », clé après un point ou dans la map d'un motif, nom de contrainte ou d'index) ; un littéral ne change que s'il est en entier un identifiant ; `banc traduire` écrit 39 fichiers, dont `fiche.cypher` suivi du balayage (labels, types et clés portés hors du schéma anglais, attendu « aucun ») et les deux recherches lues dans `questions.sh` ; `fiche.cypher` réécrit pour que chaque identifiant soit un littéral entier (motifs et facteurs recomposés à l'exécution), toujours conforme sur la base (`--exemples` : 23 valeurs, 10 exemples) ; 222 tests (liste française tirée d'ARCHITECTURE § 5, lecteur indépendant du traducteur, aller-retour, seuls des identifiants changent, alias intacts), 7 fautes injectées, toutes détectées
   - DoD : `command_passes: uv run --directory banc pytest tests/test_traduction.py -q` (contrôle contre une liste française tirée d'ARCHITECTURE § 5, indépendante de la table, identifiants communs écartés)
-- [ ] **T6.3** : `questions/fiche-schema.en.md` produite par la table (et produite de nouveau après le gel du protocole)
+- [x] **T6.3** : `questions/fiche-schema.en.md` produite par la table (et produite de nouveau après le gel du protocole) — fait le 2026-10-11 : produite par `python -m banc anglais` depuis la fiche gelée (sa dernière retouche date de T7.3, avant le gel) ; blocs `cypher` par le traducteur, code en ligne selon sa forme (identifiant seul, `Label.clé`, motif, raccourci `{rang}` compris) ; prose, valeurs et alias inchangés, aucun en-tête (elle va telle quelle dans le prompt) ; 8 tests (aucun identifiant français d'après ARCHITECTURE § 5, prose identique, seuls des identifiants changent, aller-retour), 4 fautes injectées, toutes détectées ; Prettier conforme
   - DoD : `command_passes: uv run --directory banc pytest tests/test_fiche_anglaise.py -q` (aucun identifiant de la liste française indépendante, hors identifiants communs)
 
 ## Phase 7 — Retour sur la base, à partir du 2026-10-04 (NEO-20 ; T7.1 : NEO-13)
