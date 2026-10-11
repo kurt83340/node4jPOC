@@ -5,7 +5,8 @@
 // contraintes.cypher).
 //
 // Cypher 25 pur, sans APOC (ADR-0003 ; mécanisme choisi en T7.5 par charger.sh --sonde-renommage) : labels,
-// types et clés dynamiques, par lots de 10 000 lignes pour ménager la mémoire d'Aura Free. Un type de relation
+// types et clés dynamiques, par lots de 5 000 lignes pour ménager la mémoire d'Aura Free (10 000 en T7.5,
+// réduits après la revue adverse de la phase 6 : chaque relation recréée écrit deux fois). Un type de relation
 // ne se renomme pas en place : chaque relation est recréée sous son nouveau nom, clés traduites, puis
 // supprimée. Chaque requête ne voit que ce qui porte encore un nom de l'autre langue, et la table refuse un
 // nom à la fois français et anglais : après une coupure, on relance, rien ne se fait deux fois.
@@ -18,7 +19,7 @@ CALL (n, carte) {
   UNWIND [label IN labels(n) WHERE label IN keys(carte.labels)] AS ancien
   SET n:$(carte.labels[ancien])
   REMOVE n:$(ancien)
-} IN TRANSACTIONS OF 10000 ROWS;
+} IN TRANSACTIONS OF 5000 ROWS;
 
 // Clés des nœuds.
 WITH $cartes[$langue] AS carte
@@ -28,7 +29,7 @@ CALL (n, carte) {
   UNWIND [cle IN keys(n) WHERE cle IN keys(carte.cles)] AS ancienne
   SET n[carte.cles[ancienne]] = n[ancienne]
   REMOVE n[ancienne]
-} IN TRANSACTIONS OF 10000 ROWS;
+} IN TRANSACTIONS OF 5000 ROWS;
 
 // Relations d'un type renommé : recréées sous le nouveau type, avec leurs clés traduites.
 WITH $cartes[$langue] AS carte
@@ -42,7 +43,7 @@ CALL (a, r, b, carte) {
   UNWIND [cle IN keys(s) WHERE cle IN keys(carte.cles)] AS ancienne
   SET s[carte.cles[ancienne]] = s[ancienne]
   REMOVE s[ancienne]
-} IN TRANSACTIONS OF 10000 ROWS;
+} IN TRANSACTIONS OF 5000 ROWS;
 
 // Relations d'un type commun aux deux langues : leurs clés seules (aucun type commun aujourd'hui).
 WITH $cartes[$langue] AS carte
@@ -52,4 +53,4 @@ CALL (r, carte) {
   UNWIND [cle IN keys(r) WHERE cle IN keys(carte.cles)] AS ancienne
   SET r[carte.cles[ancienne]] = r[ancienne]
   REMOVE r[ancienne]
-} IN TRANSACTIONS OF 10000 ROWS;
+} IN TRANSACTIONS OF 5000 ROWS;
