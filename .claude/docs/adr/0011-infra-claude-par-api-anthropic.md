@@ -6,6 +6,8 @@ supersedes: null
 amends: 0009
 ---
 
+> ⚠️ **Point remplacé** (2026-10-12) : « la clé d'un workspace dédié au banc », « 20 $ d'abord » et « limite mensuelle du workspace » → [ADR-0016](0016-infra-limite-anthropic-organisation.md) : la clé reste dans le workspace « Default », et la dépense Claude est bornée par la limite mensuelle de l'organisation, 20 $, et par le solde des crédits, sans recharge automatique. Le reste de cet ADR reste en vigueur.
+
 # 0011 — Claude par l'API Anthropic, plafonné par des crédits prépayés
 
 **Statut :** Accepted

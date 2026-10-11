@@ -43,6 +43,7 @@ Format : [Keep a Changelog](https://keepachangelog.com/). Versionning : `vYYYY.M
 - Plafond natif de 30 € par mois sur Vertex, en plus de la coupure de l'option C ; retard réel d'un budget (jusqu'à un jour, parfois plus), rôle personnalisé, expiration du budget de 100 € au 2026-12-31 ([ADR-0013](adr/0013-infra-plafond-natif-de-vertex.md), amende l'ADR-0010)
 - Revue assistée des cas « à revoir » : pré-analyse de Claude à l'aveugle, vérifiée par script, validée par Julien, et contre-épreuve de 8 cas tirés au sort qu'il revoit seul avant de voir les propositions ; `fr-1` garde ses décisions, la règle vaut pour la phase 10 et les jalons 3 et 4 ([ADR-0014](adr/0014-mvp-revue-assistee.md), amende l'ADR-0009)
 - Source d'un second tour de paire (Q18, Q28) : une requête exécutée au tour précédent de la même conversation compte, si son résultat contient la réponse ; Q28 dès la revue de `en-1`, Q18 après la phase 10 (T11.0) ([ADR-0015](adr/0015-mvp-source-du-tour-precedent.md), amende l'ADR-0009)
+- Clé Anthropic du banc dans le workspace « Default » ; dépense Claude bornée par la limite mensuelle de l'organisation, ramenée à 20 $, et par le solde des crédits ; remplace le workspace dédié de l'ADR-0011 ([ADR-0016](adr/0016-infra-limite-anthropic-organisation.md))
 
 ---
 
