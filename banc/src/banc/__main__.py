@@ -5,7 +5,7 @@ import sys
 from collections.abc import Sequence
 from decimal import Decimal, InvalidOperation
 
-from banc import essai_serveur, orchestration, revue
+from banc import essai_serveur, orchestration, rapport, revue
 from banc.acces import acces
 
 
@@ -63,6 +63,16 @@ def main(arguments: Sequence[str] | None = None) -> int:
     revoir.add_argument(
         "--verifier", action="store_true", help="code 0 s'il ne reste aucun cas à revoir, 1 sinon"
     )
+    rapport_ = commandes.add_parser(
+        "rapport",
+        help="bilan d'une campagne, série par série (T9.1) ; scores une fois la revue finie",
+    )
+    rapport_.add_argument("--campagne", required=True, help="identifiant de la campagne")
+    rapport_.add_argument(
+        "--complet",
+        action="store_true",
+        help="code 0 si chaque série est complète, sans panne à rejouer ni passe invalide, 1 sinon",
+    )
     lus = parseur.parse_args(arguments)
     if lus.commande == "lancer":
         demande = orchestration.Demande(
@@ -78,6 +88,8 @@ def main(arguments: Sequence[str] | None = None) -> int:
         return orchestration.commande(demande)
     if lus.commande == "revoir":
         return revue.commande(lus.campagne, seulement_verifier=lus.verifier)
+    if lus.commande == "rapport":
+        return rapport.commande(lus.campagne, complet=lus.complet)
     if lus.commande == "essai-serveur":
         return essai_serveur.commande()
     return acces()

@@ -9,6 +9,8 @@ supersedes: null
 
 > ⚠️ **Point remplacé** (2026-10-08) : « tous sur Vertex » (Décision, plan croisé) → [ADR-0011](0011-infra-claude-par-api-anthropic.md) : les deux cellules Claude passent par l'API Anthropic, Gemini reste sur Vertex `eu`. Le reste de cet ADR reste en vigueur.
 
+> ⚠️ **Point remplacé** (2026-10-11) : « revue humaine à l'aveugle du reste » (Décision, notation mixte) → [ADR-0014](0014-mvp-revue-assistee.md) : revue assistée, pré-analyse de Claude à l'aveugle validée par Julien, avec une contre-épreuve de 8 cas qu'il revoit seul. Le reste de cet ADR reste en vigueur.
+
 **Statut :** Accepted
 **Date :** 2026-10-01
 **Décideur :** Julien Leroy
