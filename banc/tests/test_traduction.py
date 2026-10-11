@@ -13,6 +13,7 @@ un littéral qui est en entier un identifiant du schéma.
 """
 
 import re
+import shutil
 from pathlib import Path
 
 import pytest
@@ -324,3 +325,155 @@ def test_commande_traduire(tmp_path: Path) -> None:
     )
     assert ecrits == sorted(TRADUCTIONS)
     assert (tmp_path / "anglais" / "q09.cypher").read_text() == TRADUCTIONS["q09.cypher"]
+
+
+# --- banc traduire --vers (revue adverse de la phase 6, T10.0) --------------------------------
+
+
+def test_vers_relatif_a_la_racine(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    # uv run --directory banc change de dossier : logs/anglais part quand même de la racine.
+    monkeypatch.setattr(anglais, "RACINE", tmp_path / "depot")
+    (tmp_path / "ailleurs").mkdir()
+    monkeypatch.chdir(tmp_path / "ailleurs")
+    assert anglais.commande_traduire(Path("logs/anglais")) == 0
+    assert (tmp_path / "depot" / "logs" / "anglais" / "q02.cypher").is_file()
+    assert not (tmp_path / "ailleurs" / "logs").exists()
+
+
+def test_traduction_perimee_effacee(tmp_path: Path) -> None:
+    dossier = tmp_path / "anglais"
+    assert anglais.commande_traduire(dossier) == 0
+    perimee = dossier / "exemples" / "q99.cypher"
+    perimee.write_text(f"{anglais.ENTETE}questions/q99.cypher.\nRETURN 1;\n")
+    assert anglais.commande_traduire(dossier) == 0
+    assert not perimee.exists()
+    assert anglais.ecarts_de_traduction(dossier) == []
+
+
+@pytest.mark.parametrize("etranger", ["notes.txt", "exemples/a-garder.cypher"])
+def test_dossier_etranger_rien_n_est_efface(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], etranger: str
+) -> None:
+    dossier = tmp_path / "anglais"
+    assert anglais.commande_traduire(dossier) == 0
+    fichier = dossier / etranger
+    fichier.write_text("RETURN 1;\n")
+    q02 = dossier / "q02.cypher"
+    q02.write_text(q02.read_text() + "// retouche\n")
+    assert anglais.commande_traduire(dossier) == 2
+    assert f"contient {etranger}, qui n'est pas une traduction" in capsys.readouterr().err
+    assert fichier.read_text() == "RETURN 1;\n"
+    # Rien d'effacé, rien de réécrit.
+    assert q02.read_text().endswith("// retouche\n")
+
+
+def test_vers_un_fichier(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    fichier = tmp_path / "anglais"
+    fichier.write_text("RETURN 1;\n")
+    assert anglais.commande_traduire(fichier) == 2
+    assert "n'est pas un dossier" in capsys.readouterr().err
+    assert fichier.read_text() == "RETURN 1;\n"
+
+
+def test_ecarts_de_traduction(tmp_path: Path) -> None:
+    dossier = tmp_path / "anglais"
+    assert anglais.ecarts_de_traduction(dossier) == ["dossier absent"]
+    dossier.mkdir()
+    assert len(anglais.ecarts_de_traduction(dossier)) == len(TRADUCTIONS)
+    assert "q02.cypher absent" in anglais.ecarts_de_traduction(dossier)
+    assert anglais.commande_traduire(dossier) == 0
+    assert anglais.ecarts_de_traduction(dossier) == []
+    (dossier / "q02.cypher").write_text(TRADUCTIONS["q02.cypher"].replace("HAS_TYPE", "A_LE_TYPE"))
+    (dossier / "q31.cypher").write_text("RETURN 1;\n")
+    assert anglais.ecarts_de_traduction(dossier) == ["q02.cypher périmé", "q31.cypher en trop"]
+
+
+# --- Maps dont une clé porte le nom d'une clé du schéma (T10.0) --------------------------------
+
+
+@pytest.mark.parametrize(
+    ("francais", "anglais_"),
+    [
+        pytest.param("RETURN {nom: 'Abra'} AS m", "RETURN {nom: 'Abra'} AS m", id="map-seule"),
+        pytest.param(
+            "WITH {nom: p.nom, rang: r.rang} AS m RETURN m",
+            "WITH {nom: p.name, rang: r.slot} AS m RETURN m",
+            id="valeurs-traduites",
+        ),
+        pytest.param(
+            "RETURN [x IN liste | {nom: x}] AS noms",
+            "RETURN [x IN liste | {nom: x}] AS noms",
+            id="map-de-liste",
+        ),
+        # Limite connue (plan, D8) : la lecture par un point se traduit, la clé de la map non ; la
+        # requête traduite ne lit plus rien. Le corpus n'en a aucune
+        # (test_aucune_cle_de_map_hors_motif_n_est_une_cle_du_schema).
+        pytest.param(
+            "WITH {nom: 'Abra'} AS m RETURN m.nom",
+            "WITH {nom: 'Abra'} AS m RETURN m.name",
+            id="limite-lecture-par-un-point",
+        ),
+    ],
+)
+def test_map_a_cle_du_schema(francais: str, anglais_: str) -> None:
+    assert en(francais) == anglais_
+
+
+def test_lien_vers_un_dossier_refuse(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    # Revue adverse de T10.0 : exemples/ en lien vers un autre dossier faisait écrire dedans.
+    precieux = tmp_path / "precieux"
+    precieux.mkdir()
+    (precieux / "dracofeu.cypher").write_text("MON FICHIER\n")
+    (precieux / "notes.md").write_text("notes\n")
+    dossier = tmp_path / "anglais"
+    assert anglais.commande_traduire(dossier) == 0
+    shutil.rmtree(dossier / "exemples")
+    (dossier / "exemples").symlink_to(precieux, target_is_directory=True)
+    assert anglais.commande_traduire(dossier) == 2
+    assert "contient exemples, qui n'est pas une traduction" in capsys.readouterr().err
+    assert sorted(f.name for f in precieux.iterdir()) == ["dracofeu.cypher", "notes.md"]
+    assert (precieux / "dracofeu.cypher").read_text() == "MON FICHIER\n"
+    # Rien d'effacé dans le dossier non plus.
+    assert (dossier / "q02.cypher").read_text() == TRADUCTIONS["q02.cypher"]
+
+
+def test_lien_vers_une_traduction_refuse(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    # Même vers un fichier sous l'en-tête, un lien n'est pas une traduction : effacer le lien
+    # laisserait la cible, écrire suivrait le lien.
+    ailleurs = tmp_path / "ailleurs.cypher"
+    ailleurs.write_text(TRADUCTIONS["q02.cypher"])
+    dossier = tmp_path / "anglais"
+    assert anglais.commande_traduire(dossier) == 0
+    (dossier / "q02.cypher").unlink()
+    (dossier / "q02.cypher").symlink_to(ailleurs)
+    assert anglais.commande_traduire(dossier) == 2
+    assert "contient q02.cypher, qui n'est pas une traduction" in capsys.readouterr().err
+    assert ailleurs.read_text() == TRADUCTIONS["q02.cypher"]
+
+
+def test_dossier_en_lien_refuse(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    vrai = tmp_path / "vrai"
+    vrai.mkdir()
+    (tmp_path / "anglais").symlink_to(vrai, target_is_directory=True)
+    assert anglais.commande_traduire(tmp_path / "anglais") == 2
+    assert "n'est pas un dossier (ou c'est un lien)" in capsys.readouterr().err
+    assert list(vrai.iterdir()) == []
+
+
+def test_traduction_impossible_rien_n_est_efface(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    dossier = tmp_path / "anglais"
+    assert anglais.commande_traduire(dossier) == 0
+
+    def en_echec(_table: object) -> dict[str, str]:
+        raise TraductionError("identifiant inconnu")
+
+    monkeypatch.setattr(anglais, "traductions", en_echec)
+    assert anglais.commande_traduire(dossier) == 2
+    assert "traduction impossible, rien n'est effacé : identifiant inconnu" in (
+        capsys.readouterr().err
+    )
+    assert (dossier / "q02.cypher").read_text() == TRADUCTIONS["q02.cypher"]

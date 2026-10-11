@@ -57,11 +57,6 @@ class Correspondance:
             return identifiant
         return self.sens(langue)[genre].get(identifiant)
 
-    def identifiants(self, langue: str) -> frozenset[str]:
-        """Tous les identifiants du schéma dans cette langue, communs compris."""
-        traduits = (nom for noms in self.sens(langue).values() for nom in noms.values())
-        return frozenset(traduits).union(*self.communs.values())
-
 
 def charger(fichier: Path = TABLE) -> Correspondance:
     """Lit la table et la valide : formes, noms en double, noms qui en masquent d'autres."""

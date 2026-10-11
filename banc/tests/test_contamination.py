@@ -1,12 +1,14 @@
 """Consigne et fiche de schéma (T1.2, plan D5) : ajoutées telles quelles au prompt système de chaque
 technique, elles ne doivent rien souffler des 30 questions ni de leurs réponses.
 
-Trois contrôles, sur les deux fichiers entiers :
+Trois contrôles, sur les deux fichiers entiers, puis sur la consigne et la fiche anglaise (D8 ;
+T10.0), qui ne change que les identifiants du schéma et va dans le prompt des passes anglaises :
 - aucun nom propre hors d'une liste blanche (types, catégories d'attaque, méthodes, schéma, outils,
   entités des exemples) ;
 - aucune valeur de questions/attendu/, aucun nom des questions, du README ni de banc.toml, hors des
   valeurs de schéma permises ; aucune entité des exemples parmi eux ;
-- aucun exemple dont la structure, littéraux et variables masqués, recoupe l'une des 27 requêtes.
+- aucun exemple dont la structure, littéraux et variables masqués, recoupe l'une des 27 requêtes
+  (traduites, pour la fiche anglaise).
 """
 
 import difflib
@@ -16,13 +18,20 @@ from pathlib import Path
 
 import pytest
 
-from banc import attendu
+from banc import anglais, attendu, correspondance
 from banc.questions import charger
 
 RACINE = Path(__file__).resolve().parents[2]
 QUESTIONS = RACINE / "questions"
 FICHIERS = (QUESTIONS / "consigne.md", QUESTIONS / "fiche-schema.md")
 TEXTE = "\n".join(fichier.read_text() for fichier in FICHIERS)
+# Le prompt des passes anglaises : la même consigne, la fiche anglaise (T6.3).
+FICHIERS_EN = (QUESTIONS / "consigne.md", QUESTIONS / "fiche-schema.en.md")
+TEXTE_EN = "\n".join(fichier.read_text() for fichier in FICHIERS_EN)
+TABLE = correspondance.charger()
+# Les labels anglais (D8) : les seuls noms propres que la fiche anglaise ajoute ; les types de
+# relation sont en capitales, les clés en minuscules.
+SCHEMA_EN = tuple(TABLE.sens("en")["labels"].values())
 README = (QUESTIONS / "README.md").read_text()
 BANC = charger()
 
@@ -111,31 +120,36 @@ def valeurs_interdites() -> set[str]:
 INTERDITES = valeurs_interdites()
 
 
-def exemples() -> list[str]:
-    return re.findall(r"```cypher\n(.*?)```", TEXTE, re.DOTALL)
+def exemples(texte: str = TEXTE) -> list[str]:
+    return re.findall(r"```cypher\n(.*?)```", texte, re.DOTALL)
 
 
 # --- Noms propres et valeurs ---------------------------------------------------------------------
 
 
 def test_fichiers_entiers() -> None:
-    # Les deux fichiers vont entiers dans le prompt : le contrôle porte sur tout leur texte.
-    for fichier in FICHIERS:
+    # Les fichiers vont entiers dans le prompt : le contrôle porte sur tout leur texte.
+    for fichier in (*FICHIERS, *FICHIERS_EN):
         assert fichier.read_text().strip()
 
 
-def test_noms_propres_en_liste_blanche() -> None:
-    permis = {jeton for nom in (*PERMIS, *EXEMPLES, *FRANCAIS) for jeton in noms_propres(nom)}
-    mots_courants = courants(TEXTE) | courants(README)
+@pytest.mark.parametrize(
+    ("texte", "schema"), [(TEXTE, ()), (TEXTE_EN, SCHEMA_EN)], ids=["fr", "en"]
+)
+def test_noms_propres_en_liste_blanche(texte: str, schema: tuple[str, ...]) -> None:
+    permis = {
+        jeton for nom in (*PERMIS, *EXEMPLES, *FRANCAIS, *schema) for jeton in noms_propres(nom)
+    }
+    mots_courants = courants(texte) | courants(README)
     inconnus = {
-        nom for nom in noms_propres(TEXTE) if nom not in permis and nom.lower() not in mots_courants
+        nom for nom in noms_propres(texte) if nom not in permis and nom.lower() not in mots_courants
     }
     assert not inconnus
 
 
-def test_aucune_valeur_du_banc() -> None:
-    texte = mots(TEXTE)
-    cites = sorted(v for v in INTERDITES if contient(texte, mots(v)))
+@pytest.mark.parametrize("texte", [TEXTE, TEXTE_EN], ids=["fr", "en"])
+def test_aucune_valeur_du_banc(texte: str) -> None:
+    cites = sorted(v for v in INTERDITES if contient(mots(texte), mots(v)))
     assert not cites
 
 
@@ -187,17 +201,24 @@ def masquer(requete: str) -> list[str]:
     return masques
 
 
-def requetes_de_reference() -> dict[str, list[str]]:
-    """Les requêtes des 27 fichiers qNN.cypher, une par instruction."""
+def requetes_de_reference(langue: str = "fr") -> dict[str, list[str]]:
+    """Les requêtes des 27 fichiers qNN.cypher, une par instruction ; en anglais, leur traduction
+    (banc traduire)."""
+    if langue == "fr":
+        textes = {f.stem: f.read_text() for f in sorted(QUESTIONS.glob("q[0-9][0-9].cypher"))}
+    else:
+        traduits = anglais.traductions(TABLE)
+        textes = {Path(c).stem: v for c, v in traduits.items() if re.fullmatch(r"q\d\d\.cypher", c)}
     requetes = {}
-    for fichier in sorted(QUESTIONS.glob("q[0-9][0-9].cypher")):
-        texte = re.sub(r"//[^\n]*", "", fichier.read_text())
+    for nom, brut in textes.items():
+        texte = re.sub(r"//[^\n]*", "", brut)
         for rang, instruction in enumerate(i for i in texte.split(";") if i.strip()):
-            requetes[f"{fichier.stem}.{rang + 1}"] = masquer(instruction)
+            requetes[f"{nom}.{rang + 1}"] = masquer(instruction)
     return requetes
 
 
 REFERENCES = requetes_de_reference()
+REFERENCES_EN = requetes_de_reference("en")
 # Seuils mesurés sur les 31 instructions de référence (2026-10-08) : deux requêtes de même
 # gabarit se ressemblent à 0,88 et plus (q01 et q27, les sémantiques entre elles) ; deux requêtes
 # courtes sans rapport, jusqu'à 0,80 (q05 et q22, par la seule syntaxe). À 0,85, l'exemple reprend
@@ -208,7 +229,9 @@ SEUIL_INCLUSION = 0.8
 
 def test_six_a_huit_exemples() -> None:
     assert 6 <= len(exemples()) <= 8
+    assert len(exemples(TEXTE_EN)) == len(exemples())
     assert len(REFERENCES) >= 27
+    assert REFERENCES_EN.keys() == REFERENCES.keys()
 
 
 def test_plein_texte_enseigne_avec_une_autre_faute() -> None:
@@ -219,10 +242,19 @@ def test_plein_texte_enseigne_avec_une_autre_faute() -> None:
     assert any(re.search(r"'\w+~'", e) for e in recherches)
 
 
-@pytest.mark.parametrize("exemple", exemples(), ids=lambda e: " ".join(e.split())[:40])
-def test_exemple_hors_des_requetes_de_reference(exemple: str) -> None:
+@pytest.mark.parametrize(
+    ("exemple", "references"),
+    [*((e, REFERENCES) for e in exemples()), *((e, REFERENCES_EN) for e in exemples(TEXTE_EN))],
+    ids=[
+        *(f"fr {' '.join(e.split())[:36]}" for e in exemples()),
+        *(f"en {' '.join(e.split())[:36]}" for e in exemples(TEXTE_EN)),
+    ],
+)
+def test_exemple_hors_des_requetes_de_reference(
+    exemple: str, references: dict[str, list[str]]
+) -> None:
     masque = masquer(exemple)
-    for nom, reference in REFERENCES.items():
+    for nom, reference in references.items():
         comparaison = difflib.SequenceMatcher(None, masque, reference, autojunk=False)
         bloc = comparaison.find_longest_match(0, len(masque), 0, len(reference)).size
         assert comparaison.ratio() < SEUIL_RESSEMBLANCE, nom

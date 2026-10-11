@@ -383,6 +383,8 @@ async def converser(client: str, commande: Commande, tarifs: Sequence[Tarif]) ->
     après un échec est l'affaire de l'orchestration (ADR-0012, T4.3).
     """
     verifier_acces(client)
+    # Avant toute trace : une fiche modifiée depuis la création de la campagne arrête tout (D7).
+    prompt = consigne_et_fiche(schema=commande.schema, empreinte=commande.empreinte_prompt)
     avant = asyncio.all_tasks()
     boite = boite_a_outils(commande)
     try:
@@ -411,7 +413,7 @@ async def converser(client: str, commande: Commande, tarifs: Sequence[Tarif]) ->
             agent = LlmAgent(
                 name=AGENT,
                 model=llm,
-                instruction=instruction(consigne_et_fiche()),
+                instruction=instruction(prompt),
                 tools=[boite],
                 generate_content_config=config,
                 after_model_callback=comptes.apres_le_modele,

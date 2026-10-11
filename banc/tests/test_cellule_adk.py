@@ -19,7 +19,7 @@ import sys
 import time
 from collections.abc import AsyncIterator, Iterator
 from contextlib import contextmanager
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import date
 from decimal import Decimal
 from pathlib import Path
@@ -42,6 +42,7 @@ from banc.cellule import (
     Plafonds,
     commande_json,
     consigne_et_fiche,
+    empreinte_prompt,
 )
 from banc.cellule_adk import ACCES, MODELES, converser
 from banc.isolement import CleAbsente, environnement_agent
@@ -367,6 +368,37 @@ def test_requete_de_gemini(bac: Bac) -> None:
         # Rien de stocké en cache (cache implicite de Vertex) : aucun cachedContent.
         assert "cachedContent" not in json.dumps(corps)
     assert all("cachedContents" not in requete["chemin"] for requete in requetes)
+
+
+def systeme(client: str, corps: dict[str, Any]) -> str:
+    """Le prompt système d'une requête du modèle, chez Anthropic ou chez Vertex."""
+    if client == CLAUDE:
+        (bloc,) = corps["system"]
+        return str(bloc["text"])
+    (partie,) = corps["systemInstruction"]["parts"]
+    return str(partie["text"])
+
+
+@pytest.mark.parametrize("client", CLIENTS)
+def test_prompt_de_la_campagne_anglaise(bac: Bac, client: str) -> None:
+    # Schéma anglais (D8, T10.0) : la fiche anglaise, sous l'empreinte fixée à la création.
+    commande = replace(bac.commande(), schema="en", empreinte_prompt=empreinte_prompt("en"))
+    bac.converser(client, TOUR_TYPE, commande)
+    requetes = bac.requetes()
+    assert requetes
+    for requete in requetes:
+        assert systeme(client, requete["corps"]).startswith(consigne_et_fiche(schema="en"))
+
+
+@pytest.mark.parametrize("client", CLIENTS)
+def test_prompt_change_depuis_la_creation(bac: Bac, client: str) -> None:
+    # L'empreinte d'un autre prompt : erreur technique, avant toute trace et tout appel.
+    commande = replace(bac.commande(), schema="en", empreinte_prompt=empreinte_prompt("fr"))
+    fini = lancer_comme_l_orchestration(bac, client, TOUR_TYPE, commande)
+    assert fini.returncode == 2
+    assert "changées depuis la création de la campagne" in fini.stderr
+    assert list((bac.racine / "traces").rglob("*.jsonl")) == []
+    assert bac.requetes() == []
 
 
 def test_cache_d_une_heure(bac: Bac) -> None:

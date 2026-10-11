@@ -10,7 +10,8 @@ import textwrap
 from pathlib import Path
 
 from banc import correspondance, traduction
-from banc.correspondance import Correspondance
+from banc.correspondance import Correspondance, CorrespondanceError
+from banc.traduction import TraductionError
 
 RACINE = Path(__file__).resolve().parents[3]
 QUESTIONS = RACINE / "questions"
@@ -20,6 +21,10 @@ FICHE_FR = QUESTIONS / "fiche-schema.md"
 FICHE_EN = QUESTIONS / "fiche-schema.en.md"
 CONTRAINTES_EN = correspondance.DOSSIER / "contraintes.cypher"
 PRODUIT = "uv run --directory banc python -m banc anglais"
+# Le corpus traduit (T10.1), où scripts/questions.sh --dossier le lit, et où banc lancer prend la
+# traduction de q02.cypher pour le contrôle de Q2 d'une campagne anglaise (T10.0).
+TRADUCTION = RACINE / "logs" / "anglais"
+ENTETE = "// Traduit vers le schéma anglais par banc traduire (D8) : "
 
 
 def contraintes(table: Correspondance) -> str:
@@ -137,8 +142,7 @@ def traductions(table: Correspondance) -> dict[str, str]:
     fiche.cypher suivi du balayage."""
     resultat = {}
     for chemin, texte in corpus().items():
-        entete = f"// Traduit vers le schéma anglais par banc traduire (D8) : {_source(chemin)}.\n"
-        traduit = entete + traduction.traduire(texte, table, "en")
+        traduit = f"{ENTETE}{_source(chemin)}.\n" + traduction.traduire(texte, table, "en")
         if chemin == "fiche.cypher":
             traduit += balayage(table)
         resultat[chemin] = traduit
@@ -155,12 +159,69 @@ def _source(chemin: str) -> str:
 
 def commande_traduire(dossier: Path) -> int:
     """Écrit le corpus traduit dans le dossier (logs/anglais pour T10.1) : les fichiers qu'y lit
-    scripts/questions.sh --dossier."""
-    table = correspondance.charger()
-    textes = traductions(table)
-    for chemin, texte in textes.items():
-        cible = dossier / chemin
-        cible.parent.mkdir(parents=True, exist_ok=True)
-        cible.write_text(texte)
-    sys.stdout.write(f"✓ {len(textes)} fichiers traduits dans {dossier}\n")
+    scripts/questions.sh --dossier. Un chemin relatif part de la racine du dépôt, quel que soit le
+    dossier courant (uv run --directory banc en change). Le dossier est vidé avant, pour qu'aucune
+    traduction périmée n'y reste : il ne doit contenir que des fichiers d'une traduction
+    précédente, et aucun lien symbolique (un lien vers un dossier ferait écrire ailleurs) ; sinon
+    rien n'est effacé ni écrit (code 2). La traduction se calcule avant d'effacer quoi que ce
+    soit."""
+    cible = dossier if dossier.is_absolute() else RACINE / dossier
+    try:
+        textes = traductions(correspondance.charger())
+    except (CorrespondanceError, TraductionError, ValueError, OSError) as erreur:
+        sys.stderr.write(f"banc traduire : traduction impossible, rien n'est effacé : {erreur}\n")
+        return 2
+    if cible.is_symlink() or (cible.exists() and not cible.is_dir()):
+        sys.stderr.write(f"banc traduire : {cible} n'est pas un dossier (ou c'est un lien)\n")
+        return 2
+    anciens: list[Path] = []
+    # Arrêt au premier élément refusé, avant d'effacer quoi que ce soit ; un lien se refuse avant
+    # de savoir s'il mène à un dossier (rglob n'y descend pas).
+    for chemin in cible.rglob("*") if cible.is_dir() else ():
+        if chemin.is_dir() and not chemin.is_symlink():
+            continue
+        if chemin.is_symlink() or not _traduit(chemin):
+            sys.stderr.write(
+                f"banc traduire : {cible} contient {chemin.relative_to(cible)}, qui n'est pas "
+                "une traduction de banc traduire : rien n'est effacé ; choisir un dossier vide\n"
+            )
+            return 2
+        anciens.append(chemin)
+    for chemin in anciens:
+        chemin.unlink()
+    for nom, texte in textes.items():
+        fichier = cible / nom
+        fichier.parent.mkdir(parents=True, exist_ok=True)
+        # « x » : jamais un fichier écrasé, le dossier vient d'être vidé.
+        with fichier.open("x", encoding="utf-8") as flux:
+            flux.write(texte)
+    sys.stdout.write(f"✓ {len(textes)} fichiers traduits dans {cible}\n")
     return 0
+
+
+def _traduit(fichier: Path) -> bool:
+    """Le fichier vient de banc traduire : un fichier ordinaire, sous son en-tête."""
+    if not fichier.is_file():
+        return False
+    try:
+        with fichier.open(encoding="utf-8") as flux:
+            return flux.readline().startswith(ENTETE)
+    except UnicodeDecodeError:
+        return False
+
+
+def ecarts_de_traduction(dossier: Path = TRADUCTION) -> list[str]:
+    """Ce qui sépare le dossier de la traduction du corpus d'aujourd'hui : fichiers absents,
+    différents, ou en trop ; vide si le dossier est à jour (banc lancer, schéma anglais)."""
+    attendus = traductions(correspondance.charger())
+    if not dossier.is_dir():
+        return ["dossier absent"]
+    presents = {str(f.relative_to(dossier)) for f in dossier.rglob("*") if not f.is_dir()}
+    ecarts = [f"{chemin} absent" for chemin in sorted(set(attendus) - presents)]
+    ecarts += [
+        f"{chemin} périmé"
+        for chemin in sorted(set(attendus) & presents)
+        if (dossier / chemin).read_text(encoding="utf-8") != attendus[chemin]
+    ]
+    ecarts += [f"{chemin} en trop" for chemin in sorted(presents - set(attendus))]
+    return ecarts

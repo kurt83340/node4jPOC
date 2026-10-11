@@ -10,6 +10,8 @@ sont remplacés par des faux : on compte leurs appels.
 """
 
 import contextlib
+import functools
+import inspect
 import json
 import os
 import signal
@@ -26,15 +28,16 @@ from typing import Any
 
 import pytest
 
-from banc import orchestration, revue
+from banc import anglais, orchestration, revue
 from banc import questions as banc_questions
 from banc.__main__ import main
-from banc.cellule import LANCEUR, RACINE, Plafonds
+from banc.cellule import LANCEUR, RACINE, Plafonds, empreinte_prompt
 from banc.isolement import environnement_agent
 from banc.mesures import lire, lire_lignes, nom_de_trace
-from banc.notation import Controle, NotationError, controle_simule
+from banc.notation import Controle, NotationError, controle_par_script, controle_simule
 from banc.orchestration import (
     CELLULES,
+    CONTROLE_EN,
     FAUX_SERVEUR,
     PROGRAMMES,
     ArretPlafond,
@@ -50,12 +53,14 @@ from banc.orchestration import (
     dernier_essai,
     descendants,
     ecrire_campagne,
+    langue_par_script,
     lire_campagne,
     message,
     moyens_faux_serveur,
     outils_des_agents,
     pannes_de_suite,
     transactions,
+    verifier_la_base,
     verrou,
 )
 
@@ -64,6 +69,8 @@ FAUSSE_CELLULE = FIXTURES / "fausse_cellule.py"
 CLE = "sk-ant-api03-cle-factice-du-banc"
 BANC = banc_questions.charger()
 EQUIPE_VALIDE = Controle(6, (), True)
+# Une réponse à Q2 dont l'équipe s'extrait (6 espèces) : le contrôle de Q2 est appelé.
+EQUIPE = "Réponse : Magnéton, Dracolosse, Flagadoss, Noadkoko, Staross, Parasect"
 CC, AC, AG = CELLULES
 INSTANCE = "f4c7e9a2"
 SECRET = (
@@ -85,6 +92,12 @@ class Bac:
     sortie: list[str] = field(default_factory=list)
     # Conversations lancées au moment de chaque nettoyage d'Aura.
     moments: list[int] = field(default_factory=list)
+    # Langue demandée à chaque vérification de la base (T10.0), et ce qu'elle trouve.
+    verifications: list[str] = field(default_factory=list)
+    langue_de_la_base: str = "fr"
+    # Contrôles de Q2 demandés : (langue de la requête, équipe) ; ceux qui échouent encore.
+    controles: list[tuple[str, str]] = field(default_factory=list)
+    echecs_du_controle: int = 0
 
     @property
     def nettoyages(self) -> int:
@@ -106,6 +119,29 @@ class Bac:
         self.moments.append(len(self.lancees()))
         return "transactions : aucune lecture active"
 
+    def controler(self, langue: str) -> Callable[[str], Controle]:
+        """Un faux contrôle de Q2, qui note sa langue : une équipe valide."""
+
+        def controle(liste: str) -> Controle:
+            self.controles.append((langue, liste))
+            if self.echecs_du_controle > 0:
+                self.echecs_du_controle -= 1
+                raise NotationError("questions.sh --controle : code 2 Aura injoignable")
+            return EQUIPE_VALIDE
+
+        return controle
+
+    def verifier_la_base(self, schema: str) -> None:
+        """La vraie règle (orchestration.verifier_la_base), avec une base factice à jour."""
+        self.verifications.append(schema)
+        orchestration.verifier_la_base(
+            schema, langue=lambda: self.langue_de_la_base, traduction=self.traduction
+        )
+
+    @property
+    def traduction(self) -> Path:
+        return self.racine / "anglais"
+
     def moyens(self, **reglages: Any) -> Moyens:
         programmes = {
             cellule: (
@@ -122,8 +158,10 @@ class Bac:
             "traces": self.racine / "traces",
             "programmes": programmes,
             "chemins": (self.racine / "outils",),
-            "controle": lambda _liste: EQUIPE_VALIDE,
+            "controle": self.controler("fr"),
+            "controle_en": self.controler("en"),
             "nettoyer": self.nettoyer,
+            "verifier_la_base": self.verifier_la_base,
             "marge_s": 30.0,
             "ecrire": self.sortie.append,
         }
@@ -183,6 +221,7 @@ def campagne(
         cellules,
         cache_1h,
         Plafonds(**plafonds),
+        empreinte_prompt=empreinte_prompt("fr"),
     )
 
 
@@ -276,17 +315,30 @@ def test_message_pose() -> None:
         {"cellules": ()},
         {"cellules": (CC, CC)},
         {"cellules": (CC, "claude-autre")},
+        {"schema": "de"},
+        {"empreinte_prompt": "a" * 63},
+        {"empreinte_prompt": "a" * 65},
+        {"empreinte_prompt": "A" * 64},
     ],
 )
 def test_campagne_invalide(reglages: dict[str, Any]) -> None:
+    # Le message nomme le seul champ fautif.
     valide = campagne(("Q1",), ("Q2", "Q18"))
-    with pytest.raises(OrchestrationError, match="campagne invalide"):
+    (champ,) = reglages
+    with pytest.raises(OrchestrationError, match=rf"campagne invalide \({champ}\)"):
         replace(valide, **reglages)
+
+
+def test_campagne_sans_empreinte_non_ecrite(tmp_path: Path) -> None:
+    fichier = tmp_path / "campagne.json"
+    with pytest.raises(OrchestrationError, match="sans empreinte du prompt : non écrite"):
+        ecrire_campagne(fichier, replace(campagne(), empreinte_prompt=None))
+    assert not fichier.exists()
 
 
 def test_parametres_relus(tmp_path: Path) -> None:
     fixee = campagne(("Q19",), ("Q2", "Q18"), passes=3, cellules=(AG, CC), cache_1h=True, tours=5)
-    fixee = replace(fixee, faux_serveur=True)
+    fixee = replace(fixee, faux_serveur=True, schema="en", empreinte_prompt="a" * 64)
     fichier = tmp_path / "campagne.json"
     ecrire_campagne(fichier, fixee)
     assert lire_campagne(fichier) == fixee
@@ -296,21 +348,26 @@ def test_parametres_relus(tmp_path: Path) -> None:
 
 
 @pytest.mark.parametrize(
-    ("cle", "valeur"),
+    ("cle", "valeur", "motif"),
     [
-        ("format", 1),
-        ("passes", 2.0),
-        ("cache_1h", 1),
-        ("faux_serveur", "oui"),
-        ("inconnue", True),
+        ("format", 1, "illisible : format 1"),
+        ("passes", 2.0, "passes : un entier"),
+        ("cache_1h", 1, "cache_1h, faux_serveur : vrai ou faux"),
+        ("faux_serveur", "oui", "cache_1h, faux_serveur : vrai ou faux"),
+        ("inconnue", True, "inattendues"),
+        ("format", 4, "illisible : format 4"),
+        ("schema", 3, "schema : du texte attendu"),
+        ("empreinte_prompt", 3, "empreinte_prompt : du texte attendu"),
+        # Au format 3, une empreinte nulle couperait la vérification du gel.
+        ("empreinte_prompt", None, "empreinte_prompt : du texte attendu"),
     ],
 )
-def test_parametres_illisibles(tmp_path: Path, cle: str, valeur: Any) -> None:
+def test_parametres_illisibles(tmp_path: Path, cle: str, valeur: Any, motif: str) -> None:
     fichier = tmp_path / "campagne.json"
     ecrire_campagne(fichier, campagne())
     contenu = json.loads(fichier.read_text()) | {cle: valeur}
     fichier.write_text(json.dumps(contenu))
-    with pytest.raises(OrchestrationError, match="illisible"):
+    with pytest.raises(OrchestrationError, match=motif):
         lire_campagne(fichier)
 
 
@@ -930,9 +987,11 @@ def test_moyens_du_faux_serveur() -> None:
     # Au-delà du délai d'une question (180 s), en deçà de l'échéance de la cellule.
     assert moyens.serveur_lent == (*FAUX_SERVEUR, "--lent-s", "240")
     assert moyens.controle is controle_simule
-    # Ni gcloud ni neo4j-mcp dans le PATH des agents, rien à nettoyer sur Aura.
+    assert moyens.controle_en is controle_simule
+    # Ni gcloud ni neo4j-mcp dans le PATH des agents, rien à nettoyer ni à vérifier sur Aura.
     assert moyens.chemins == ()
     assert moyens.nettoyer() == ""
+    assert moyens.verifier_la_base is None
 
 
 def test_serveur_lent_pour_la_seule_conversation_lente(bac: Bac) -> None:
@@ -997,10 +1056,14 @@ def test_commande_prend_les_moyens_du_faux_serveur(
 def test_campagne_creee_puis_finie(bac: Bac) -> None:
     assert bac.commande(questions=("Q19", "Q2", "Q18"), cellules=(AG,), passes=2) == 0
     fixee = lire_campagne(bac.racine / "traces" / "essai" / "campagne.json")
-    assert fixee == Campagne("essai", 2, (("Q19",), ("Q2", "Q18")), (AG,))
+    attendue = Campagne("essai", 2, (("Q19",), ("Q2", "Q18")), (AG,))
+    assert fixee == replace(attendue, empreinte_prompt=empreinte_prompt("fr"))
+    assert fixee.schema == "fr"
     # Reprendre une campagne finie ne relance rien.
     assert bac.commande(reprendre=True) == 0
     assert len(bac.lancees()) == 4
+    # La base vérifiée avant la création, puis avant la reprise (T10.0).
+    assert bac.verifications == ["fr", "fr"]
 
 
 def test_campagne_existante(bac: Bac) -> None:
@@ -1024,19 +1087,31 @@ def test_reprendre_sans_campagne(bac: Bac) -> None:
 
 @pytest.mark.parametrize(
     "ecart",
-    [{"passes": 2}, {"questions": ("Q3",)}, {"cellules": (CC,)}, {"cache_1h": True}],
+    [
+        {"passes": 2},
+        {"questions": ("Q3",)},
+        {"cellules": (CC,)},
+        {"cache_1h": True},
+        {"schema": "en"},
+    ],
 )
-def test_reprendre_garde_les_parametres(bac: Bac, ecart: dict[str, Any]) -> None:
+def test_reprendre_garde_les_parametres(
+    bac: Bac, capsys: pytest.CaptureFixture[str], ecart: dict[str, Any]
+) -> None:
     fixes: dict[str, Any] = {
         "passes": 1,
         "questions": ("Q1",),
         "cellules": (AG,),
         "cache_1h": False,
+        "schema": "fr",
     }
     assert bac.commande(**fixes) == 0
-    # Les mêmes paramètres, redits, passent ; un seul qui change est refusé.
+    # Les mêmes paramètres, redits, passent ; un seul qui change est refusé, et nommé.
     assert bac.commande(reprendre=True, **fixes) == 0
+    capsys.readouterr()
     assert bac.commande(reprendre=True, **(fixes | ecart)) == 2
+    (champ,) = ecart
+    assert f"({champ} différents)" in capsys.readouterr().err
 
 
 def test_cle_absente(bac: Bac, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -1063,13 +1138,20 @@ def test_point_d_entree(monkeypatch: pytest.MonkeyPatch) -> None:
     complete = [
         "lancer", "--campagne", "pilote", "--plafond-usd", "4.5", "--questions", "Q19, Q2,Q18",
         "--cellules", "adk-gemini", "--passes", "3", "--cache-1h", "--reprendre", "--faux-serveur",
+        "--schema", "en",
     ]  # fmt: skip
     assert main(complete) == 0
     assert main(["lancer", "--campagne", "pilote", "--plafond-usd", "2"]) == 0
     assert recues == [
-        Demande("pilote", Decimal("4.5"), True, 3, ("Q19", "Q2", "Q18"), (AG,), True, True),
+        Demande("pilote", Decimal("4.5"), True, 3, ("Q19", "Q2", "Q18"), (AG,), True, True, "en"),
         Demande("pilote", Decimal(2)),
     ]
+
+
+def test_schema_inconnu() -> None:
+    with pytest.raises(SystemExit) as sortie:
+        main(["lancer", "--campagne", "pilote", "--plafond-usd", "2", "--schema", "de"])
+    assert sortie.value.code == 2
 
 
 @pytest.mark.parametrize("plafond", ["0", "-1", "abc", "NaN", "Infinity"])
@@ -1413,3 +1495,191 @@ def test_vraie_cellule_adk_arretee_avec_son_serveur(
     assert demarrage["pgid"] == demarrage["pid"] != os.getpgid(0)
     attendre(lambda: not vivant(demarrage["pid"]), 5.0)
     assert bac.nettoyages == 2
+
+
+# --- Schéma anglais (T10.0, plan D8) ------------------------------------------------------------
+
+
+def test_format_2_relu_en_francais(tmp_path: Path) -> None:
+    # Les campagnes d'avant T10.0 (pilote, fr-1) se relisent : en français, sans empreinte.
+    fichier = tmp_path / "campagne.json"
+    ecrire_campagne(fichier, campagne(("Q1",)))
+    ancien = json.loads(fichier.read_text())
+    del ancien["schema"], ancien["empreinte_prompt"]
+    fichier.write_text(json.dumps(ancien | {"format": 2}))
+    relue = lire_campagne(fichier)
+    assert (relue.schema, relue.empreinte_prompt) == ("fr", None)
+    # Mais une campagne au format 2 n'a pas ces clés.
+    fichier.write_text(json.dumps(ancien | {"format": 2, "schema": "fr"}))
+    with pytest.raises(OrchestrationError, match="inattendues"):
+        lire_campagne(fichier)
+
+
+def repondre_une_equipe(bac: Bac) -> None:
+    bac.scenario({f"{AG} p1 Q2+Q18 e1": {"tours": [tour("reponse") | {"reponse": EQUIPE}]}})
+
+
+def test_campagne_anglaise(bac: Bac) -> None:
+    # Fiche anglaise au prompt, contrôle de Q2 sur la traduction ; langue et empreinte notées.
+    assert anglais.commande_traduire(bac.traduction) == 0
+    bac.langue_de_la_base = "en"
+    repondre_une_equipe(bac)
+    assert bac.commande(questions=("Q2", "Q18", "Q1"), cellules=(AG,), schema="en") == 0
+    fixee = lire_campagne(bac.racine / "traces" / "essai" / "campagne.json")
+    assert (fixee.schema, fixee.empreinte_prompt) == ("en", empreinte_prompt("en"))
+    assert {(n["schema"], n["empreinte_prompt"]) for n in bac.notes()} == {
+        ("en", empreinte_prompt("en"))
+    }
+    assert bac.verifications == ["en"]
+    # Le contrôle anglais, et lui seul, a noté Q2.
+    assert [langue for langue, _ in bac.controles] == ["en"]
+
+
+def test_campagne_francaise_controle_francais(bac: Bac) -> None:
+    repondre_une_equipe(bac)
+    assert bac.commande(questions=("Q2", "Q18"), cellules=(AG,)) == 0
+    assert {(n["schema"], n["empreinte_prompt"]) for n in bac.notes()} == {
+        ("fr", empreinte_prompt("fr"))
+    }
+    assert [langue for langue, _ in bac.controles] == ["fr"]
+
+
+@pytest.mark.parametrize(
+    ("base", "schema", "motif"),
+    [
+        ("en", "fr", "base en en, campagne en fr : scripts/charger.sh --schema fr d'abord"),
+        ("fr", "en", "base en fr, campagne en en : scripts/charger.sh --schema en d'abord"),
+        ("vide", "fr", "base vide, campagne en fr : scripts/charger.sh --tout d'abord"),
+        ("mixte", "en", "bascule du schéma interrompue (noms des deux langues)"),
+        (
+            "incomplète",
+            "fr",
+            "bascule du schéma interrompue (contraintes ou index absents ou pas en ligne) : "
+            "relancer scripts/charger.sh --schema fr",
+        ),
+    ],
+)
+def test_base_dans_une_autre_langue(
+    bac: Bac, capsys: pytest.CaptureFixture[str], base: str, schema: str, motif: str
+) -> None:
+    # Vérifiée avant de créer quoi que ce soit : refusée, la campagne n'existe pas.
+    assert anglais.commande_traduire(bac.traduction) == 0
+    bac.langue_de_la_base = base
+    assert bac.commande(questions=("Q1",), cellules=(AG,), schema=schema) == 2
+    assert motif in capsys.readouterr().err
+    assert not (bac.racine / "traces" / "essai").exists()
+    assert bac.lancees() == []
+
+
+def test_traduction_perimee(bac: Bac, capsys: pytest.CaptureFixture[str]) -> None:
+    assert anglais.commande_traduire(bac.traduction) == 0
+    q02 = bac.traduction / "q02.cypher"
+    q02.write_text(q02.read_text().replace("HAS_TYPE", "A_LE_TYPE"))
+    bac.langue_de_la_base = "en"
+    assert bac.commande(questions=("Q1",), cellules=(AG,), schema="en") == 2
+    erreur = capsys.readouterr().err
+    assert "traduction à refaire" in erreur
+    assert "q02.cypher périmé" in erreur
+    assert not (bac.racine / "traces" / "essai").exists()
+
+
+def test_fiche_changee_avant_la_reprise(
+    bac: Bac, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    assert bac.commande(questions=("Q1", "Q3"), cellules=(AG,)) == 0
+    monkeypatch.setattr(orchestration, "empreinte_prompt", lambda _schema: "b" * 64)
+    assert bac.commande(reprendre=True) == 2
+    assert "consigne ou fiche-schema.md changées depuis la création de la campagne essai" in (
+        capsys.readouterr().err
+    )
+
+
+def test_verifier_la_base_francaise_sans_traduction(tmp_path: Path) -> None:
+    # En français, la traduction ne sert pas : son absence ne bloque rien.
+    verifier_la_base("fr", langue=lambda: "fr", traduction=tmp_path / "absente")
+    with pytest.raises(OrchestrationError, match=r"traduction à refaire .*dossier absent"):
+        verifier_la_base("en", langue=lambda: "en", traduction=tmp_path / "absente")
+
+
+def faux_charger(tmp_path: Path, sortie: str, code: int) -> Path:
+    """Un faux scripts/charger.sh : note son environnement et ses arguments, rend sa sortie."""
+    (tmp_path / "sortie").write_text(sortie)
+    script = tmp_path / "charger.sh"
+    script.write_text(
+        "#!/bin/bash\n"
+        f'env > "{tmp_path}/env"\n'
+        f'printf "%s\\n" "$*" > "{tmp_path}/arguments"\n'
+        f'cat "{tmp_path}/sortie"\n'
+        f"exit {code}\n"
+    )
+    script.chmod(0o755)
+    return script
+
+
+@pytest.mark.parametrize(
+    ("sortie", "code", "langue"),
+    [
+        ("noms français : 2583 nœuds\nLANGUE : fr\n", 0, "fr"),
+        ("LANGUE : en\n", 0, "en"),
+        ("LANGUE : mixte\n", 1, "mixte"),
+        ("contraintes et index : 3/5 contraintes\nLANGUE : incomplète\n", 1, "incomplète"),
+        # Le code 1 ne dit que « mixte » ou « incomplète » : la langue se lit sur la dernière ligne.
+        ("LANGUE : en\n", 1, "en"),
+    ],
+)
+def test_langue_par_script(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, sortie: str, code: int, langue: str
+) -> None:
+    monkeypatch.setenv("ANTHROPIC_API_KEY", CLE)
+    assert langue_par_script(faux_charger(tmp_path, sortie, code)) == langue
+    assert (tmp_path / "arguments").read_text() == "--langue\n"
+    # Sans la clé Anthropic (code-map).
+    assert "ANTHROPIC_" not in (tmp_path / "env").read_text()
+
+
+@pytest.mark.parametrize(
+    ("sortie", "code"),
+    [
+        ("LANGUE : fr\n", 2),
+        ("LANGUE : de\n", 0),
+        ("aucune langue\n", 0),
+        ("LANGUE : fr\nfin\n", 0),
+    ],
+)
+def test_langue_par_script_illisible(tmp_path: Path, sortie: str, code: int) -> None:
+    with pytest.raises(OrchestrationError, match=r"charger\.sh --langue : code"):
+        langue_par_script(faux_charger(tmp_path, sortie, code))
+
+
+def test_reprise_d_une_campagne_anglaise(bac: Bac, capsys: pytest.CaptureFixture[str]) -> None:
+    # La reprise relit la langue dans campagne.json : sans --schema, elle vérifie l'anglais,
+    # refuse une base française, puis note avec le contrôle anglais la trace restée sans ligne.
+    assert anglais.commande_traduire(bac.traduction) == 0
+    bac.langue_de_la_base = "en"
+    repondre_une_equipe(bac)
+    bac.echecs_du_controle = 1
+    assert bac.commande(questions=("Q2", "Q18"), cellules=(AG,), schema="en") == 2
+    assert bac.lignes() == []
+    bac.langue_de_la_base = "fr"
+    capsys.readouterr()
+    assert bac.commande(reprendre=True) == 2
+    assert "base en fr, campagne en en" in capsys.readouterr().err
+    bac.langue_de_la_base = "en"
+    assert bac.commande(reprendre=True) == 0
+    assert bac.verifications == ["en", "en", "en"]
+    assert [langue for langue, _ in bac.controles] == ["en", "en"]
+    # Notée, jamais rejouée (ADR-0009).
+    assert bac.lancees() == [f"{AG} p1 Q2+Q18 e1"]
+    assert [(v["question"], v["essai"]) for v in bac.lignes()] == [("Q2", "1"), ("Q18", "1")]
+
+
+def test_controle_anglais_par_defaut() -> None:
+    # Le contrôle de Q2 d'une campagne anglaise joue la traduction que banc lancer vérifie.
+    moyens = Moyens()
+    assert moyens.controle_en is CONTROLE_EN
+    assert isinstance(CONTROLE_EN, functools.partial)
+    assert CONTROLE_EN.func is controle_par_script
+    assert CONTROLE_EN.keywords == {"dossier": anglais.TRADUCTION}
+    defaut = inspect.signature(verifier_la_base).parameters["traduction"].default
+    assert defaut == anglais.TRADUCTION
+    assert moyens.verifier_la_base is verifier_la_base

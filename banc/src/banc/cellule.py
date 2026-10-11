@@ -10,7 +10,9 @@ trace complète se note même après une sortie en 2 (reprise de banc.orchestrat
 dernier `fin`, seul l'arrêt du client peut encore échouer.
 """
 
+import hashlib
 import json
+import re
 from dataclasses import asdict, dataclass, field, fields
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
@@ -21,6 +23,10 @@ from banc.mesures import QUESTION
 RACINE = Path(__file__).resolve().parents[3]
 QUESTIONS = RACINE / "questions"
 LANCEUR = RACINE / "scripts" / "mcp-neo4j.sh"
+# La fiche de schéma de chaque langue de la base (plan, D8) : la française, ou sa traduction par la
+# table (T6.3), qui ne change que les identifiants du schéma.
+FICHES = {"fr": "fiche-schema.md", "en": "fiche-schema.en.md"}
+EMPREINTE = re.compile(r"[0-9a-f]{64}")
 
 
 class CelluleError(Exception):
@@ -69,6 +75,11 @@ class Commande:
     serveur: tuple[str, ...] = (str(LANCEUR),)
     # Binaire de Claude Code : None pour celui du SDK, sinon un faux (tests).
     cli: Path | None = None
+    # Langue du schéma (D8) : la fiche du prompt.
+    schema: str = "fr"
+    # SHA-256 du prompt (consigne et fiche), fixé à la création de la campagne : un prompt modifié
+    # depuis arrête la conversation (protocole gelé, D7). None : non vérifié (essais hors campagne).
+    empreinte_prompt: str | None = None
 
 
 def lire_commande(texte: str) -> Commande:
@@ -97,11 +108,33 @@ def commande_json(commande: Commande) -> str:
     return json.dumps(champs, ensure_ascii=False)
 
 
-def consigne_et_fiche(dossier: Path = QUESTIONS) -> str:
-    """La consigne puis la fiche de schéma, telles quelles (D5) : le même texte pour toutes les
-    cellules."""
+def empreinte_prompt(schema: str, dossier: Path = QUESTIONS) -> str:
+    """SHA-256 du prompt de cette langue : la consigne et la fiche, telles que les cellules les
+    reçoivent (D7 les gèle toutes deux)."""
+    return hashlib.sha256(_prompt(dossier, schema).encode("utf-8")).hexdigest()
+
+
+def consigne_et_fiche(
+    dossier: Path = QUESTIONS, schema: str = "fr", empreinte: str | None = None
+) -> str:
+    """La consigne puis la fiche de schéma de la langue de la base, telles quelles (D5, D8) : le
+    même texte pour toutes les cellules.
+
+    Raises:
+        CelluleError: le prompt n'a plus l'empreinte fixée à la création de la campagne.
+    """
+    prompt = _prompt(dossier, schema)
+    if empreinte is not None and hashlib.sha256(prompt.encode("utf-8")).hexdigest() != empreinte:
+        raise CelluleError(
+            f"consigne ou {FICHES[schema]} changées depuis la création de la campagne "
+            "(protocole gelé, D7)"
+        )
+    return prompt
+
+
+def _prompt(dossier: Path, schema: str) -> str:
     consigne = (dossier / "consigne.md").read_text(encoding="utf-8")
-    fiche = (dossier / "fiche-schema.md").read_text(encoding="utf-8")
+    fiche = (dossier / FICHES[schema]).read_text(encoding="utf-8")
     return f"{consigne}\n\n{fiche}"
 
 
@@ -127,6 +160,13 @@ def _commande(brut: dict[str, Any]) -> Commande:
         raise TypeError("campagne et traces : du texte attendu")
     if not isinstance(brut.get("cache_1h", False), bool):
         raise TypeError("cache_1h : vrai ou faux attendu")
+    if brut.get("schema", "fr") not in FICHES:
+        raise ValueError(f"schema : {' ou '.join(FICHES)} attendu, pas {brut['schema']!r}")
+    empreinte = brut.get("empreinte_prompt")
+    if empreinte is not None and not (
+        isinstance(empreinte, str) and EMPREINTE.fullmatch(empreinte)
+    ):
+        raise ValueError(f"empreinte_prompt : un SHA-256 en hexadécimal attendu, pas {empreinte!r}")
     cli = brut.get("cli")
     return Commande(
         campagne=brut["campagne"],
@@ -138,6 +178,8 @@ def _commande(brut: dict[str, Any]) -> Commande:
         cache_1h=brut.get("cache_1h", False),
         serveur=serveur,
         cli=None if cli is None else Path(cli),
+        schema=brut.get("schema", "fr"),
+        empreinte_prompt=empreinte,
     )
 
 

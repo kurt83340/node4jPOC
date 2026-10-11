@@ -11,7 +11,9 @@ from banc.orchestration import Campagne, ecrire_campagne
 
 CELLULES = ("claude-code", "adk-gemini")
 CONVERSATIONS = (("Q1",), ("Q2", "Q18"))
-CAMPAGNE = Campagne("c1", passes=2, conversations=CONVERSATIONS, cellules=CELLULES)
+CAMPAGNE = Campagne(
+    "c1", passes=2, conversations=CONVERSATIONS, cellules=CELLULES, empreinte_prompt="c" * 64
+)
 
 
 def ligne(
@@ -187,6 +189,8 @@ def test_commande_complete(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -
     sortie = capsys.readouterr().out
     assert "campagne c1 : complète" in sortie
     assert "claude-code, passe 1 : 3/3 questions" in sortie
+    # Langue et empreinte du prompt, notées à la création (T10.0).
+    assert "schéma fr : consigne.md et fiche-schema.md, empreinte du prompt cccccccccccc" in sortie
 
 
 def test_commande_incomplete(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
