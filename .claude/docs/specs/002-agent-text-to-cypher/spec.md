@@ -1,6 +1,6 @@
 ---
 status: in-progress # draft | validated | in-progress | done | parked
-progress: 23/33 # X/Y tasks (compté depuis tasks.md) — MAJ par /feature-done ou à la main
+progress: 26/34 # X/Y tasks (compté depuis tasks.md) — MAJ par /feature-done ou à la main
 ---
 
 # Spec — Agent text-to-Cypher

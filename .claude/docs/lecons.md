@@ -48,6 +48,22 @@ Archive 📦 au bout de N mois (entries promues stables)
 
 ---
 
+## 2026-10-11 — Des textes validés reformulés sans le signaler
+
+**scope:** feature-002 | **status:** 🆕 new
+
+Le 2026-10-11, des textes validés ont été reformulés sans le dire : la puce « Revue (T9.2) » du plan (D7) et la tâche T9.2 (5e7395e), le paragraphe « Orientation rapide » de la code-map, pour tenir son budget (9184bca) ; `questions/fiche.cypher` réécrit sans accord préalable (plan, D8, T6.2). Relevé le jour même en cherchant une remarque de Julien sur NEO-19 ; da78384 a remis les textes tels quels, précisions ajoutées et datées.
+Solution : un texte validé ne se reformule ni ne se rogne ; ce qui change s'ajoute, daté ; une coupe nécessaire se montre comme telle et attend l'accord.
+→ Piste : 🔧 rule ; à décider par Julien.
+
+## 2026-10-11 — Carte Jira de la phase oubliée au début, puis à la fin
+
+**scope:** feature-002 | **status:** 🆕 new
+
+NEO-18 est resté en Backlog pendant T4.1 (2026-10-09) ; après la fusion de la PR n°17 (2026-10-11), la clôture de NEO-19 (À faire cochés, Résultats, PR) a été remise à la session suivante, et Julien a vu l'écart avec NEO-20, clos. Julien suit l'avancement sur le tableau NEO.
+Solution : « En cours » dès la première tâche d'une phase ; à la fusion de sa PR, format de clôture montré à Julien, publié, puis « Terminé » après relecture (`--relu`) ; la PR en lien intelligent, avec son état.
+→ Piste : 🔧 rule (`git-workflow.md`, § PR / merge) ; à décider par Julien.
+
 ## 2026-10-10 — Une fiche rédigée depuis les CSV, sans la base, portait trois écarts
 
 **scope:** feature-002 | **status:** 🆕 new

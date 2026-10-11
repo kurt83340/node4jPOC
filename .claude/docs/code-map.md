@@ -22,9 +22,10 @@ Secret Manager ─┬─► scripts/ ─► cypher-shell ─► AuraDB Free ◄�
 Budget 100 € ─► Pub/Sub ─► infra/coupure-vertex/ ─► Service Usage (coupe Vertex)
 ```
 
-→ Orientation : chargement → `cypher/NN-*.cypher` (ordre fixe : [ARCHITECTURE § 3](conception/ARCHITECTURE.md)) ;
-identifiants, purge, codes retour → `scripts/` (communes : `scripts/commun.sh`) ; banc d'essai → `questions/` ; services
-Google Cloud → `infra/` ([RUNBOOK](RUNBOOK.md)). Harnais du banc → `banc/` ([plan 002](specs/002-agent-text-to-cypher/plan.md)).
+→ Orientation rapide : chargement → `cypher/NN-*.cypher` (ordre fixe : [ARCHITECTURE § 3](conception/ARCHITECTURE.md)) ;
+identifiants, purge, codes retour → `scripts/` (fonctions partagées : `scripts/commun.sh`) ; banc d'essai → `questions/` ; services
+Google Cloud → `infra/` ([RUNBOOK](RUNBOOK.md)). Réponses de référence : `questions/attendu/`, rejouées par `scripts/questions.sh`.
+Harnais du banc d'essai → `banc/` ([plan 002](specs/002-agent-text-to-cypher/plan.md)).
 
 ## Règles de couplage (⭐ le cœur — non déductible du code)
 
