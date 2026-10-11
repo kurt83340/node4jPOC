@@ -40,6 +40,7 @@ Format : [Keep a Changelog](https://keepachangelog.com/). Versionning : `vYYYY.M
 - Claude par l'API Anthropic pour les deux cellules Claude, Gemini sur Vertex `eu` ; crédits prépayés sans recharge automatique comme plafond ([ADR-0011](adr/0011-infra-claude-par-api-anthropic.md))
 - Second tour d'une paire après un échec du premier : faux d'office, sans relance ni nouvelle session ([ADR-0012](adr/0012-mvp-second-tour-apres-echec.md))
 - Plafond natif de 30 € par mois sur Vertex, en plus de la coupure de l'option C ; retard réel d'un budget (jusqu'à un jour, parfois plus), rôle personnalisé, expiration du budget de 100 € au 2026-12-31 ([ADR-0013](adr/0013-infra-plafond-natif-de-vertex.md), amende l'ADR-0010)
+- Revue assistée des cas « à revoir » : pré-analyse de Claude à l'aveugle, vérifiée par script, validée par Julien, et contre-épreuve de 8 cas tirés au sort qu'il revoit seul avant de voir les propositions ; `fr-1` garde ses décisions, la règle vaut pour la phase 10 et les jalons 3 et 4 ([ADR-0014](adr/0014-mvp-revue-assistee.md), amende l'ADR-0009)
 
 ---
 
