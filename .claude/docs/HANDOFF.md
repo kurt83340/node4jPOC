@@ -1,40 +1,40 @@
-# HANDOFF — 2026-10-11 06h45
+# HANDOFF — 2026-10-12 02h05
 
 > Court, narratif, versionné. Patterns techniques → auto-memory. Reprise précise → /resume.
 
-**Branche** : `feature/002-phase-9`, reprise pour T9.3, tirée de `main` après les PR n°16 et n°17
-**Spec en cours** : [002-agent-text-to-cypher](specs/002-agent-text-to-cypher/spec.md) (26/34 tasks : phases 0 à 8, T9.1, T9.2)
-**Goal session** : T9.3, fusion de la phase 9, phase 6 (schéma anglais sans base), décisions d'avant la phase 10
+**Branche** : `feature/002-phase-11`, poussée, tirée de `main` après les PR n°18 et n°19
+**Spec en cours** : [002-agent-text-to-cypher](specs/002-agent-text-to-cypher/spec.md) (34/35 tasks : il reste T11.3)
+**Goal session** : T9.3, phase 10 (schéma anglais sur la base, verdict du FR/EN), phase 11 jusqu'au rapport, `/doc-health`
 
 ## Status
 
-- ✅ PR n°16 (phase 9, sans T9.3) et n°17 (phase 6) fusionnées, CI verte ; 1 386 tests, ruff, mypy, shellcheck, Prettier
-- ✅ Phase 6 : table `cypher/anglais/correspondance.toml`, `charger.sh --schema en|fr [--explain]` (16 requêtes planifiées sur la base), `banc traduire`, fiche anglaise ; 32 fautes injectées, toutes détectées ; NEO-19 clos, risques de la bascule remontés dans NEO-2
-- ✅ ADR-0014 : revue assistée, contre-épreuve de 8 cas que Julien revoit seul avant les propositions ; Poissirène écarté dans la table de Q9, hors filet
-- ⏳ T9.3 : Gemini du pilote recoupé à l'unité (plan, D7) ; `fr-1` absent de l'export à 3 h 17 UTC ; Console encore à 3,71 $ (capture de 1 h 58 UTC)
+- ✅ 1 481 tests verts ; ruff, mypy, shellcheck, Prettier propres (relancés le 2026-10-12)
+- ✅ PR n°18 (T9.3 : coût de `fr-1` recoupé à moins d'un centime) et n°19 (phase 10 : `en-1` à 19,17 de moyenne contre 20,67 pour `fr-1`, pas d'effet mesurable du schéma anglais, Δ = −1,5 pour un seuil de 2,5 ; contrôle à 21,5, dans [18,5 ; 23] ; base revenue au français, prouvée) fusionnées, CI verte ; NEO-21 à NEO-23 « Terminé »
+- ✅ ADR-0015 (source d'un second tour), ADR-0016 (clé Anthropic dans « Default », limite de l'organisation à 20 $ par mois) ; T11.0 à T11.2 (Q18 noté sur deux tours, rapport `banc/resultats/technique-2.md`, doc du jalon 2)
+- ✅ `/doc-health` du 2026-10-12 traité avec le doc-maintainer : glossaire, code-map à 2 893 jetons, cohérence des docs, trois leçons promues en rules (`textes-valides.md`, `git-workflow.md`, `testing.md`), une écartée
 
 ## Échecs tentés (à ne pas refaire)
 
-- `tmux send-keys` vers une fenêtre désignée par son nom → Julien y avait relancé Claude Code : vérifier `pane_current_command` avant
 - Script de mutation sans `finally` → arrêté en route, il a laissé le fichier muté : copie d'abord, motif unique vérifié, restauration dans un `finally`
 
 ## Blocked on
 
-- T9.3 : l'export BigQuery de `fr-1` (Gemini ; délais vus : 4 h 35 à 6 h 43 après l'heure d'usage) et une capture à jour de la Console (Claude ; rafraîchie environ toutes les 4 h)
+- Recoupement de la phase 10 : l'export BigQuery des heures de 17 h et 18 h UTC (`en-1`) et de 19 h UTC (`fr-controle`), le 2026-10-11 ; toujours absent à 23 h 41 UTC (délais vus jusqu'ici : 4 h 35 à 6 h 43)
+- T11.3 : l'accord de Julien pour la fusion et le tag `jalon-2`
 
 ## Next (par ordre)
 
-1. **T9.3** : export (`facture.py detail`, puis une requête `bq` par heure, 23 h et 0 h UTC ; attendu 2 267 890, 1 265 700 et 234 619 jetons, 2,590 € net) et Console (6,45 $ sur trente jours, dont 2,742 $ le 11) ; écart au plan (D7), T9.3 cochée, PR ; NEO-21 au format de clôture (critères 2 et 3), « Terminé » après relecture
-2. **T10.0** : constats de la revue adverse de la phase 6, rien de bloquant (Q28 trié, `--vers` relatif à la racine, `banc lancer` en anglais, mineurs) ; trancher les alias français de la fiche anglaise et `db.propertyKeys()`
-3. **Phase 10 (NEO-23)** : T10.1 sans frais ; T10.2 et T10.3 payantes (environ 0,98 $ la passe Gemini), feu vert de Julien ; revues avec contre-épreuve (ADR-0014)
-4. À trancher : ADR qui précise l'ADR-0009 ? ; leçons en rules ; flag des équipes ; NEO-27 début décembre
+1. **Recoupement** (Gemini seul) : `facture.py detail`, puis une requête `bq` par heure ; attendu (entrée, cache lu, sortie) `en-1` 2 165 493, 1 334 367 et 209 294 jetons (2,759954 $), `fr-controle` 735 717, 364 599 et 64 065 (0,901313 $) ; écart au plan (D8), au rapport (§ Coût et § Limites), dans `tasks.md`
+2. **T11.3** : `/feature-done 002-agent-text-to-cypher` (ROADMAP, CHANGELOG, HANDOFF) ; cocher US1, US2 et US4 de la spec (« traces à l'appui » d'US1 à préciser : le plan ne cite que D3 et T7.4) ; clés orphelines de `db.propertyKeys()` au jalon 4 de la ROADMAP ; PR de la phase 11 (NEO-24), fusion et tag `jalon-2` sur l'accord de Julien ; puis NEO-24 au format de clôture, résultats de NEO-2 (critères 1 et 2)
+3. Plus tard : outillage de revue (`tirage.py`, `page.py`, `enregistrer.py`, scratchpad de la session `aac0f55f`) à promouvoir dans `banc/` ou à refaire au jalon 3 ; `/reload-skills`, instruction morte du skill scaffold, à corriger dans le template ; scratchpad à nettoyer
+4. À trancher : ADR pour les précisions de l'ADR-0009 restées au plan 002 (plafonds invisibles, instructions ôtées, garde-fou, reprise) ? ; flag des équipes en portée user ; NEO-27 début décembre
 
 ## Continuation State (machine-readable — grammaire fixe `Clé: valeur`, 1 ligne chacune)
 
 Spec: 002-agent-text-to-cypher
-Task: T9.3
+Task: T11.3
 Fichiers en cours: aucun
-Bloqué sur: export BigQuery de fr-1 (Gemini) et capture à jour de la Console (Claude)
+Bloqué sur: export BigQuery de en-1 et fr-controle, accord de Julien pour la fusion et le tag
 Commande de reprise: uv run ~/.claude/skills/google-facture/scripts/facture.py detail
 
 → **Journal des sessions** (append-only) : [HANDOFF-journal.md](HANDOFF-journal.md) — non auto-chargé.
