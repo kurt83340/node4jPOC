@@ -8,7 +8,7 @@
 > il « perd le fil » (échecs ×4 constatés en télémétrie, Morph 2026) → découper la phase.
 
 **Date :** 2026-10-01
-**Status :** [~] 26/33 tasks → MAJ au fil de l'eau
+**Status :** [~] 26/34 tasks → MAJ au fil de l'eau
 
 > Phases 0 à 6 : sans la base (prévues pendant la période creuse de NEO-13, close le 2026-10-07). Phases 7 à 11 : sur la base.
 > Les tests n'appellent aucun outil réel : PATH réduit aux faux outils, HOME temporaire.
@@ -100,6 +100,9 @@
   - DoD : `manual: écart noté dans le rapport de campagne`
 
 ## Phase 10 — Schéma anglais, sur la base (NEO-23)
+
+- [ ] **T10.0** : constats de la revue adverse de la phase 6 (2026-10-11), avant toute bascule : Q28 triée (`collect` sans `ORDER BY` : la recréation des relations peut inverser `typesOnix` ; `ORDER BY r.rang DESC` garde `attendu/q28.txt`, sinon le réenregistrer, choix de Julien) ; `banc traduire --vers` relatif à la racine du dépôt (uv change de dossier : `logs/anglais` devenait `banc/logs/anglais`), dossier vidé avant ; `banc lancer` en anglais : fiche anglaise au prompt, dossier traduit au contrôle de Q2, langue de la base vérifiée avant de lancer, langue et empreinte de la fiche notées dans la campagne ; mineurs : `restes` compte aussi les clés, fichiers vérifiés avant la suppression des contraintes, lots de 5 000, balayage joué en contre-épreuve sur la base française, cas de maps à clé du schéma dans les tests, fiche anglaise au test de contamination, code mort `Correspondance.identifiants` ; à trancher avec Julien : alias français de la fiche anglaise (`AS facteur`…), `db.propertyKeys()` qui montre encore les clés françaises
+  - DoD : `command_passes: uv run --directory banc pytest -q && scripts/questions.sh --verifier`, et `manual: contre-épreuve du balayage sur la base française, qui liste les identifiants français`
 
 - [ ] **T10.1** : bascule vers l'anglais, puis preuve d'isomorphisme : les 27 requêtes traduites rendent `attendu/` à l'identique, `dracofeu~` trouve Dracaufeu par l'index anglais, le balayage ne trouve aucun identifiant français ; `db.propertyKeys()` relevé
   - DoD : `command_passes: uv run --directory banc python -m banc traduire --vers logs/anglais && scripts/charger.sh --schema en && scripts/questions.sh --verifier --dossier logs/anglais && scripts/questions.sh --exemples --dossier logs/anglais`
