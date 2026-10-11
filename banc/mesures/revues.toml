@@ -316,3 +316,1073 @@ date = 2026-10-10T20:33:11
 note = "juste"
 source = "oui"
 motif = "electrik-nul-signale"
+
+# Campagne fr-1 (2026-10-11) : décisions de Julien, validées en bloc sur la pré-analyse de Claude
+# (cas rendus à l'aveugle par banc.revue ; longues listes et contrôle de Q2 vérifiés par script) ;
+# écart à la revue humaine de l'ADR-0008, noté au plan 002 (T9.2).
+
+[[revue]]
+campagne = "fr-1"
+cellule = "adk-gemini"
+passe = 3
+question = "Q21"
+essai = 1
+empreinte = "298824ce9b50e7bf"
+date = 2026-10-11T03:37:44
+note = "juste"
+motif = "comparaison-juste"
+
+[[revue]]
+campagne = "fr-1"
+cellule = "adk-gemini"
+passe = 2
+question = "Q12"
+essai = 1
+empreinte = "7d91fb5ed3742f90"
+date = 2026-10-11T03:37:44
+note = "juste"
+motif = "forme-signalee"
+
+[[revue]]
+campagne = "fr-1"
+cellule = "adk-claude"
+passe = 3
+question = "Q27"
+essai = 1
+empreinte = "0df5ae5783e831ae"
+date = 2026-10-11T03:37:44
+note = "juste"
+source = "oui"
+motif = "precision-expliquee"
+
+[[revue]]
+campagne = "fr-1"
+cellule = "claude-code"
+passe = 1
+question = "Q13"
+essai = 1
+empreinte = "bea7da0642323e17"
+date = 2026-10-11T03:37:44
+note = "juste"
+motif = "zenith-en-tete"
+
+[[revue]]
+campagne = "fr-1"
+cellule = "adk-gemini"
+passe = 2
+question = "Q29"
+essai = 1
+empreinte = "3c6d96d5e0e534c0"
+date = 2026-10-11T03:37:44
+note = "juste"
+source = "oui"
+motif = "premisse-corrigee"
+
+[[revue]]
+campagne = "fr-1"
+cellule = "claude-code"
+passe = 2
+question = "Q1"
+essai = 1
+empreinte = "3b1a3efb64c5536c"
+date = 2026-10-11T03:37:44
+note = "partiel"
+motif = "capacite-z-en-tete"
+
+[[revue]]
+campagne = "fr-1"
+cellule = "claude-code"
+passe = 1
+question = "Q1"
+essai = 1
+empreinte = "29e6646099f6dccd"
+date = 2026-10-11T03:37:44
+note = "partiel"
+motif = "capacite-z-en-tete"
+
+[[revue]]
+campagne = "fr-1"
+cellule = "claude-code"
+passe = 3
+question = "Q27"
+essai = 1
+empreinte = "78db138405adea2b"
+date = 2026-10-11T03:37:44
+note = "juste"
+source = "oui"
+motif = "precision-expliquee"
+
+[[revue]]
+campagne = "fr-1"
+cellule = "adk-claude"
+passe = 2
+question = "Q10"
+essai = 1
+empreinte = "f7a210d6a1f2fefd"
+date = 2026-10-11T03:37:44
+note = "juste"
+motif = "hors-donnees-signale"
+
+[[revue]]
+campagne = "fr-1"
+cellule = "claude-code"
+passe = 3
+question = "Q21"
+essai = 1
+empreinte = "238794decc421c41"
+date = 2026-10-11T03:37:44
+note = "juste"
+motif = "comparaison-juste"
+
+[[revue]]
+campagne = "fr-1"
+cellule = "adk-claude"
+passe = 1
+question = "Q10"
+essai = 1
+empreinte = "4c18b2cb232b05fc"
+date = 2026-10-11T03:37:44
+note = "juste"
+motif = "hors-donnees-signale"
+
+[[revue]]
+campagne = "fr-1"
+cellule = "adk-claude"
+passe = 1
+question = "Q21"
+essai = 1
+empreinte = "2577a167ceb9e293"
+date = 2026-10-11T03:37:44
+note = "juste"
+motif = "comparaison-juste"
+
+[[revue]]
+campagne = "fr-1"
+cellule = "claude-code"
+passe = 3
+question = "Q29"
+essai = 1
+empreinte = "83f3d3d6714ffcc8"
+date = 2026-10-11T03:37:44
+note = "juste"
+source = "oui"
+motif = "premisse-corrigee"
+
+[[revue]]
+campagne = "fr-1"
+cellule = "adk-claude"
+passe = 2
+question = "Q15"
+essai = 1
+empreinte = "037f56f326d84920"
+date = 2026-10-11T03:37:44
+note = "juste"
+motif = "forme-signalee"
+
+[[revue]]
+campagne = "fr-1"
+cellule = "adk-gemini"
+passe = 3
+question = "Q1"
+essai = 1
+empreinte = "e6af98f395e43bd8"
+date = 2026-10-11T03:37:44
+note = "partiel"
+motif = "capacites-z-classees"
+
+[[revue]]
+campagne = "fr-1"
+cellule = "adk-gemini"
+passe = 3
+question = "Q29"
+essai = 1
+empreinte = "e1c1d889c1773d03"
+date = 2026-10-11T03:37:44
+note = "juste"
+source = "oui"
+motif = "premisse-corrigee"
+
+[[revue]]
+campagne = "fr-1"
+cellule = "adk-claude"
+passe = 3
+question = "Q30"
+essai = 1
+empreinte = "728b0ffd50ad9ec7"
+date = 2026-10-11T03:37:44
+note = "juste"
+source = "oui"
+motif = "critere-annonce"
+
+[[revue]]
+campagne = "fr-1"
+cellule = "adk-claude"
+passe = 1
+question = "Q18"
+essai = 1
+empreinte = "01b3ecbb4703fb75"
+date = 2026-10-11T03:37:44
+note = "juste"
+motif = "comparaison-juste"
+
+[[revue]]
+campagne = "fr-1"
+cellule = "adk-claude"
+passe = 2
+question = "Q1"
+essai = 1
+empreinte = "b70a4645113ca090"
+date = 2026-10-11T03:37:44
+note = "partiel"
+motif = "capacite-z-en-tete"
+
+[[revue]]
+campagne = "fr-1"
+cellule = "adk-claude"
+passe = 2
+question = "Q21"
+essai = 1
+empreinte = "cedc1d29e62a5ee4"
+date = 2026-10-11T03:37:44
+note = "juste"
+motif = "comparaison-juste"
+
+[[revue]]
+campagne = "fr-1"
+cellule = "adk-claude"
+passe = 1
+question = "Q1"
+essai = 1
+empreinte = "9e8adeba5e733c88"
+date = 2026-10-11T03:37:44
+note = "partiel"
+motif = "capacite-z-signalee"
+
+[[revue]]
+campagne = "fr-1"
+cellule = "adk-claude"
+passe = 1
+question = "Q9"
+essai = 1
+empreinte = "5a443ff992cd9d99"
+date = 2026-10-11T03:37:44
+note = "partiel"
+motif = "ecartes-cites"
+
+[[revue]]
+campagne = "fr-1"
+cellule = "claude-code"
+passe = 1
+question = "Q29"
+essai = 1
+empreinte = "1dad425982737dfe"
+date = 2026-10-11T03:37:44
+note = "juste"
+source = "oui"
+motif = "premisse-corrigee"
+
+[[revue]]
+campagne = "fr-1"
+cellule = "claude-code"
+passe = 1
+question = "Q10"
+essai = 1
+empreinte = "31e183d100b5aca6"
+date = 2026-10-11T03:37:44
+note = "juste"
+motif = "hors-donnees-signale"
+
+[[revue]]
+campagne = "fr-1"
+cellule = "claude-code"
+passe = 3
+question = "Q30"
+essai = 1
+empreinte = "50248da2430feeab"
+date = 2026-10-11T03:37:44
+note = "juste"
+source = "oui"
+motif = "critere-annonce"
+
+[[revue]]
+campagne = "fr-1"
+cellule = "adk-gemini"
+passe = 2
+question = "Q27"
+essai = 1
+empreinte = "e689c5eca7cfa9c7"
+date = 2026-10-11T03:37:44
+note = "juste"
+source = "oui"
+motif = "precision-expliquee"
+
+[[revue]]
+campagne = "fr-1"
+cellule = "claude-code"
+passe = 1
+question = "Q8"
+essai = 1
+empreinte = "c1758cda287a6d1a"
+date = 2026-10-11T03:37:44
+note = "juste"
+motif = "famille-exclue-citee"
+
+[[revue]]
+campagne = "fr-1"
+cellule = "adk-claude"
+passe = 1
+question = "Q8"
+essai = 1
+empreinte = "a0ecd10f0007c64e"
+date = 2026-10-11T03:37:44
+note = "juste"
+motif = "famille-exclue-citee"
+
+[[revue]]
+campagne = "fr-1"
+cellule = "adk-claude"
+passe = 2
+question = "Q29"
+essai = 1
+empreinte = "24c8bf2476c02f90"
+date = 2026-10-11T03:37:44
+note = "juste"
+source = "oui"
+motif = "premisse-corrigee"
+
+[[revue]]
+campagne = "fr-1"
+cellule = "adk-claude"
+passe = 2
+question = "Q9"
+essai = 1
+empreinte = "28e7bad9a939de09"
+date = 2026-10-11T03:37:44
+note = "partiel"
+motif = "ecartes-cites"
+
+[[revue]]
+campagne = "fr-1"
+cellule = "claude-code"
+passe = 1
+question = "Q9"
+essai = 1
+empreinte = "7433a2b144c825d5"
+date = 2026-10-11T03:37:44
+note = "partiel"
+motif = "rappel-sous-50"
+
+[[revue]]
+campagne = "fr-1"
+cellule = "adk-gemini"
+passe = 1
+question = "Q29"
+essai = 1
+empreinte = "bf18a5fd9c13055b"
+date = 2026-10-11T03:37:44
+note = "juste"
+source = "oui"
+motif = "premisse-corrigee"
+
+[[revue]]
+campagne = "fr-1"
+cellule = "claude-code"
+passe = 3
+question = "Q18"
+essai = 1
+empreinte = "4391b447ea985de9"
+date = 2026-10-11T03:37:44
+note = "juste"
+motif = "comparaison-juste"
+
+[[revue]]
+campagne = "fr-1"
+cellule = "claude-code"
+passe = 2
+question = "Q10"
+essai = 1
+empreinte = "e261e4fdf307d286"
+date = 2026-10-11T03:37:44
+note = "juste"
+motif = "hors-donnees-signale"
+
+[[revue]]
+campagne = "fr-1"
+cellule = "adk-claude"
+passe = 2
+question = "Q13"
+essai = 1
+empreinte = "e2250a366277a82c"
+date = 2026-10-11T03:37:44
+note = "juste"
+motif = "zenith-en-tete"
+
+[[revue]]
+campagne = "fr-1"
+cellule = "adk-claude"
+passe = 1
+question = "Q29"
+essai = 1
+empreinte = "a4066cfb9483d9d8"
+date = 2026-10-11T03:37:44
+note = "juste"
+source = "oui"
+motif = "premisse-corrigee"
+
+[[revue]]
+campagne = "fr-1"
+cellule = "adk-claude"
+passe = 1
+question = "Q7"
+essai = 1
+empreinte = "c179f88f84179377"
+date = 2026-10-11T03:37:44
+note = "juste"
+motif = "liste-complete"
+
+[[revue]]
+campagne = "fr-1"
+cellule = "claude-code"
+passe = 1
+question = "Q30"
+essai = 1
+empreinte = "76301c3e27f6bf2b"
+date = 2026-10-11T03:37:44
+note = "juste"
+source = "oui"
+motif = "critere-demande"
+
+[[revue]]
+campagne = "fr-1"
+cellule = "claude-code"
+passe = 1
+question = "Q18"
+essai = 1
+empreinte = "8166645c70ef0233"
+date = 2026-10-11T03:37:44
+note = "juste"
+motif = "comparaison-juste"
+
+[[revue]]
+campagne = "fr-1"
+cellule = "claude-code"
+passe = 3
+question = "Q13"
+essai = 1
+empreinte = "7f8505316f767155"
+date = 2026-10-11T03:37:44
+note = "juste"
+motif = "zenith-en-tete"
+
+[[revue]]
+campagne = "fr-1"
+cellule = "claude-code"
+passe = 3
+question = "Q1"
+essai = 1
+empreinte = "2ce24d146ba942d1"
+date = 2026-10-11T03:37:44
+note = "partiel"
+motif = "capacite-z-signalee"
+
+[[revue]]
+campagne = "fr-1"
+cellule = "claude-code"
+passe = 2
+question = "Q9"
+essai = 1
+empreinte = "3842e729c6e29794"
+date = 2026-10-11T03:37:44
+note = "partiel"
+motif = "ecartes-cites"
+
+[[revue]]
+campagne = "fr-1"
+cellule = "claude-code"
+passe = 3
+question = "Q9"
+essai = 1
+empreinte = "8d305eb8238770cd"
+date = 2026-10-11T03:37:44
+note = "partiel"
+motif = "hors-table-ecarte"
+
+[[revue]]
+campagne = "fr-1"
+cellule = "adk-claude"
+passe = 1
+question = "Q30"
+essai = 1
+empreinte = "2d4a936c5f0a9ce5"
+date = 2026-10-11T03:37:44
+note = "juste"
+source = "oui"
+motif = "critere-annonce"
+
+[[revue]]
+campagne = "fr-1"
+cellule = "claude-code"
+passe = 2
+question = "Q13"
+essai = 1
+empreinte = "54afa70f968bde72"
+date = 2026-10-11T03:37:44
+note = "juste"
+motif = "zenith-en-tete"
+
+[[revue]]
+campagne = "fr-1"
+cellule = "claude-code"
+passe = 3
+question = "Q8"
+essai = 1
+empreinte = "7c9f228d78dfc2fa"
+date = 2026-10-11T03:37:44
+note = "juste"
+motif = "famille-exclue-citee"
+
+[[revue]]
+campagne = "fr-1"
+cellule = "adk-gemini"
+passe = 3
+question = "Q8"
+essai = 1
+empreinte = "c7958eeff57a1444"
+date = 2026-10-11T03:37:44
+note = "juste"
+motif = "famille-exclue-citee"
+
+[[revue]]
+campagne = "fr-1"
+cellule = "adk-claude"
+passe = 2
+question = "Q28"
+essai = 1
+empreinte = "5185288ed0621cc5"
+date = 2026-10-11T03:37:44
+note = "juste"
+source = "oui"
+motif = "source-du-tour-precedent"
+
+[[revue]]
+campagne = "fr-1"
+cellule = "claude-code"
+passe = 1
+question = "Q27"
+essai = 1
+empreinte = "46394f9b078707d4"
+date = 2026-10-11T03:37:44
+note = "juste"
+source = "oui"
+motif = "precision-expliquee"
+
+[[revue]]
+campagne = "fr-1"
+cellule = "adk-claude"
+passe = 1
+question = "Q26"
+essai = 1
+empreinte = "6b19f3fa99a8edc8"
+date = 2026-10-11T03:37:44
+note = "juste"
+motif = "exclus-explicites"
+
+[[revue]]
+campagne = "fr-1"
+cellule = "adk-gemini"
+passe = 2
+question = "Q28"
+essai = 1
+empreinte = "756ea43643f4170f"
+date = 2026-10-11T03:37:44
+note = "juste"
+source = "oui"
+motif = "electrik-nul-signale"
+
+[[revue]]
+campagne = "fr-1"
+cellule = "adk-claude"
+passe = 3
+question = "Q8"
+essai = 1
+empreinte = "a64bb9d12237f4e8"
+date = 2026-10-11T03:37:44
+note = "juste"
+motif = "famille-exclue-citee"
+
+[[revue]]
+campagne = "fr-1"
+cellule = "adk-claude"
+passe = 2
+question = "Q27"
+essai = 1
+empreinte = "8610e646492e63ee"
+date = 2026-10-11T03:37:44
+note = "juste"
+source = "oui"
+motif = "precision-expliquee"
+
+[[revue]]
+campagne = "fr-1"
+cellule = "claude-code"
+passe = 3
+question = "Q10"
+essai = 1
+empreinte = "1d95b19db9298a30"
+date = 2026-10-11T03:37:44
+note = "juste"
+motif = "hors-donnees-signale"
+
+[[revue]]
+campagne = "fr-1"
+cellule = "claude-code"
+passe = 2
+question = "Q8"
+essai = 1
+empreinte = "fedbd658632d7746"
+date = 2026-10-11T03:37:44
+note = "juste"
+motif = "famille-exclue-citee"
+
+[[revue]]
+campagne = "fr-1"
+cellule = "adk-claude"
+passe = 3
+question = "Q10"
+essai = 1
+empreinte = "49076e777c60ca54"
+date = 2026-10-11T03:37:44
+note = "juste"
+motif = "hors-donnees-signale"
+
+[[revue]]
+campagne = "fr-1"
+cellule = "adk-claude"
+passe = 2
+question = "Q17"
+essai = 1
+empreinte = "f9e2205972772092"
+date = 2026-10-11T03:37:44
+note = "juste"
+motif = "nuance-hors-critere"
+
+[[revue]]
+campagne = "fr-1"
+cellule = "adk-claude"
+passe = 3
+question = "Q1"
+essai = 1
+empreinte = "25b9b347ad90df0f"
+date = 2026-10-11T03:37:44
+note = "partiel"
+motif = "capacite-z-en-tete"
+
+[[revue]]
+campagne = "fr-1"
+cellule = "adk-claude"
+passe = 3
+question = "Q26"
+essai = 1
+empreinte = "35514c1da662c9e7"
+date = 2026-10-11T03:37:44
+note = "partiel"
+motif = "hors-table-non-prouve"
+
+[[revue]]
+campagne = "fr-1"
+cellule = "claude-code"
+passe = 3
+question = "Q28"
+essai = 1
+empreinte = "665e1577d0820cdb"
+date = 2026-10-11T03:37:44
+note = "juste"
+source = "oui"
+motif = "electrik-nul-signale"
+
+[[revue]]
+campagne = "fr-1"
+cellule = "adk-claude"
+passe = 1
+question = "Q2"
+essai = 1
+empreinte = "3dd6f1908e960c45"
+date = 2026-10-11T03:37:44
+note = "juste"
+motif = "equipe-valide-controle"
+
+[[revue]]
+campagne = "fr-1"
+cellule = "claude-code"
+passe = 2
+question = "Q21"
+essai = 1
+empreinte = "61974524967e0423"
+date = 2026-10-11T03:37:44
+note = "juste"
+motif = "comparaison-juste"
+
+[[revue]]
+campagne = "fr-1"
+cellule = "adk-gemini"
+passe = 3
+question = "Q12"
+essai = 1
+empreinte = "0cf1c356ebc0e50f"
+date = 2026-10-11T03:37:44
+note = "juste"
+motif = "forme-signalee"
+
+[[revue]]
+campagne = "fr-1"
+cellule = "adk-gemini"
+passe = 1
+question = "Q27"
+essai = 1
+empreinte = "927842788cfd43e5"
+date = 2026-10-11T03:37:44
+note = "juste"
+source = "oui"
+motif = "precision-expliquee"
+
+[[revue]]
+campagne = "fr-1"
+cellule = "adk-gemini"
+passe = 1
+question = "Q1"
+essai = 1
+empreinte = "d663055ca44f0c6c"
+date = 2026-10-11T03:37:44
+note = "partiel"
+motif = "capacite-z-signalee"
+
+[[revue]]
+campagne = "fr-1"
+cellule = "adk-claude"
+passe = 2
+question = "Q30"
+essai = 1
+empreinte = "2610b89e016480dd"
+date = 2026-10-11T03:37:44
+note = "juste"
+source = "oui"
+motif = "critere-annonce"
+
+[[revue]]
+campagne = "fr-1"
+cellule = "adk-claude"
+passe = 3
+question = "Q18"
+essai = 1
+empreinte = "f51144e5eec30adf"
+date = 2026-10-11T03:37:44
+note = "juste"
+motif = "comparaison-juste"
+
+[[revue]]
+campagne = "fr-1"
+cellule = "claude-code"
+passe = 1
+question = "Q21"
+essai = 1
+empreinte = "8ad04bb42c7f0cf2"
+date = 2026-10-11T03:37:44
+note = "juste"
+motif = "comparaison-juste"
+
+[[revue]]
+campagne = "fr-1"
+cellule = "claude-code"
+passe = 2
+question = "Q30"
+essai = 1
+empreinte = "14e3fc3689dc2c10"
+date = 2026-10-11T03:37:44
+note = "juste"
+source = "oui"
+motif = "critere-annonce"
+
+[[revue]]
+campagne = "fr-1"
+cellule = "adk-gemini"
+passe = 2
+question = "Q30"
+essai = 1
+empreinte = "3ceb3b1e88bcfce5"
+date = 2026-10-11T03:37:44
+note = "juste"
+source = "oui"
+motif = "critere-annonce"
+
+[[revue]]
+campagne = "fr-1"
+cellule = "adk-gemini"
+passe = 1
+question = "Q12"
+essai = 1
+empreinte = "b7b95bf902a8cd56"
+date = 2026-10-11T03:37:44
+note = "juste"
+motif = "forme-signalee"
+
+[[revue]]
+campagne = "fr-1"
+cellule = "claude-code"
+passe = 2
+question = "Q28"
+essai = 1
+empreinte = "52c716b8cf2fa7e5"
+date = 2026-10-11T03:37:44
+note = "juste"
+source = "oui"
+motif = "source-du-tour-precedent"
+
+[[revue]]
+campagne = "fr-1"
+cellule = "adk-gemini"
+passe = 2
+question = "Q13"
+essai = 1
+empreinte = "56612518e6886898"
+date = 2026-10-11T03:37:44
+note = "juste"
+motif = "zenith-en-tete"
+
+[[revue]]
+campagne = "fr-1"
+cellule = "claude-code"
+passe = 1
+question = "Q15"
+essai = 1
+empreinte = "df546c2e6fcce84e"
+date = 2026-10-11T03:37:44
+note = "juste"
+motif = "forme-signalee"
+
+[[revue]]
+campagne = "fr-1"
+cellule = "adk-claude"
+passe = 2
+question = "Q18"
+essai = 1
+empreinte = "ee90cfd9f173b6a7"
+date = 2026-10-11T03:37:44
+note = "juste"
+motif = "comparaison-juste"
+
+[[revue]]
+campagne = "fr-1"
+cellule = "adk-claude"
+passe = 3
+question = "Q13"
+essai = 1
+empreinte = "768fadc8592053f7"
+date = 2026-10-11T03:37:44
+note = "juste"
+motif = "zenith-en-tete"
+
+[[revue]]
+campagne = "fr-1"
+cellule = "adk-gemini"
+passe = 1
+question = "Q14"
+essai = 1
+empreinte = "6c90409b2e5b2691"
+date = 2026-10-11T03:37:44
+note = "juste"
+motif = "liste-complete"
+
+[[revue]]
+campagne = "fr-1"
+cellule = "adk-gemini"
+passe = 1
+question = "Q21"
+essai = 1
+empreinte = "d42b9b3b53484856"
+date = 2026-10-11T03:37:44
+note = "juste"
+motif = "comparaison-juste"
+
+[[revue]]
+campagne = "fr-1"
+cellule = "adk-claude"
+passe = 3
+question = "Q28"
+essai = 1
+empreinte = "564dfff28e380c49"
+date = 2026-10-11T03:37:44
+note = "juste"
+source = "oui"
+motif = "source-du-tour-precedent"
+
+[[revue]]
+campagne = "fr-1"
+cellule = "claude-code"
+passe = 3
+question = "Q17"
+essai = 1
+empreinte = "960d0d3f0133225a"
+date = 2026-10-11T03:37:44
+note = "partiel"
+motif = "rappel-insuffisant"
+
+[[revue]]
+campagne = "fr-1"
+cellule = "adk-claude"
+passe = 1
+question = "Q13"
+essai = 1
+empreinte = "43c76fb19e45801e"
+date = 2026-10-11T03:37:44
+note = "juste"
+motif = "zenith-en-tete"
+
+[[revue]]
+campagne = "fr-1"
+cellule = "adk-claude"
+passe = 3
+question = "Q17"
+essai = 1
+empreinte = "952a09e8b2fadc62"
+date = 2026-10-11T03:37:44
+note = "juste"
+motif = "exclus-explicites"
+
+[[revue]]
+campagne = "fr-1"
+cellule = "adk-gemini"
+passe = 3
+question = "Q13"
+essai = 1
+empreinte = "e8191224b6f84091"
+date = 2026-10-11T03:37:44
+note = "juste"
+motif = "zenith-en-tete"
+
+[[revue]]
+campagne = "fr-1"
+cellule = "adk-claude"
+passe = 2
+question = "Q8"
+essai = 1
+empreinte = "ac9cefd99035a656"
+date = 2026-10-11T03:37:44
+note = "juste"
+motif = "famille-exclue-citee"
+
+[[revue]]
+campagne = "fr-1"
+cellule = "claude-code"
+passe = 1
+question = "Q28"
+essai = 1
+empreinte = "f836f1a8439e6643"
+date = 2026-10-11T03:37:44
+note = "juste"
+source = "oui"
+motif = "source-du-tour-precedent"
+
+[[revue]]
+campagne = "fr-1"
+cellule = "adk-claude"
+passe = 3
+question = "Q21"
+essai = 1
+empreinte = "d9bd6093297c81d6"
+date = 2026-10-11T03:37:44
+note = "juste"
+motif = "comparaison-juste"
+
+[[revue]]
+campagne = "fr-1"
+cellule = "adk-gemini"
+passe = 2
+question = "Q14"
+essai = 1
+empreinte = "881e7bb22b42a256"
+date = 2026-10-11T03:37:44
+note = "juste"
+motif = "liste-complete"
+
+[[revue]]
+campagne = "fr-1"
+cellule = "claude-code"
+passe = 1
+question = "Q26"
+essai = 1
+empreinte = "0afa627db2cc6b56"
+date = 2026-10-11T03:37:44
+note = "partiel"
+motif = "hors-table-non-prouve"
+
+[[revue]]
+campagne = "fr-1"
+cellule = "adk-claude"
+passe = 1
+question = "Q27"
+essai = 1
+empreinte = "5276f3ea9b130386"
+date = 2026-10-11T03:37:44
+note = "juste"
+source = "oui"
+motif = "precision-expliquee"
+
+[[revue]]
+campagne = "fr-1"
+cellule = "adk-gemini"
+passe = 3
+question = "Q27"
+essai = 1
+empreinte = "8f4999059eb4e804"
+date = 2026-10-11T03:37:44
+note = "juste"
+source = "oui"
+motif = "precision-expliquee"
+
+[[revue]]
+campagne = "fr-1"
+cellule = "claude-code"
+passe = 2
+question = "Q27"
+essai = 1
+empreinte = "f46ccbc15504af6f"
+date = 2026-10-11T03:37:44
+note = "juste"
+source = "oui"
+motif = "precision-expliquee"
+
+[[revue]]
+campagne = "fr-1"
+cellule = "claude-code"
+passe = 2
+question = "Q29"
+essai = 1
+empreinte = "25247f486a004378"
+date = 2026-10-11T03:37:44
+note = "juste"
+source = "oui"
+motif = "premisse-corrigee"
+
+[[revue]]
+campagne = "fr-1"
+cellule = "adk-claude"
+passe = 1
+question = "Q28"
+essai = 1
+empreinte = ""
+date = 2026-10-11T03:37:44
+note = "juste"
+source = "oui"
+motif = "source-du-tour-precedent"
+
+[[revue]]
+campagne = "fr-1"
+cellule = "adk-claude"
+passe = 3
+question = "Q29"
+essai = 1
+empreinte = "4817a7cbbea65918"
+date = 2026-10-11T03:37:44
+note = "juste"
+source = "oui"
+motif = "premisse-corrigee"

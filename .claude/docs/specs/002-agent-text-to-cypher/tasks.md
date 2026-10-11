@@ -8,7 +8,7 @@
 > il « perd le fil » (échecs ×4 constatés en télémétrie, Morph 2026) → découper la phase.
 
 **Date :** 2026-10-01
-**Status :** [~] 21/33 tasks → MAJ au fil de l'eau
+**Status :** [~] 23/33 tasks → MAJ au fil de l'eau
 
 > Phases 0 à 6 : sans la base (prévues pendant la période creuse de NEO-13, close le 2026-10-07). Phases 7 à 11 : sur la base.
 > Les tests n'appellent aucun outil réel : PATH réduit aux faux outils, HOME temporaire.
@@ -92,9 +92,9 @@
 
 ## Phase 9 — Campagne (NEO-21 ; T9.2 : NEO-22)
 
-- [ ] **T9.1** : 3 passes comptées, cellules alternées question par question, reprise possible — en cours le 2026-10-11 : `banc rapport` écrit pour la DoD (plan, D10 ; complet sur le pilote) ; campagne `fr-1` à lancer après le feu vert de Julien sur le coût et le plafond
+- [x] **T9.1** : 3 passes comptées, cellules alternées question par question, reprise possible — fait le 2026-10-11 : `banc rapport` écrit pour la DoD (plan, D10 ; 17 tests, 10 fautes injectées, toutes détectées) ; campagne `fr-1` (`--passes 3 --plafond-usd 12.5`, choix de Julien), 252 conversations sans panne, 7,60 $ pour 7,54 $ attendus ; complète ; scores sur 30 : claude-code 27,5 (écart entre passes 0), adk-claude 27,8 (0,5), adk-gemini 20,7 (2,5) ; relevé : plan, D7
   - DoD : `command_passes: uv run --directory banc python -m banc rapport --campagne <id> --complet` (9 séries, aucune panne non relancée)
-- [ ] **T9.2** : revue humaine des « à revoir »
+- [x] **T9.2** : revue humaine des « à revoir » — fait le 2026-10-11 : 95 cas ; décisions de Julien, validées en bloc sur la pré-analyse de Claude (cas rendus à l'aveugle, longues listes et contrôle de Q2 vérifiés par script), écart à l'ADR-0008 noté au plan (D7) ; 79 justes, 16 partielles ; aucun cas restant
   - DoD : `command_passes: uv run --directory banc python -m banc revoir --campagne <id> --verifier` (aucun cas restant)
 - [ ] **T9.3** : coût recoupé avec l'usage de la Console Anthropic (cellules Claude, [ADR-0011](../../adr/0011-infra-claude-par-api-anthropic.md)) et l'export de facturation BigQuery (`/google-facture`, cellule Gemini), le lendemain (plan, D10)
   - DoD : `manual: écart noté dans le rapport de campagne`

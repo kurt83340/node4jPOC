@@ -210,6 +210,13 @@ Mode « faux serveur » (avant le 2026-10-04) : serveur MCP, validation des noms
 - **Réglé** : l'extraction (titres de jeux, D4) et le journal du lanceur (D1) ; ni la consigne, ni la fiche, ni les plafonds. Cache : 5 min (D10). Seuils du FR/EN : D8. Gemini annonce désormais sa lecture en cache implicite (`cached_content_token_count`), comptée au prix de la lecture.
 - **Gel** : `gel` et `pilote = "pilote"` en tête de `banc/mesures/revues.toml`, dans le commit qui clôt la phase 8.
 
+**Campagne comptée `fr-1` (T9.1, T9.2, 2026-10-11)** : `scripts/banc.sh lancer --campagne fr-1 --passes 3 --plafond-usd 12.5` (choix de Julien : « si ça dépasse un peu c'est pas grave »), de 1 h 25 à 2 h 50 : 252 conversations, 270 lignes, aucune panne ; `banc rapport --campagne fr-1 --complet` : complète.
+
+- **Coût** : 7,601 $ pour 7,54 $ attendus d'après le pilote (2,50, 2,47 et 2,63 $ par passe) ; Claude 4,658 $, Gemini 2,943 $.
+- **Issues** : claude-code et adk-claude répondent aux 90 questions ; adk-gemini épuise ses 10 appels du modèle 9, 7 et 8 fois, plus le second tour faux d'office.
+- **Scores** (justes, plus la moitié des partielles, sur 30) : claude-code 27,5, 27,5, 27,5 ; adk-claude 28, 28, 27,5 ; adk-gemini 19,5, 22, 20,5. Écart entre passes : 0, 0,5 et 2,5 : le bruit R de Gemini vaut 2,5 points, d'où un seuil de 2,5 points pour le FR/EN et une passe de contrôle attendue entre 18,5 et 23 (D8).
+- **Revue (T9.2)** : 95 cas, dont 1 tranché par une décision réutilisée (même réponse courte, après le gel). Écart à l'ADR-0008 : Claude a rendu les cas à l'aveugle par `banc.revue`, vérifié par script les longues listes (Q7, Q14 : ensembles exacts) et l'équipe de Q2 (requête de contrôle), puis proposé une décision par cas ; Julien les a validées en bloc (« tes décisions ont l'air bien et vérifiées »), et elles sont enregistrées comme les siennes, avec une note en tête de leurs tables. 79 justes, 16 partielles : Q1, capacité Z classée en tête (8 cas) ; Q9, Poissirène, d'eau douce, tenu pour écarté (4 cas) et un rappel de 45 % ; Q17, un rappel de 1 sur 6 ; Q26, espèces hors table non prouvées (2 cas). Q28 : source « oui » quand les chiffres de Surf viennent d'une requête du tour précédent, dans la même conversation. Une revue assistée pour les campagnes suivantes passerait par un ADR qui amende l'ADR-0008.
+
 ### D8 — Schéma anglais par bascule prouvée de l'instance
 
 **Choix :**
