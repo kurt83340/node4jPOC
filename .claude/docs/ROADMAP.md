@@ -61,7 +61,7 @@ La fiche de schéma reprend les règles de réponse du banc d'essai ([questions/
 - Limite d'AuraDB Free : 200 000 nœuds et 400 000 relations (lue le 2026-09-30) ; le graphe chargé en occupe 4,4 % et 28,4 %
 - Instance Free en pause après 72 h sans activité, supprimée après 30 jours de pause : garder le script de chargement réexécutable ; le job de réveil quotidien `reveil-aura` l'évite (NEO-13, vérifié du 2026-10-01 au 2026-10-07)
 - Coûts qui tournent en tâche de fond : éteindre Aura Agent exposé, l'agent Agent Runtime (`min_instances=0`) et toute instance Business Critical après chaque session de mesure
-- Dépense LLM : coupure automatique de Vertex ([ADR-0010](adr/0010-infra-plafond-de-depense.md)) à construire avant la première campagne payante (au plus tard T5.1) ; Claude plafonné par 20 $ de crédits sans recharge automatique ([ADR-0011](adr/0011-infra-claude-par-api-anthropic.md)) ; coupure en place depuis le 2026-10-10, avec un plafond natif de 30 € par mois sur Vertex ([ADR-0013](adr/0013-infra-plafond-natif-de-vertex.md), NEO-26)
+- Dépense LLM : coupure automatique de Vertex ([ADR-0010](adr/0010-infra-plafond-de-depense.md)) à construire avant la première campagne payante (au plus tard T5.1) ; Claude plafonné par 20 $ de crédits sans recharge automatique ([ADR-0011](adr/0011-infra-claude-par-api-anthropic.md)) ; coupure en place depuis le 2026-10-10, avec un plafond natif de 30 € par mois sur Vertex ([ADR-0013](adr/0013-infra-plafond-natif-de-vertex.md), NEO-26) ; précision du 2026-10-12 : Claude est borné par des crédits offerts sans recharge automatique (31,61 $ le 2026-10-11) et par la limite de l'organisation, 20 $ par mois depuis le 2026-10-11 ([ACCESS](ACCESS.md))
 
 ## 🚫 Hors POC
 

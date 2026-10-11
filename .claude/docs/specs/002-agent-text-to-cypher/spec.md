@@ -100,7 +100,7 @@ Mesurer la technique 2 du banc d'essai : un agent LLM qui écrit lui-même le Cy
 ## Dépendances
 
 - NEO-13 clos (période creuse de 72 h) avant toute requête sur la base : fait le 2026-10-07
-- accès à Claude par l'API Anthropic (workspace du banc, clé dans Secret Manager, [ADR-0011](../../adr/0011-infra-claude-par-api-anthropic.md)) : fait le 2026-10-08 (T0.2)
+- accès à Claude par l'API Anthropic (workspace du banc, clé dans Secret Manager, [ADR-0011](../../adr/0011-infra-claude-par-api-anthropic.md)) : fait le 2026-10-08 (T0.2) ; précision du 2026-10-12 : clé dans le workspace « Default », sous la limite de l'organisation (20 $ par mois depuis le 2026-10-11, [ACCESS](../../ACCESS.md))
 - spec [001-socle-donnees](../001-socle-donnees/spec.md) livrée (graphe, `questions/attendu/`)
 
 ## Liens
@@ -108,4 +108,4 @@ Mesurer la technique 2 du banc d'essai : un agent LLM qui écrit lui-même le Cy
 - Research : [research.md](research.md)
 - Plan technique : [plan.md](plan.md)
 - Tasks : [tasks.md](tasks.md)
-- ADRs liés : [0002](../../adr/0002-cadrage-environnement-cible-google-cloud.md), [0005](../../adr/0005-mvp-conventions-nommage-schema.md), [0006](../../adr/0006-mvp-banc-essai-30-questions.md), [0007](../../adr/0007-infra-secrets-et-services-geres.md), [0008](../../adr/0008-mvp-notation-questions-semantiques.md), [0010](../../adr/0010-infra-plafond-de-depense.md) ; protocole de mesure : [0009](../../adr/0009-mvp-protocole-mesure-techniques.md), amendé par [0011](../../adr/0011-infra-claude-par-api-anthropic.md) (Claude par l'API Anthropic) et précisé par [0012](../../adr/0012-mvp-second-tour-apres-echec.md) (second tour après un échec)
+- ADRs liés : [0002](../../adr/0002-cadrage-environnement-cible-google-cloud.md), [0005](../../adr/0005-mvp-conventions-nommage-schema.md), [0006](../../adr/0006-mvp-banc-essai-30-questions.md), [0007](../../adr/0007-infra-secrets-et-services-geres.md), [0008](../../adr/0008-mvp-notation-questions-semantiques.md), [0010](../../adr/0010-infra-plafond-de-depense.md) ; protocole de mesure : [0009](../../adr/0009-mvp-protocole-mesure-techniques.md), amendé par [0011](../../adr/0011-infra-claude-par-api-anthropic.md) (Claude par l'API Anthropic) et précisé par [0012](../../adr/0012-mvp-second-tour-apres-echec.md) (second tour après un échec) ; amendé aussi par [0014](../../adr/0014-mvp-revue-assistee.md) (revue assistée) et [0015](../../adr/0015-mvp-source-du-tour-precedent.md) (source d'un second tour) ; [0011](../../adr/0011-infra-claude-par-api-anthropic.md) amendé par [0016](../../adr/0016-infra-limite-anthropic-organisation.md) (clé dans « Default », limite de l'organisation)

@@ -8,7 +8,7 @@
 > il « perd le fil » (échecs ×4 constatés en télémétrie, Morph 2026) → découper la phase.
 
 **Date :** 2026-10-01
-**Status :** [~] 26/34 tasks → MAJ au fil de l'eau
+**Status :** [~] 34/35 tasks → MAJ au fil de l'eau
 
 > Phases 0 à 6 : sans la base (prévues pendant la période creuse de NEO-13, close le 2026-10-07). Phases 7 à 11 : sur la base.
 > Les tests n'appellent aucun outil réel : PATH réduit aux faux outils, HOME temporaire.
@@ -61,7 +61,7 @@
 ## Phase 5 — Répétition générale (NEO-18)
 
 - [x] **T5.1** : vrais LLM, mode faux serveur (serveur MCP, validation des noms et contrôle de Q2 simulés) : 3 cellules sur Q19, puis Q2 suivie de Q18 ; un délai dépassé noté faux — fait le 2026-10-10 : `banc lancer --faux-serveur` (`banc.faux_serveur` : liste vide à chaque appel, choix de Julien ; contrôle de Q2 simulé, sans espèce reconnue : « à revoir » ; aucun nettoyage ; serveur lent pour la paire Q2 → Q18 d'adk-gemini) ; `scripts/banc.sh` passe au harnais le PATH de l'appelant, sans gcloud ; campagne `repetition-1` (`--plafond-usd 3`), lancée sans gcloud dans le PATH du harnais et avec un leurre de `cypher-shell`, jamais appelé : 9 lignes, 0,195 $ ; Q19 répondue par les deux cellules Claude, adk-gemini en échec sur ses 10 appels du modèle (« tours ») ; Q2 et Q18 répondues par les deux cellules Claude ; adk-gemini : Q2 en échec sur son délai (180,1 s), Q18 faux d'office (ADR-0012) ; relevés au plan (D13) ; 1 042 tests ; 10 fautes injectées (mode faux serveur, banc.sh), toutes détectées
-  - DoD : `command_passes: uv run --directory banc python -m banc lancer --faux-serveur --questions Q19,Q2,Q18`, lancé avec un PATH sans `gcloud` ni `cypher-shell` (traces, CSV et coût produits)
+  - DoD : `command_passes: uv run --directory banc python -m banc lancer --faux-serveur --questions Q19,Q2,Q18`, lancé avec un PATH sans `gcloud` ni `cypher-shell` (traces, CSV et coût produits) — précision du 2026-10-12 : `banc lancer` exige aussi `--campagne` et `--plafond-usd` (ici `repetition-1` et `--plafond-usd 3`, d'après le fait noté)
 
 ## Phase 6 — Schéma anglais, partie sans base (NEO-19)
 

@@ -3,7 +3,7 @@
 > Procédures d'exploitation des services déployés : redéployer, lancer, lire les journaux, réagir à une
 > alerte, couper. Accès et identifiants : [ACCESS.md](ACCESS.md). Aucun secret ici.
 
-**Dernière MAJ :** 2026-10-10
+**Dernière MAJ :** 2026-10-11
 
 ## Job `reveil-aura` (NEO-13)
 
@@ -235,4 +235,4 @@ scripts/verifier.sh && scripts/questions.sh --verifier && scripts/questions.sh -
 - Gemini : export de facturation BigQuery (`/google-facture`), une ligne par heure d'usage et par SKU (`usage_start_time`) ; une requête `bq` par heure isole la campagne, dont les jetons (entrée hors cache, lecture du cache, sortie) égalent ceux du CSV du banc. Google compte au prix standard et retire la promotion de 50 % en crédit `DISCOUNT` ; taux : `currency_conversion_rate`. Délai observé : 4 h 35 à 6 h 43 après le début de l'heure d'usage (2026-10-11).
 - Claude : usage de la Console Anthropic, jours en UTC, rafraîchi environ toutes les 4 h ; capture au moins 4 à 5 h après la fin de la campagne.
 - Fuseaux : l'export compte les jours à l'heure du Pacifique, la Console en UTC ; une campagne de nuit (heure de Paris) tombe sur deux jours UTC.
-- L'écart se note au relevé de la campagne (plan 002, D7).
+- L'écart se note au relevé de la campagne (plan 002, D7) ; pour `en-1` et `fr-controle`, D8.

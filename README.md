@@ -111,6 +111,8 @@ scripts/banc.sh lancer --campagne <id> --passes 3 --plafond-usd <$>    # clé An
 uv run --directory banc python -m banc rapport --campagne <id> --complet # scores, temps, coût
 ```
 
+Prérequis du banc, en plus : uv, `neo4j-mcp` v1.6.0, la clé Anthropic du banc et l'ADC de gcloud pour Vertex ([ACCESS](.claude/docs/ACCESS.md)).
+
 ## Contact
 
 - Owner technique : Julien Leroy (fr.leroyjulien@gmail.com)

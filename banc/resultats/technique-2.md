@@ -59,7 +59,7 @@ Moyenne des 3 passes, sur 5 ([ADR-0006](../../.claude/docs/adr/0006-mvp-banc-ess
 
 - **Gemini ne conclut pas** : 27 échecs, chacun faux d'office. 24 fois, il épuise ses 10 appels au modèle sur des
   requêtes valides, sans jamais rendre sa réponse : Q2, Q7, Q9, Q10, Q17 et Q26 à chaque passe, Q1, Q8, Q28 et Q30
-  parfois. 3 fois, Q18 compte faux parce que Q2, son premier tour, a échoué (ADR-0012). Il appelle le modèle 5,5 fois
+  parfois. 3 fois, Q18 compte faux parce que Q2, son premier tour, a échoué (ADR-0012). Il appelle le modèle 5,6 fois
   par question en moyenne, contre 1,8 à 2 pour Claude. Le plafond de 10 appels vaut pour toutes les cellules (choix
   de Julien au pilote : plus d'appels aurait coûté plus et rendu la mesure moins comparable aux jalons 3 et 4).
 - **Les partielles de Claude** (15 pour Claude Code, 13 pour ADK) tiennent à deux causes :

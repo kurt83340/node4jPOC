@@ -81,6 +81,8 @@
   en erreur n'est jamais une source. Un test d'exclusion emploie une entrée que le code accepterait sans elle.
 - ⚠️ `banc/src/banc/trace.py` — contrat lu par la notation (choix de Julien du 2026-10-08) : T3.1 l'entoure (JSONL,
   masquage, mesures) ; y ajouter un champ, oui ; en changer le sens, jamais sans revoir `notation.py`.
+- ⚠️ `infra/reveil-aura/` — le job : secret monté en fichier par Cloud Run, sous un compte qui ne lit que lui ; tout
+  message passe par `masquer` (`infra/reveil-aura/reveil.py:161`) ([ADR-0007](adr/0007-infra-secrets-et-services-geres.md)).
 - ⚠️ `infra/reveil-aura/reveil.py` — la Query API d'Aura répond 202 même quand la requête échoue ; seul un
   refus d'authentification donne 401. Lire `errors` dans le corps, jamais le seul code HTTP
   ([doc Query API](https://neo4j.com/docs/query-api/current/query/), lue le 2026-09-30).
@@ -104,6 +106,10 @@
 - ⚠️ `scripts/mcp-neo4j.sh` — son stdout masqué est le canal MCP, un message JSON par ligne : le filtre rend chaque
   ligne aussitôt (`$| = 1` de perl), sinon le client attend sa réponse sans fin ; il ne peut pas non plus retirer
   une ligne (même blocage) ; l'identifiant lui arrive par l'environnement, jamais en argument (`ps`) (vu le 2026-10-08).
+- ⚠️ `scripts/mcp-neo4j.sh` — le masque du stdout ôte aussi les instructions du serveur (elles citent `get-schema`) :
+  Claude Code 2.1.292 les injecte dans la conversation alors que l'outil est masqué ; perl ôte ce membre sur la seule
+  ligne qui porte `serverInfo`. Chaque cellule ne reçoit que la consigne, la fiche et les descriptions des outils
+  (choix de Julien ; [plan 002, D1](specs/002-agent-text-to-cypher/plan.md), T4.1, vu le 2026-10-09).
 - ⚠️ `banc/mesures/revues.toml` — `gel` s'écrit en date-heure sans fuseau (`gel = 2026-10-20T10:00:00`), tout en
   haut, avant toute table, avec la campagne pilote, exigée (`pilote = "pilote"`) : une date seule ou un gel sans
   pilote laisseraient réutiliser une décision du pilote. Une décision se corrige ou se complète dans le fichier,
