@@ -113,7 +113,7 @@
 
 ## Phase 11 — Résultats et livraison (NEO-24)
 
-- [ ] **T11.0** : source d'un second tour ([ADR-0015](../../adr/0015-mvp-source-du-tour-precedent.md)) : `banc.notation` lit aussi le tour précédent pour la source de Q18, hors de toute campagne ; colonne source des Q18 recalculée pour `fr-1`, la campagne anglaise et la passe de contrôle, avant le rapport
+- [x] **T11.0** : source d'un second tour ([ADR-0015](../../adr/0015-mvp-source-du-tour-precedent.md)) : `banc.notation` lit aussi le tour précédent pour la source de Q18, hors de toute campagne ; colonne source des Q18 recalculée pour `fr-1`, la campagne anglaise et la passe de contrôle, avant le rapport — fait le 2026-10-11 : `noter` reçoit le tour précédent d'un second tour, la revue en montre les lectures (Q28) ; 4 mutations détectées ; recalcul : `fr-1`, 6 réponses à Q18, une source changée (adk-claude, passe 3 : non → oui, aucun appel dans son tour) ; `en-1` et `fr-controle` : aucune réponse à Q18 ; rapports et scores inchangés ; relevé : plan, D4
   - DoD : `command_passes: uv run --directory banc pytest -q`, et `manual: colonnes source des Q18 recalculées, écarts notés au plan`
 - [ ] **T11.1** : rapport de la technique 2 : score par cellule et par catégorie, écart entre passes, causes d'échec, introspections, temps, coût, sources citées, FR/EN (seuils fixés d'avance, limite à un modèle), effort de mise en place
   - DoD : `file_exists: banc/resultats/technique-2.md`
