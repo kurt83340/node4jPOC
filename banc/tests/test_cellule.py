@@ -16,6 +16,7 @@ from banc.cellule import (
     Plafonds,
     commande_json,
     consigne_et_fiche,
+    empreinte_prompt,
     lire_commande,
 )
 
@@ -29,6 +30,8 @@ COMMANDE = Commande(
     cache_1h=True,
     serveur=("/opt/faux/serveur", "--option"),
     cli=Path("/opt/faux/claude"),
+    schema="en",
+    empreinte_prompt="0" * 64,
 )
 
 
@@ -50,9 +53,14 @@ def test_budget_exact() -> None:
 
 
 def test_valeurs_par_defaut() -> None:
-    commande = lire_commande(brut(plafonds=None, cache_1h=None, serveur=None, cli=None))
+    retires = dict.fromkeys(
+        ("plafonds", "cache_1h", "serveur", "cli", "schema", "empreinte_prompt")
+    )
+    commande = lire_commande(brut(**retires))
     assert (commande.plafonds, commande.cache_1h) == (Plafonds(), False)
     assert (commande.serveur, commande.cli) == ((str(LANCEUR),), None)
+    # Français, fiche non vérifiée : un essai hors campagne.
+    assert (commande.schema, commande.empreinte_prompt) == ("fr", None)
     # ADR-0009 et choix de Julien (T4.1) : 180 s et 10 tours par question, 0,50 $ par conversation.
     assert Plafonds() == Plafonds(180.0, 10, Decimal("0.50"), 30.0)
 
@@ -76,6 +84,10 @@ def test_valeurs_par_defaut() -> None:
         ({"plafonds": {"connexion_s": -1}}, "plafonds invalides"),
         ({"plafonds": {"budget_usd": "0"}}, "budget invalide"),
         ({"plafonds": {"budget": "1"}}, "unexpected keyword argument 'budget'"),
+        ({"schema": "de"}, "schema : fr ou en attendu"),
+        ({"empreinte_prompt": "0" * 63}, "empreinte_prompt : un SHA-256"),
+        ({"empreinte_prompt": "G" * 64}, "empreinte_prompt : un SHA-256"),
+        ({"empreinte_prompt": "0" * 65}, "empreinte_prompt : un SHA-256"),
     ],
     ids=lambda valeur: valeur if isinstance(valeur, str) else None,
 )
@@ -107,3 +119,24 @@ def test_consigne_puis_fiche() -> None:
     fiche = (QUESTIONS / "fiche-schema.md").read_text(encoding="utf-8")
     assert consigne_et_fiche() == f"{consigne}\n\n{fiche}"
     assert consigne_et_fiche().startswith("# Consigne")
+
+
+def test_fiche_de_la_langue_de_la_base() -> None:
+    # Schéma anglais (D8) : la même consigne, la fiche traduite (T6.3).
+    consigne = (QUESTIONS / "consigne.md").read_text(encoding="utf-8")
+    fiche = (QUESTIONS / "fiche-schema.en.md").read_text(encoding="utf-8")
+    assert consigne_et_fiche(schema="en") == f"{consigne}\n\n{fiche}"
+    assert "(:Form)" in fiche
+    assert "(:Forme)" not in fiche
+
+
+@pytest.mark.parametrize("schema", ["fr", "en"])
+def test_empreinte_de_la_fiche(schema: str) -> None:
+    attendue = empreinte_prompt(schema)
+    assert consigne_et_fiche(schema=schema, empreinte=attendue).endswith(
+        (QUESTIONS / ("fiche-schema.md" if schema == "fr" else "fiche-schema.en.md")).read_text()
+    )
+    # L'empreinte de l'autre langue : la fiche a « changé » depuis la création de la campagne.
+    autre = empreinte_prompt("en" if schema == "fr" else "fr")
+    with pytest.raises(CelluleError, match="changées depuis la création de la campagne"):
+        consigne_et_fiche(schema=schema, empreinte=autre)

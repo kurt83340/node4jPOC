@@ -11,6 +11,8 @@ supersedes: null
 
 > ⚠️ **Point remplacé** (2026-10-11) : « revue humaine à l'aveugle du reste » (Décision, notation mixte) → [ADR-0014](0014-mvp-revue-assistee.md) : revue assistée, pré-analyse de Claude à l'aveugle validée par Julien, avec une contre-épreuve de 8 cas qu'il revoit seul. Le reste de cet ADR reste en vigueur.
 
+> ⚠️ **Point remplacé** (2026-10-11) : « Source citée : une requête exécutée pendant le tour » (Décision), pour les seconds tours → [ADR-0015](0015-mvp-source-du-tour-precedent.md) : au second tour d'une paire, une requête exécutée au tour précédent de la même conversation compte aussi comme source, si son résultat contient la réponse. Le reste de cet ADR reste en vigueur.
+
 **Statut :** Accepted
 **Date :** 2026-10-01
 **Décideur :** Julien Leroy

@@ -48,6 +48,12 @@ def main(arguments: Sequence[str] | None = None) -> int:
         help="répétition générale (T5.1) : vrais LLM, faux serveur MCP, rien ne touche Aura",
     )
     lancer.add_argument(
+        "--schema",
+        choices=("fr", "en"),
+        help="langue du schéma de la base (plan, D8) : fiche du prompt et contrôle de Q2 ; "
+        "vérifiée sur la base avant de lancer (défaut : fr)",
+    )
+    lancer.add_argument(
         "--reprendre",
         action="store_true",
         help="continue la campagne : rejoue pannes, arrêts et conversations coupées",
@@ -97,6 +103,7 @@ def main(arguments: Sequence[str] | None = None) -> int:
             cellules=lus.cellules,
             cache_1h=lus.cache_1h,
             faux_serveur=lus.faux_serveur,
+            schema=lus.schema,
         )
         return orchestration.commande(demande)
     actions: dict[str, Callable[[], int]] = {

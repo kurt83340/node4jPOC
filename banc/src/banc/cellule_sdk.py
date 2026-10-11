@@ -194,7 +194,8 @@ async def converser(commande: Commande, tarifs: Sequence[Tarif]) -> None:
     après un échec est l'affaire de l'orchestration (ADR-0012, T4.3).
     """
     verifier_cache(commande)
-    client = ClaudeSDKClient(options(commande, consigne_et_fiche()))
+    prompt = consigne_et_fiche(schema=commande.schema, empreinte=commande.empreinte_prompt)
+    client = ClaudeSDKClient(options(commande, prompt))
     await client.connect()
     try:
         statut = await attendre_serveur(client, commande.plafonds.connexion_s)

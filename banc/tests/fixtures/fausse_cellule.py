@@ -78,6 +78,8 @@ def principal() -> int:
         "cache_1h": commande.cache_1h,
         "plafonds": {"delai_s": commande.plafonds.delai_s, "tours": commande.plafonds.tours},
         "serveur": list(commande.serveur),
+        "schema": commande.schema,
+        "empreinte_prompt": commande.empreinte_prompt,
     }
     attente = [sys.executable, "-c", "import time; time.sleep(600)"]
     if conduite.get("enfant"):

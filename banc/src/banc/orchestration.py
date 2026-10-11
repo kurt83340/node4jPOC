@@ -53,6 +53,7 @@ d'ADK est arrêté par sa cellule ; neo4j-mcp sort à la fin de son appel, stdin
 
 import contextlib
 import fcntl
+import functools
 import json
 import os
 import re
@@ -69,10 +70,20 @@ from glob import escape
 from pathlib import Path
 from types import FrameType
 
-from banc import prix
+from banc import anglais, prix
 from banc import questions as banc_questions
 from banc.attendu import AttenduError
-from banc.cellule import LANCEUR, RACINE, Commande, Plafonds, commande_json
+from banc.cellule import (
+    EMPREINTE,
+    FICHES,
+    LANCEUR,
+    RACINE,
+    Commande,
+    Plafonds,
+    commande_json,
+    empreinte_prompt,
+)
+from banc.correspondance import CorrespondanceError
 from banc.isolement import CleAbsente, cle_anthropic, environnement_agent
 from banc.lecture import LectureError
 from banc.mesures import (
@@ -100,6 +111,7 @@ from banc.notation import (
 )
 from banc.prix import PrixError
 from banc.questions import Banc, BancError, Question
+from banc.traduction import TraductionError
 
 CELLULES = ("claude-code", "adk-claude", "adk-gemini")
 # Chaque cellule lit sa commande sur stdin (banc.cellule).
@@ -115,9 +127,13 @@ CLAUDE = frozenset({"claude-code", "adk-claude"})
 NEO4J_MCP = Path.home() / ".local" / "share" / "neo4j-mcp" / "v1.6.0"
 GCLOUD = Path.home() / "google-cloud-sdk" / "bin" / "gcloud"
 TRANSACTIONS = RACINE / "scripts" / "transactions.sh"
+# Langue du schéma de la base, en lecture seule (--langue, T10.0).
+CHARGER = RACINE / "scripts" / "charger.sh"
 PARAMETRES = "campagne.json"
-# 2 : le mode faux serveur (T5.1) entre dans les paramètres d'une campagne.
-FORMAT = 2
+# 2 : le mode faux serveur (T5.1) entre dans les paramètres d'une campagne ; 3 : la langue du schéma
+# et l'empreinte du prompt (T10.0). Le format 2 se relit encore : une campagne en français.
+FORMAT = 3
+FORMATS_LUS = (2, 3)
 # Répétition générale (T5.1) : faux serveur MCP, lancé par chaque client comme le lanceur.
 FAUX_SERVEUR = (sys.executable, "-I", "-m", "banc.faux_serveur")
 # La conversation au faux serveur lent : sa cellule et son premier tour. adk-gemini, la moins
@@ -180,6 +196,11 @@ class Campagne:
     plafonds: Plafonds = field(default_factory=Plafonds)
     # Répétition générale (T5.1) : faux serveur MCP, rien ne touche Aura.
     faux_serveur: bool = False
+    # Langue du schéma de la base (D8) : la fiche du prompt, et la requête du contrôle de Q2.
+    schema: str = "fr"
+    # SHA-256 du prompt (consigne et fiche) à la création (T10.0) : un prompt modifié depuis arrête
+    # la campagne (protocole gelé, D7). None : campagne d'avant T10.0 (format 2), non vérifiée.
+    empreinte_prompt: str | None = None
 
     def __post_init__(self) -> None:
         questions = [question for conversation in self.conversations for question in conversation]
@@ -192,6 +213,9 @@ class Campagne:
             "cellules": not self.cellules
             or len(set(self.cellules)) != len(self.cellules)
             or not set(self.cellules) <= set(CELLULES),
+            "schema": self.schema not in FICHES,
+            "empreinte_prompt": self.empreinte_prompt is not None
+            and not EMPREINTE.fullmatch(self.empreinte_prompt),
         }
         if fautifs := [champ for champ, probleme in problemes.items() if probleme]:
             raise OrchestrationError(f"campagne invalide ({', '.join(fautifs)}) : {self}")
@@ -225,6 +249,8 @@ class Demande:
     cache_1h: bool | None = None
     # Répétition générale (T5.1) : à redonner à la reprise, qui le vérifie.
     faux_serveur: bool = False
+    # Langue du schéma (D8 ; défaut : fr).
+    schema: str | None = None
 
 
 def conversations(banc: Banc, demandees: Sequence[str] = ()) -> tuple[tuple[str, ...], ...]:
@@ -263,7 +289,10 @@ def message(question: Question) -> str:
 
 
 def ecrire_campagne(fichier: Path, campagne: Campagne) -> None:
-    """Écrit les paramètres d'une campagne à sa création ; jamais réécrits."""
+    """Écrit les paramètres d'une campagne à sa création ; jamais réécrits. Une campagne créée
+    porte l'empreinte de son prompt (format 3) : sans elle, rien ne vérifierait le gel (D7)."""
+    if campagne.empreinte_prompt is None:
+        raise OrchestrationError(f"campagne {campagne.nom} sans empreinte du prompt : non écrite")
     plafonds = asdict(campagne.plafonds) | {"budget_usd": str(campagne.plafonds.budget_usd)}
     contenu = {
         "format": FORMAT,
@@ -274,6 +303,8 @@ def ecrire_campagne(fichier: Path, campagne: Campagne) -> None:
         "cache_1h": campagne.cache_1h,
         "plafonds": plafonds,
         "faux_serveur": campagne.faux_serveur,
+        "schema": campagne.schema,
+        "empreinte_prompt": campagne.empreinte_prompt,
     }
     fichier.parent.mkdir(parents=True, exist_ok=True)
     with fichier.open("x", encoding="utf-8") as flux:
@@ -281,7 +312,8 @@ def ecrire_campagne(fichier: Path, campagne: Campagne) -> None:
 
 
 def lire_campagne(fichier: Path) -> Campagne:
-    """Relit les paramètres d'une campagne ; une clé inconnue ou manquante est refusée."""
+    """Relit les paramètres d'une campagne ; une clé inconnue ou manquante est refusée. Une campagne
+    au format 2 (d'avant T10.0) est en français, sans empreinte de sa fiche."""
     cles = {
         "format",
         "campagne",
@@ -294,8 +326,16 @@ def lire_campagne(fichier: Path) -> Campagne:
     }
     try:
         brut = json.loads(fichier.read_text(encoding="utf-8"))
-        if not isinstance(brut, dict) or set(brut) != cles or brut["format"] != FORMAT:
-            raise ValueError(f"clés {sorted(brut)} ou format inattendus")
+        if not isinstance(brut, dict) or brut.get("format") not in FORMATS_LUS:
+            raise ValueError(f"format {brut.get('format') if isinstance(brut, dict) else brut!r}")
+        if brut["format"] == FORMAT:
+            cles |= {"schema", "empreinte_prompt"}
+        if set(brut) != cles:
+            raise ValueError(f"clés {sorted(brut)} inattendues")
+        if not isinstance(brut.get("schema", "fr"), str):
+            raise TypeError("schema : du texte attendu")
+        if brut["format"] == FORMAT and not isinstance(brut["empreinte_prompt"], str):
+            raise TypeError("empreinte_prompt : du texte attendu")
         plafonds = dict(brut["plafonds"])
         plafonds["budget_usd"] = Decimal(plafonds["budget_usd"])
         if not isinstance(brut["passes"], int) or not all(
@@ -310,6 +350,8 @@ def lire_campagne(fichier: Path) -> Campagne:
             cache_1h=brut["cache_1h"],
             plafonds=Plafonds(**plafonds),
             faux_serveur=brut["faux_serveur"],
+            schema=brut.get("schema", "fr"),
+            empreinte_prompt=brut.get("empreinte_prompt"),
         )
     except (OSError, ValueError, KeyError, TypeError, InvalidOperation) as erreur:
         raise OrchestrationError(f"{fichier} illisible : {erreur}") from erreur
@@ -508,6 +550,79 @@ def outils_des_agents() -> tuple[Path, ...]:
     return (gcloud.parent, serveur.parent)
 
 
+def langue_par_script(script: Path = CHARGER, delai_s: float = 120.0) -> str:
+    """La langue du schéma de la base par scripts/charger.sh --langue, en lecture seule : fr, en,
+    vide, mixte ou incomplète. Lancé sans la clé Anthropic de l'environnement : elle ne sert
+    qu'aux cellules Claude (code-map)."""
+    environnement = {cle: v for cle, v in os.environ.items() if not cle.startswith("ANTHROPIC_")}
+    try:
+        fini = subprocess.run(
+            [str(script), "--langue"],
+            capture_output=True,
+            text=True,
+            timeout=delai_s,
+            env=environnement,
+            check=False,
+        )
+    except subprocess.TimeoutExpired as erreur:
+        raise OrchestrationError(
+            f"charger.sh --langue : aucune réponse en {delai_s:g} s"
+        ) from erreur
+    derniere = (fini.stdout.strip().splitlines() or [""])[-1]
+    trouvee = re.fullmatch(r"LANGUE : (fr|en|vide|mixte|incomplète)", derniere)
+    if fini.returncode not in {0, 1} or trouvee is None:
+        message = (fini.stderr.strip().splitlines() or [""])[-1]
+        raise OrchestrationError(f"charger.sh --langue : code {fini.returncode} {message}".strip())
+    return trouvee.group(1)
+
+
+def verifier_la_base(
+    schema: str,
+    langue: Callable[[], str] = langue_par_script,
+    traduction: Path = anglais.TRADUCTION,
+) -> None:
+    """Avant de créer ou de reprendre une campagne (T10.0) : la base est dans la langue de son
+    schéma (D8) ; en anglais, la traduction où le contrôle de Q2 prend q02.cypher est à jour.
+
+    Raises:
+        OrchestrationError: base dans l'autre langue, vide, bascule interrompue (noms des deux
+            langues, ou d'une seule sans ses contraintes et index) ; traduction absente ou
+            périmée.
+    """
+    trouvee = langue()
+    if trouvee in {"mixte", "incomplète"}:
+        cause = (
+            "noms des deux langues"
+            if trouvee == "mixte"
+            else "contraintes ou index absents ou pas en ligne"
+        )
+        raise OrchestrationError(
+            f"bascule du schéma interrompue ({cause}) : relancer scripts/charger.sh --schema "
+            f"{schema}"
+        )
+    if trouvee != schema:
+        raise OrchestrationError(
+            f"base {'vide' if trouvee == 'vide' else f'en {trouvee}'}, campagne en {schema} : "
+            f"scripts/charger.sh {'--tout' if trouvee == 'vide' else f'--schema {schema}'} d'abord"
+        )
+    if schema != "en":
+        return
+    try:
+        ecarts = anglais.ecarts_de_traduction(traduction)
+    except (CorrespondanceError, TraductionError, ValueError, OSError) as erreur:
+        raise OrchestrationError(f"traduction illisible ({traduction}) : {erreur}") from erreur
+    if ecarts:
+        raise OrchestrationError(
+            f"traduction à refaire dans {traduction} ({', '.join(ecarts[:3])}"
+            f"{', …' if len(ecarts) > 3 else ''}) : uv run --directory banc python -m banc "
+            "traduire --vers logs/anglais"
+        )
+
+
+# Contrôle de Q2 d'une campagne en anglais : la traduction de q02.cypher (D8).
+CONTROLE_EN: Controleur = functools.partial(controle_par_script, dossier=anglais.TRADUCTION)
+
+
 @dataclass(frozen=True)
 class Moyens:
     """Ce qui mène et note les conversations, hors des paramètres de la campagne : les tests le
@@ -524,9 +639,14 @@ class Moyens:
     serveur_lent: tuple[str, ...] | None = None
     # Binaire de Claude Code : None pour celui du SDK.
     cli: Path | None = None
-    # Contrôle de Q2 (D6) ; nettoyage d'Aura après une conversation qui ne finit pas proprement.
+    # Contrôle de Q2 (D6), sur la base française ou anglaise ; nettoyage d'Aura après une
+    # conversation qui ne finit pas proprement.
     controle: Controleur | None = controle_par_script
+    controle_en: Controleur | None = CONTROLE_EN
     nettoyer: Callable[[], str] = transactions
+    # Avant de créer ou de reprendre une campagne : la base dans sa langue (T10.0) ; None : rien
+    # à vérifier (répétition générale, rien ne touche Aura).
+    verifier_la_base: Callable[[str], None] | None = verifier_la_base
     marge_s: float = MARGE_S
     ecrire: Callable[[str], None] = print
 
@@ -539,7 +659,9 @@ def moyens_faux_serveur() -> Moyens:
         serveur=FAUX_SERVEUR,
         serveur_lent=(*FAUX_SERVEUR, "--lent-s", f"{lent_s:g}"),
         controle=controle_simule,
+        controle_en=controle_simule,
         nettoyer=_sans_nettoyage,
+        verifier_la_base=None,
     )
 
 
@@ -570,6 +692,8 @@ class Orchestration:
         self.tarifs = prix.charger()
         self.csv = fichier_mesures(campagne.nom, moyens.mesures)
         self.dossier = moyens.traces / campagne.nom
+        # Le contrôle de Q2 joue q02.cypher dans la langue de la base (D8).
+        self.controle = moyens.controle_en if campagne.schema == "en" else moyens.controle
         # Coût de chaque trace restée sans ligne, lu une fois (plafond de la campagne).
         self._couts_sans_ligne: dict[Path, Decimal] = {}
 
@@ -678,6 +802,8 @@ class Orchestration:
             cache_1h=self.campagne.cache_1h,
             serveur=self._serveur(etape),
             cli=self.moyens.cli,
+            schema=self.campagne.schema,
+            empreinte_prompt=self.campagne.empreinte_prompt,
         )
 
     def _serveur(self, etape: Etape) -> tuple[str, ...]:
@@ -747,7 +873,7 @@ class Orchestration:
             notation = None
             if tour.issue == "reponse":
                 question = self.banc.questions[tour.question]
-                notation = noter(question, tour.tour(), self.referentiel, self.moyens.controle)
+                notation = noter(question, tour.tour(), self.referentiel, self.controle)
             lignes.append(ligne(entete, tour, notation, self.tarifs))
         if tours[-1].issue == "echec":
             for ident in entete.questions[len(tours) :]:
@@ -921,6 +1047,11 @@ def _preparer(demande: Demande, moyens: Moyens) -> Orchestration:
             raise OrchestrationError(f"aucune campagne {demande.nom} à reprendre ({parametres})")
         campagne = lire_campagne(parametres)
         _verifier_la_reprise(campagne, demande, banc)
+        if campagne.empreinte_prompt not in {None, empreinte_prompt(campagne.schema)}:
+            raise OrchestrationError(
+                f"consigne ou {FICHES[campagne.schema]} changées depuis la création de la "
+                f"campagne {campagne.nom} (protocole gelé, D7)"
+            )
     else:
         if csv.exists() or dossier.exists():
             raise OrchestrationError(
@@ -933,9 +1064,13 @@ def _preparer(demande: Demande, moyens: Moyens) -> Orchestration:
             cellules=demande.cellules or CELLULES,
             cache_1h=bool(demande.cache_1h),
             faux_serveur=demande.faux_serveur,
+            schema=demande.schema or "fr",
+            empreinte_prompt=empreinte_prompt(demande.schema or "fr"),
         )
     if CLAUDE & set(campagne.cellules):
         cle_anthropic()
+    if moyens.verifier_la_base is not None:
+        moyens.verifier_la_base(campagne.schema)
     orchestration = Orchestration(campagne, demande.plafond_usd, moyens, banc)
     if not demande.reprendre:
         ecrire_campagne(parametres, campagne)
@@ -955,6 +1090,7 @@ def _verifier_la_reprise(campagne: Campagne, demande: Demande, banc: Banc) -> No
         "cache_1h": (demande.cache_1h, campagne.cache_1h),
         # Sans valeur « non précisé » : une reprise redit le mode de sa campagne.
         "faux_serveur": (demande.faux_serveur, campagne.faux_serveur),
+        "schema": (demande.schema, campagne.schema),
     }
     if ecarts := [nom for nom, (voulu, fixe) in demandes.items() if voulu not in {None, fixe}]:
         raise OrchestrationError(

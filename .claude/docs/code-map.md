@@ -55,7 +55,8 @@ Harnais du banc d'essai → `banc/` ([plan 002](specs/002-agent-text-to-cypher/p
   d'essai lisent (`--access-mode read`, `scripts/verifier.sh:45`), le réveil quotidien aussi (`accessMode: Read`,
   `infra/reveil-aura/reveil.py:119`) ; exception prévue : la mémoire d'agent (jalon 5). Seul `scripts/transactions.sh`
   arrête des transactions : celles de neo4j-mcp (métadonnée `app`), sans rien écrire ; `banc/` le lance sans `ANTHROPIC_*`.
-- ✅ Seul `charger.sh --schema en|fr` renomme (écrit) le schéma (D8) ; `--tout` refusé sur base anglaise.
+- ✅ Seul `charger.sh --schema en|fr` renomme (écrit) le schéma (D8) ; `--tout` refusé sur base anglaise ; `--langue`
+  lit (pour `banc lancer`).
 
 ## Intention & décisions locales
 

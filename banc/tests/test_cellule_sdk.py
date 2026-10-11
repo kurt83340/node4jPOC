@@ -28,6 +28,7 @@ from banc.cellule import (
     IsolementError,
     Plafonds,
     consigne_et_fiche,
+    empreinte_prompt,
 )
 from banc.cellule import commande_json as en_json
 from banc.cellule_sdk import MODELE, OUTIL, VERSIONS, converser
@@ -364,6 +365,25 @@ def test_options_de_d3(bac: Bac, isolee: subprocess.CompletedProcess[str]) -> No
     assert "--system-prompt" not in argv
     # Le budget, compté par la cellule, ne s'affiche pas à l'agent (relevé T4.1).
     assert "--max-budget-usd" not in argv
+
+
+def test_prompt_de_la_campagne_anglaise(bac: Bac) -> None:
+    # Schéma anglais (D8, T10.0) : la fiche anglaise, sous l'empreinte fixée à la création.
+    commande = replace(bac.commande(), schema="en", empreinte_prompt=empreinte_prompt("en"))
+    fini = lancer_isolee(bac, commande)
+    assert fini.returncode == 0, fini.stderr
+    argv = bac.demarrage()["argv"]
+    assert argument(argv, "--append-system-prompt") == consigne_et_fiche(schema="en")
+
+
+def test_prompt_change_depuis_la_creation(bac: Bac) -> None:
+    # L'empreinte d'un autre prompt : erreur technique, avant Claude Code et avant toute trace.
+    commande = replace(bac.commande(), schema="en", empreinte_prompt=empreinte_prompt("fr"))
+    fini = lancer_isolee(bac, commande)
+    assert fini.returncode == 2
+    assert "changées depuis la création de la campagne" in fini.stderr
+    assert not bac.racine.joinpath("journal", "claude.jsonl").exists()
+    assert list((bac.racine / "traces").rglob("*.jsonl")) == []
 
 
 def test_chrono_apres_la_connexion(bac: Bac) -> None:

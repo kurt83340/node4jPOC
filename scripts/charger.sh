@@ -44,7 +44,7 @@ NOMS=()
 usage() {
   cat <<'EOF'
 Usage : scripts/charger.sh --tout | --idempotence | --ping | --go-no-go | --purge | --sonde-renommage
-       scripts/charger.sh --schema en|fr [--explain]
+       scripts/charger.sh --schema en|fr [--explain] | --langue
 
   --tout         exécute dans l'ordre les fichiers de chargement de cypher/ (00 à 89) ; une relance ne crée
                  rien ; journal dans logs/, à suivre avec tail -f quand le chargement tourne en arrière-plan
@@ -62,6 +62,9 @@ Usage : scripts/charger.sh --tout | --idempotence | --ping | --go-no-go | --purg
                  valeurs ne changent pas. --tout est refusé tant que la base est en anglais
   --explain      avec --schema : EXPLAIN de chaque requête du renommage et des contraintes, en lecture
                  seule, et liste de ce qui serait supprimé ; rien n'est exécuté ni écrit
+  --langue       langue du schéma de la base, en lecture seule : fr ou en (noms, contraintes et index de la
+                 langue en place), vide, mixte ou incomplète (bascule interrompue, code 1) ; banc lancer la
+                 vérifie avant une campagne (spec 002, T10.0) ; relève aussi db.propertyKeys() par langue
 
 Variables : NEO4J_SECRET (défaut neo4j-aura-poc), GCP_PROJET (défaut jleroy-labo),
 POKEAPI_BASE (défaut : CSV PokéAPI au commit 168b1e8).
@@ -282,9 +285,11 @@ lire_carte() {
 }
 
 # RESTES reçoit ce qui porte encore un nom de l'autre langue, vers la langue visée : les nœuds des labels et
-# les relations des types à renommer. Vers fr, ce sont les noms anglais : « 0 nœuds, 0 relations » dit une base
-# en français, ou vide.
+# les relations des types à renommer, et les clés à renommer, sur les nœuds comme sur les relations (revue
+# adverse de la phase 6 : une bascule coupée entre les labels et les clés passait sinon pour finie). Vers fr,
+# ce sont les noms anglais : SANS_RESTE dit une base en français, ou vide.
 RESTES=""
+readonly SANS_RESTE="0 nœuds, 0 relations, 0 clés"
 restes() {
   local langue="$1"
   cypher "WITH \$cartes[\$langue] AS carte
@@ -298,7 +303,16 @@ restes() {
       CALL (nomType) { MATCH ()-[r:\$(nomType)]->() RETURN count(r) AS r }
       RETURN sum(r) AS relations
     }
-    RETURN toString(noeuds) + ' nœuds, ' + toString(relations) + ' relations' AS restes" \
+    CALL (carte) {
+      MATCH (n)
+      RETURN sum(size([cle IN keys(n) WHERE cle IN keys(carte.cles)])) AS clesNoeuds
+    }
+    CALL (carte) {
+      MATCH ()-[r]->()
+      RETURN sum(size([cle IN keys(r) WHERE cle IN keys(carte.cles)])) AS clesRelations
+    }
+    RETURN toString(noeuds) + ' nœuds, ' + toString(relations) + ' relations, '
+      + toString(clesNoeuds + clesRelations) + ' clés' AS restes" \
     --access-mode read -P "$CARTES" -P "{langue: '$langue'}" || {
     erreur "noms de l'autre langue non comptés : ${SORTIE%%$'\n'*}"
     exit 2
@@ -310,9 +324,102 @@ restes() {
 refuser_si_anglais() {
   lire_carte
   restes fr
-  if [[ "$RESTES" != "0 nœuds, 0 relations" ]]; then
+  if [[ "$RESTES" != "$SANS_RESTE" ]]; then
     erreur "base en anglais ($RESTES) : scripts/charger.sh --schema fr d'abord"
     exit 2
+  fi
+}
+
+# SCHEMA_EN_PLACE reçoit l'état des contraintes et index d'une langue, en lecture seule : ceux que crée son fichier
+# (contraintes_de), les index des contraintes compris, présents et en ligne. Code 0 s'ils y sont tous, 1 sinon (revue
+# adverse de T10.0 : une bascule coupée entre la suppression des contraintes et leur recréation laisse des noms d'une
+# seule langue, sans contraintes ni index plein texte).
+SCHEMA_EN_PLACE=""
+schema_en_place() {
+  local fichier nom presentes etat total contraintes=() index=()
+  fichier="$(contraintes_de "$1")"
+  while IFS= read -r nom; do
+    contraintes+=("'$nom'")
+  done < <(sed -nE 's/^CREATE CONSTRAINT ([A-Za-z0-9_]+) IF NOT EXISTS.*/\1/p' "$fichier")
+  while IFS= read -r nom; do
+    index+=("'$nom'")
+  done < <(sed -nE 's/^CREATE (FULLTEXT )?INDEX ([A-Za-z0-9_]+) IF NOT EXISTS.*/\2/p' "$fichier")
+  if ((${#contraintes[@]} == 0 || ${#index[@]} == 0)); then
+    erreur "aucune contrainte ou aucun index lu dans ${fichier#"$DOSSIER_CYPHER"/}"
+    exit 2
+  fi
+  local -r liste_contraintes="[$(IFS=,; printf '%s' "${contraintes[*]}")]"
+  local -r liste_index="[$(IFS=,; printf '%s' "${index[*]}")]"
+  cypher "SHOW CONSTRAINTS YIELD name WHERE name IN $liste_contraintes RETURN count(*) AS presentes" \
+    --access-mode read || {
+    erreur "contraintes illisibles : ${SORTIE%%$'\n'*}"
+    exit 2
+  }
+  presentes="$(valeur)"
+  cypher "SHOW INDEXES YIELD name, state, owningConstraint
+    WHERE name IN $liste_index OR owningConstraint IN $liste_contraintes
+    RETURN toString(count(*)) + ' index, ' + toString(count(CASE WHEN state = 'ONLINE' THEN 1 END)) + ' en ligne'
+      AS etat" --access-mode read || {
+    erreur "index illisibles : ${SORTIE%%$'\n'*}"
+    exit 2
+  }
+  etat="$(valeur)"
+  total=$((${#index[@]} + ${#contraintes[@]}))
+  SCHEMA_EN_PLACE="$presentes/${#contraintes[@]} contraintes, $etat (attendus : $total)"
+  [[ "$presentes" == "${#contraintes[@]}" && "$etat" == "$total index, $total en ligne" ]]
+}
+
+# CLES_CONNUES reçoit ce que montre db.propertyKeys(), en lecture seule : toutes les clés que la base a connues, par
+# langue. Neo4j garde le nom d'une clé que plus rien ne porte (D8) : après une bascule, les deux langues y restent.
+# Relevé de T10.1 et T10.3.
+CLES_CONNUES=""
+cles_connues() {
+  cypher "WITH \$cartes AS cartes
+    CALL db.propertyKeys() YIELD propertyKey
+    WITH cartes, collect(propertyKey) AS cles
+    RETURN toString(size(cles)) + ' clés, dont '
+      + toString(size([cle IN cles WHERE cle IN keys(cartes.en.cles)])) + ' françaises et '
+      + toString(size([cle IN cles WHERE cle IN keys(cartes.fr.cles)])) + ' anglaises' AS connues" \
+    --access-mode read -P "$CARTES" || {
+    erreur "db.propertyKeys() illisible : ${SORTIE%%$'\n'*}"
+    exit 2
+  }
+  CLES_CONNUES="$(valeur)"
+}
+
+# --langue (spec 002, D8 ; T10.0) : la langue du schéma de la base, en lecture seule, que banc lancer vérifie
+# avant une campagne. fr ou en : plus aucun nom de l'autre langue, et les contraintes et index de la langue en place
+# (schema_en_place) ; vide : aucun nom de l'une ni de l'autre ; mixte : les deux, bascule interrompue ; incomplète :
+# une seule langue, mais pas ses contraintes et index. Mixte et incomplète : à relancer, code 1. La dernière ligne
+# donne la langue : « LANGUE : fr ».
+langue_de_la_base() {
+  local francais anglais langue
+  lire_carte
+  restes en
+  francais="$RESTES"
+  restes fr
+  anglais="$RESTES"
+  if [[ "$francais" == "$SANS_RESTE" && "$anglais" == "$SANS_RESTE" ]]; then
+    langue=vide
+  elif [[ "$anglais" == "$SANS_RESTE" ]]; then
+    langue=fr
+  elif [[ "$francais" == "$SANS_RESTE" ]]; then
+    langue=en
+  else
+    langue=mixte
+  fi
+  printf 'noms français : %s\nnoms anglais : %s\n' "$francais" "$anglais"
+  cles_connues
+  printf 'db.propertyKeys() : %s\n' "$CLES_CONNUES"
+  if [[ "$langue" == fr || "$langue" == en ]]; then
+    if ! schema_en_place "$langue"; then
+      langue=incomplète
+    fi
+    printf 'contraintes et index : %s\n' "$SCHEMA_EN_PLACE"
+  fi
+  printf 'LANGUE : %s\n' "$langue"
+  if [[ "$langue" == mixte || "$langue" == incomplète ]]; then
+    exit 1
   fi
 }
 
@@ -363,9 +470,17 @@ contraintes_de() {
 # ligne. Écrit, comme le chargement (code-map). Conforme si le graphe garde ses nœuds et ses relations et que
 # plus rien ne porte un nom de l'autre langue. Après une coupure, on relance : rien ne se fait deux fois.
 changer_schema() {
-  local langue="$1" contraintes avant debut dixiemes stats ecarts=0
+  local langue="$1" contraintes avant debut dixiemes stats ecarts=0 fichier
   contraintes="$(contraintes_de "$langue")"
   lire_carte
+  # Avant de rien supprimer : un fichier absent ici laisserait la base sans contraintes ni index (revue
+  # adverse de la phase 6).
+  for fichier in "$RENOMMER" "$contraintes"; do
+    if [[ ! -f "$fichier" || ! -s "$fichier" ]]; then
+      erreur "fichier de la bascule absent ou vide, rien n'est supprimé : ${fichier#"$DOSSIER_CYPHER"/}"
+      exit 2
+    fi
+  done
   compter
   avant="$COMPTE"
   printf '── schéma vers %s : %s\n' "$langue" "$avant"
@@ -394,7 +509,7 @@ changer_schema() {
     printf '✗ graphe changé : %s, avant %s\n' "$COMPTE" "$avant"
     ecarts=$((ecarts + 1))
   fi
-  if [[ "$RESTES" != "0 nœuds, 0 relations" ]]; then
+  if [[ "$RESTES" != "$SANS_RESTE" ]]; then
     printf '✗ noms de l'"'"'autre langue restants : %s\n' "$RESTES"
     ecarts=$((ecarts + 1))
   fi
@@ -587,6 +702,12 @@ main() {
       lire_identifiants
       ping_aura
       sonde_renommage
+      ;;
+    --langue)
+      trouver_outils
+      lire_identifiants
+      ping_aura
+      langue_de_la_base
       ;;
     --schema)
       if [[ "${2:-}" != en && "${2:-}" != fr ]] || (($# > 3)) || [[ $# -eq 3 && "$3" != --explain ]]; then

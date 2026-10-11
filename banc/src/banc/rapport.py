@@ -18,6 +18,7 @@ from decimal import Decimal
 from pathlib import Path
 
 from banc import revue
+from banc.cellule import FICHES
 from banc.mesures import TRACES, MesureError, fichier_mesures, lire_lignes
 from banc.orchestration import (
     PANNES_PAR_SERIE,
@@ -148,6 +149,11 @@ def commande(
     etat = "complète" if not manquants else f"incomplète ({len(manquants)} manques)"
     total = sum((bilan.cout_usd for bilan in bilans), Decimal(0))
     print(f"campagne {campagne} : {etat} ; {len(lignes)} lignes ; {total} $")
+    if parametres.empreinte_prompt is not None:
+        print(
+            f"schéma {parametres.schema} : consigne.md et {FICHES[parametres.schema]}, "
+            f"empreinte du prompt {parametres.empreinte_prompt[:12]}"
+        )
     for manque in manquants:
         print(f"  manque : {manque}")
     for bilan in bilans:

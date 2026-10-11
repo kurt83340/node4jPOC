@@ -2,8 +2,10 @@
 // Règle (README) : l'agent doit signaler que l'Électrik est sans effet contre Onix (Roche et Sol) ; Surf est
 // attendu, une autre attaque ×4 ou ×2 est acceptée avec son explication.
 
-// Le piège : le multiplicateur de l'Électrik contre Onix.
-MATCH (:Pokemon {nom: 'Onix'})-[:A_POUR_FORME_PAR_DEFAUT]->(:Forme)-[:A_LE_TYPE]->(c:Type)
+// Le piège : le multiplicateur de l'Électrik contre Onix. Types triés par rang décroissant, pour que la
+// recréation des relations (bascule du schéma, D8) ne change pas l'ordre de typesOnix.
+MATCH (:Pokemon {nom: 'Onix'})-[:A_POUR_FORME_PAR_DEFAUT]->(:Forme)-[r:A_LE_TYPE]->(c:Type)
+WITH c ORDER BY r.rang DESC
 WITH collect(c) AS typesCible
 MATCH (t:Type {nom: 'Électrik'})
 RETURN t.nom AS typeAttaque, [c IN typesCible | c.nom] AS typesOnix,
