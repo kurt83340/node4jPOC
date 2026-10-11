@@ -7,13 +7,13 @@
 >
 > ⚠️ Avant d'éditer un fichier, vérifie les **règles de couplage** ci-dessous.
 
-**Dernière MAJ :** 2026-10-10
+**Dernière MAJ :** 2026-10-11
 
 ## Vue d'ensemble (macro — sous-systèmes, pas fichiers)
 
 ```
 Secret Manager ─┬─► scripts/ ─► cypher-shell ─► AuraDB Free ◄─ LOAD CSV ─ CSV PokéAPI (commit figé)
-                │      ├─ cypher/     00 → 06 : chargement · 90 : vérification
+                │      ├─ cypher/     00 → 06 : chargement · 90 : vérification · anglais/
                 │      ├─ questions/  banc d'essai : requêtes et réponses de référence (jalons 1 à 4)
                 │      ├─ mcp-neo4j.sh ─► neo4j-mcp (stdio, lecture seule) ─► AuraDB Free ◄─ agents de banc/
                 │      ├─ transactions.sh ─► AuraDB Free (lectures d'agents orphelines)
@@ -22,10 +22,9 @@ Secret Manager ─┬─► scripts/ ─► cypher-shell ─► AuraDB Free ◄�
 Budget 100 € ─► Pub/Sub ─► infra/coupure-vertex/ ─► Service Usage (coupe Vertex)
 ```
 
-→ Orientation rapide : chargement → `cypher/NN-*.cypher` (ordre fixe : [ARCHITECTURE § 3](conception/ARCHITECTURE.md)) ;
-identifiants, purge, codes retour → `scripts/` (fonctions partagées : `scripts/commun.sh`) ; banc d'essai → `questions/` ; services
-Google Cloud → `infra/` ([RUNBOOK](RUNBOOK.md)). Réponses de référence : `questions/attendu/`, rejouées par `scripts/questions.sh`.
-Harnais du banc d'essai → `banc/` ([plan 002](specs/002-agent-text-to-cypher/plan.md)).
+→ Orientation : chargement → `cypher/NN-*.cypher` (ordre fixe : [ARCHITECTURE § 3](conception/ARCHITECTURE.md)) ;
+identifiants, purge, codes retour → `scripts/` (communes : `scripts/commun.sh`) ; banc d'essai → `questions/` ; services
+Google Cloud → `infra/` ([RUNBOOK](RUNBOOK.md)). Harnais du banc → `banc/` ([plan 002](specs/002-agent-text-to-cypher/plan.md)).
 
 ## Règles de couplage (⭐ le cœur — non déductible du code)
 
@@ -55,6 +54,7 @@ Harnais du banc d'essai → `banc/` ([plan 002](specs/002-agent-text-to-cypher/p
   d'essai lisent (`--access-mode read`, `scripts/verifier.sh:45`), le réveil quotidien aussi (`accessMode: Read`,
   `infra/reveil-aura/reveil.py:119`) ; exception prévue : la mémoire d'agent (jalon 5). Seul `scripts/transactions.sh`
   arrête des transactions : celles de neo4j-mcp (métadonnée `app`), sans rien écrire ; `banc/` le lance sans `ANTHROPIC_*`.
+- ✅ Seul `charger.sh --schema en|fr` renomme (écrit) le schéma (D8) ; `--tout` refusé sur base anglaise.
 
 ## Intention & décisions locales
 

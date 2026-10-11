@@ -25,6 +25,10 @@
   pas `neo4j` : les lire dans le secret (`NEO4J_USERNAME`, `NEO4J_DATABASE`), rien en dur. Toute sortie
   de `cypher-shell` passe par `filtrer` (mot de passe → arrêt, identifiant → ‹instance›) ; jamais de
   `set -x`, de `--debug`, ni de mot de passe en argument ([ADR-0007](adr/0007-infra-secrets-et-services-geres.md)).
+- ⚠️ `cypher/anglais/` — `correspondance.cypher`, `contraintes.cypher` et `questions/fiche-schema.en.md` sont produits
+  de `correspondance.toml` par `uv run --directory banc python -m banc anglais` : jamais édités à la main (les tests
+  « à jour » de `banc/tests/test_correspondance.py` échouent). `renommer.cypher` vaut dans les deux sens : rien de
+  propre à une langue, tout passe par `$cartes[$langue]`.
 - ⚠️ `scripts/charger.sh` — `dbms.components()` annonce Neo4j « 5.27-aura » quand la console affiche
   2026.09 : ce n'est pas le signe d'un vieux Neo4j. Cypher 25 est disponible et déjà la langue par
   défaut de la base (`SHOW DATABASES`).

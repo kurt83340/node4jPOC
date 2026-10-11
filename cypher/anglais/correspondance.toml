@@ -1,0 +1,72 @@
+# Table de correspondance du schéma anglais (spec 002, plan D8) : la source unique des noms anglais.
+# Seuls les identifiants du schéma se traduisent (labels, types de relation, clés, noms des contraintes et
+# des index) ; les valeurs ne changent pas (noms de Pokémon, de types et d'attaques, catégories, méthodes,
+# textes). Une entrée par identifiant français ; les identifiants communs aux deux langues, relus, sont
+# listés à part (communs) et écartés des contrôles « aucun identifiant français ».
+#
+# Produits par `uv run --directory banc python -m banc anglais`, versionnés, et tenus à jour par
+# banc/tests/test_correspondance.py : correspondance.cypher, la carte de paramètres de renommer.cypher ;
+# contraintes.cypher, les contraintes et index en anglais (traduction de cypher/00-contraintes.cypher) ;
+# questions/fiche-schema.en.md.
+#
+# Noms choisis le 2026-10-11 (choix délégué par Julien) : conventions de l'ADR-0005 (labels en PascalCase,
+# relations en SCREAMING_SNAKE_CASE, clés en camelCase) ; le vocabulaire anglais des jeux et de PokéAPI
+# quand il existe (Move, Ability, HP, slot, accuracy, « super effective », « not very effective »).
+
+[labels]
+Forme = "Form"
+Talent = "Ability"
+Attaque = "Move"
+
+[relations]
+A_POUR_FORME_PAR_DEFAUT = "HAS_DEFAULT_FORM"
+FORME_DE = "FORM_OF"
+EVOLUE_EN = "EVOLVES_INTO"
+A_LE_TYPE = "HAS_TYPE"
+SUPER_EFFICACE_CONTRE = "SUPER_EFFECTIVE_AGAINST"
+PEU_EFFICACE_CONTRE = "NOT_VERY_EFFECTIVE_AGAINST"
+SANS_EFFET_CONTRE = "NO_EFFECT_AGAINST"
+A_LE_TALENT = "HAS_ABILITY"
+APPREND = "LEARNS"
+A_POUR_DESCRIPTION = "HAS_DESCRIPTION"
+
+# Clés des nœuds et des relations, un seul espace de noms : une clé se traduit de la même façon sur tous
+# les labels (categorie d'un Pokemon comme d'une Attaque).
+[proprietes]
+identifiantPokeapi = "pokeapiIdentifier"
+nom = "name"
+categorie = "category"
+parDefaut = "isDefault"
+statPv = "statHp"
+statAttaque = "statAttack"
+statAttaqueSpeciale = "statSpecialAttack"
+statDefenseSpeciale = "statSpecialDefense"
+statVitesse = "statSpeed"
+puissance = "power"
+precision = "accuracy"
+texte = "text"
+jeux = "games"
+rang = "slot"
+facteur = "factor"
+cache = "isHidden"
+methodes = "methods"
+niveau = "level"
+
+# Noms des contraintes et des index de cypher/00-contraintes.cypher.
+[index]
+forme_id = "form_id"
+talent_id = "ability_id"
+attaque_id = "move_id"
+type_nom = "type_name"
+pokemon_nom = "pokemon_name"
+forme_nom = "form_name"
+talent_nom = "ability_name"
+attaque_nom = "move_name"
+noms_plein_texte = "names_fulltext"
+
+# Identifiants communs aux deux langues (relus le 2026-10-11) : ils restent tels quels.
+[communs]
+labels = ["Pokemon", "Type", "Description"]
+relations = []
+proprietes = ["id", "pp", "statDefense"]
+index = ["type_id", "pokemon_id"]

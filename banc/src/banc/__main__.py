@@ -5,7 +5,7 @@ import sys
 from collections.abc import Sequence
 from decimal import Decimal, InvalidOperation
 
-from banc import essai_serveur, orchestration, rapport, revue
+from banc import anglais, essai_serveur, orchestration, rapport, revue
 from banc.acces import acces
 
 
@@ -73,6 +73,11 @@ def main(arguments: Sequence[str] | None = None) -> int:
         action="store_true",
         help="code 0 si chaque série est complète, sans panne à rejouer ni passe invalide, 1 sinon",
     )
+    commandes.add_parser(
+        "anglais",
+        help="écrit les fichiers du schéma anglais tirés de cypher/anglais/correspondance.toml "
+        "(T6.1) : carte de paramètres, contraintes et index ; sans la base",
+    )
     lus = parseur.parse_args(arguments)
     if lus.commande == "lancer":
         demande = orchestration.Demande(
@@ -92,6 +97,8 @@ def main(arguments: Sequence[str] | None = None) -> int:
         return rapport.commande(lus.campagne, complet=lus.complet)
     if lus.commande == "essai-serveur":
         return essai_serveur.commande()
+    if lus.commande == "anglais":
+        return anglais.commande()
     return acces()
 
 

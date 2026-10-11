@@ -8,7 +8,7 @@
 > il « perd le fil » (échecs ×4 constatés en télémétrie, Morph 2026) → découper la phase.
 
 **Date :** 2026-10-01
-**Status :** [~] 23/33 tasks → MAJ au fil de l'eau
+**Status :** [~] 24/33 tasks → MAJ au fil de l'eau
 
 > Phases 0 à 6 : sans la base (prévues pendant la période creuse de NEO-13, close le 2026-10-07). Phases 7 à 11 : sur la base.
 > Les tests n'appellent aucun outil réel : PATH réduit aux faux outils, HOME temporaire.
@@ -65,7 +65,7 @@
 
 ## Phase 6 — Schéma anglais, partie sans base (NEO-19)
 
-- [ ] **T6.1** : `cypher/anglais/correspondance.toml` (table unique, liste relue des identifiants communs aux deux langues) ; carte `correspondance.cypher` produite par `banc` et versionnée ; `renommer.cypher` (relations recréées par lots, contraintes et index de la langue visée) ; `charger.sh --schema fr|en` et `--explain`, sans Python au chargement, qui refuse `--tout` sur une base anglaise ; règle de couplage de `--schema` dans la code-map
+- [x] **T6.1** : `cypher/anglais/correspondance.toml` (table unique, liste relue des identifiants communs aux deux langues) ; carte `correspondance.cypher` produite par `banc` et versionnée ; `renommer.cypher` (relations recréées par lots, contraintes et index de la langue visée) ; `charger.sh --schema fr|en` et `--explain`, sans Python au chargement, qui refuse `--tout` sur une base anglaise ; règle de couplage de `--schema` dans la code-map — fait le 2026-10-11 : table de 3 labels, 10 types, 18 clés et 9 noms d'index (noms anglais : choix délégué par Julien, plan D8), communs relus (`Pokemon`, `Type`, `Description`, `id`, `pp`, `statDefense`, `type_id`, `pokemon_id`) ; `python -m banc anglais` en tire la carte et `anglais/contraintes.cypher`, traduction de `00-contraintes.cypher` par le traducteur de T6.2, écrit d'avance ; `renommer.cypher` : 4 requêtes en Cypher 25 pur, les mêmes dans les deux sens (`$cartes[$langue]`) ; `--schema` supprime contraintes et index, renomme, recrée ceux de la langue visée, attend les index, puis contrôle les comptes et l'absence de noms de l'autre langue ; règle dans la code-map, produits non éditables dans les gotchas ; sur la base, `--schema en --explain` : PLANIFIÉ, 16 requêtes (2 583 nœuds et 113 700 relations à renommer) ; 13 + 57 + 19 tests, 21 fautes injectées, toutes détectées
   - DoD : `command_passes: bash -n scripts/charger.sh && uv run --directory banc pytest tests/test_correspondance.py -q` (carte à jour avec la table), puis, sur la base, `command_passes: scripts/charger.sh --schema en --explain` (repris de T7.5, la phase 6 venant après la 7 ; mécanisme : Cypher 25, plan D8)
 - [ ] **T6.2** : traducteur du Cypher, en TDD, et `banc traduire --vers <dossier>` : les 27 requêtes (dont la q02) et `especes.cypher`, `fiche.cypher` (T7.3), les exemples de la fiche (dont `dracofeu~` et `ELECTRIK`, sous `exemples/dracofeu.cypher` et `exemples/electrik.cypher`) et une requête de balayage avec sa réponse attendue ; identifiants traduits ; littéraux, alias et expressions régulières inchangés
   - DoD : `command_passes: uv run --directory banc pytest tests/test_traduction.py -q` (contrôle contre une liste française tirée d'ARCHITECTURE § 5, indépendante de la table, identifiants communs écartés)
