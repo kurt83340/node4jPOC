@@ -28,5 +28,6 @@ pokemon, ensemble, types, raison
 "Écayon", "acceptable", ["Eau"], "se retire dans les abysses la nuit"
 "Concombaffe", "écarté", ["Eau"], "eaux peu profondes"
 "Lovdisc", "écarté", ["Eau"], "mers peu profondes"
+"Poissirène", "écarté", ["Eau"], "poisson d’eau douce : profondeurs hors de la mer"
 "Sinistrail", "écarté", ["Spectre", "Plante"], "né d’algues du fond de l’océan : une origine"
 "Tadmorv", "écarté", ["Poison"], "né de la vase des fonds marins : une origine"
