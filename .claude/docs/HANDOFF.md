@@ -9,9 +9,8 @@
 ## Status
 
 - ✅ PR n°16 (phase 9, sans T9.3) et n°17 (phase 6) fusionnées, CI verte ; 1 386 tests, ruff, mypy, shellcheck, Prettier
-- ✅ Phase 6 : table `cypher/anglais/correspondance.toml`, `charger.sh --schema en|fr [--explain]` (16 requêtes planifiées sur la base), `banc traduire`, fiche anglaise ; 32 fautes injectées, toutes détectées
+- ✅ Phase 6 : table `cypher/anglais/correspondance.toml`, `charger.sh --schema en|fr [--explain]` (16 requêtes planifiées sur la base), `banc traduire`, fiche anglaise ; 32 fautes injectées, toutes détectées ; NEO-19 clos, risques de la bascule remontés dans NEO-2
 - ✅ ADR-0014 : revue assistée, contre-épreuve de 8 cas que Julien revoit seul avant les propositions ; Poissirène écarté dans la table de Q9, hors filet
-- ✅ NEO-19 clos au format de clôture (PR n°17) ; risques de la bascule remontés dans NEO-2
 - ⏳ T9.3 : Gemini du pilote recoupé à l'unité (plan, D7) ; `fr-1` absent de l'export à 3 h 17 UTC ; Console encore à 3,71 $ (capture de 1 h 58 UTC)
 
 ## Échecs tentés (à ne pas refaire)
