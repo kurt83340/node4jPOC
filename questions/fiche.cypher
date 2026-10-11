@@ -160,23 +160,29 @@ RETURN 'forme par défaut au nom de son espèce : paires, noms différents|1025,
 
 // fiche : « ## Relations »
 // Chaque motif (label de départ, type, label d'arrivée, propriétés portées) : la fiche les donne tous, aucun autre.
-// Les trois relations d'efficacité, écrites en une ligne par la fiche, sont ici séparées.
+// Les trois relations d'efficacité, écrites en une ligne par la fiche, sont ici séparées. Un identifiant par
+// littéral, et le motif recomposé ici, clés triées comme celles de la base : la traduction anglaise (banc traduire,
+// spec 002 D8) traduit un littéral qui est en entier un identifiant, jamais un morceau de texte.
 CALL () {
   UNWIND [
-    '(:Pokemon)-[:A_POUR_FORME_PAR_DEFAUT]->(:Forme)',
-    '(:Forme)-[:FORME_DE]->(:Pokemon)',
-    '(:Pokemon)-[:EVOLUE_EN]->(:Pokemon)',
-    '(:Forme)-[:A_LE_TYPE {rang}]->(:Type)',
-    '(:Attaque)-[:A_LE_TYPE]->(:Type)',
-    '(:Type)-[:SUPER_EFFICACE_CONTRE {facteur}]->(:Type)',
-    '(:Type)-[:PEU_EFFICACE_CONTRE {facteur}]->(:Type)',
-    '(:Type)-[:SANS_EFFET_CONTRE {facteur}]->(:Type)',
-    '(:Forme)-[:A_LE_TALENT {cache}]->(:Talent)',
-    '(:Forme)-[:APPREND {methodes, niveau}]->(:Attaque)',
-    '(:Pokemon)-[:A_POUR_DESCRIPTION]->(:Description)'
+    ['Pokemon', 'A_POUR_FORME_PAR_DEFAUT', 'Forme'],
+    ['Forme', 'FORME_DE', 'Pokemon'],
+    ['Pokemon', 'EVOLUE_EN', 'Pokemon'],
+    ['Forme', 'A_LE_TYPE', 'Type', 'rang'],
+    ['Attaque', 'A_LE_TYPE', 'Type'],
+    ['Type', 'SUPER_EFFICACE_CONTRE', 'Type', 'facteur'],
+    ['Type', 'PEU_EFFICACE_CONTRE', 'Type', 'facteur'],
+    ['Type', 'SANS_EFFET_CONTRE', 'Type', 'facteur'],
+    ['Forme', 'A_LE_TALENT', 'Talent', 'cache'],
+    ['Forme', 'APPREND', 'Attaque', 'methodes', 'niveau'],
+    ['Pokemon', 'A_POUR_DESCRIPTION', 'Description']
   ] AS valeurFiche
-  WITH valeurFiche ORDER BY valeurFiche
-  RETURN collect(valeurFiche) AS attendus
+  WITH valeurFiche, COLLECT { UNWIND valeurFiche[3..] AS cle RETURN cle ORDER BY cle } AS cles
+  WITH '(:' + valeurFiche[0] + ')-[:' + valeurFiche[1]
+    + CASE WHEN cles = [] THEN '' ELSE ' {' + reduce(s = '', x IN cles | s + CASE s WHEN '' THEN '' ELSE ', ' END + x)
+    + '}' END + ']->(:' + valeurFiche[2] + ')' AS motif
+  ORDER BY motif
+  RETURN collect(motif) AS attendus
 }
 CALL () {
   MATCH (a)-[r]->(b)
@@ -335,9 +341,9 @@ RETURN 'méthodes rares (relations)||' + reduce(s = '', x IN rares | s + CASE s 
 
 // fiche : « `facteur` : 2.0 (`SUPER_EFFICACE_CONTRE`), 0.5 (`PEU_EFFICACE_CONTRE`), 0.0 (`SANS_EFFET_CONTRE`). »
 CALL () {
-  UNWIND ['SUPER_EFFICACE_CONTRE 2.0', 'PEU_EFFICACE_CONTRE 0.5', 'SANS_EFFET_CONTRE 0.0'] AS valeurFiche
-  WITH valeurFiche ORDER BY valeurFiche
-  RETURN collect(valeurFiche) AS attendus
+  UNWIND [['SUPER_EFFICACE_CONTRE', 2.0], ['PEU_EFFICACE_CONTRE', 0.5], ['SANS_EFFET_CONTRE', 0.0]] AS valeurFiche
+  WITH valeurFiche[0] + ' ' + toString(valeurFiche[1]) AS valeur ORDER BY valeur
+  RETURN collect(valeur) AS attendus
 }
 CALL () {
   MATCH (:Type)-[e]->(:Type)

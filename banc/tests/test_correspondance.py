@@ -1,47 +1,21 @@
 """Table de correspondance du schéma anglais (spec 002, T6.1 ; plan D8), sans base.
 
-La table couvre tout le schéma, d'après des listes qui ne viennent pas d'elle : les labels, types et
-clés d'ARCHITECTURE § 5, les noms de cypher/00-contraintes.cypher. Les fichiers qu'on en tire
-(carte de paramètres, contraintes en anglais) sont à jour. Chaque règle de validation refuse seule
-une table qui ne viole qu'elle.
+La table couvre tout le schéma, d'après des listes qui ne viennent pas d'elle (schema_francais) :
+les labels, types et clés d'ARCHITECTURE § 5, les noms de cypher/00-contraintes.cypher. Les
+fichiers qu'on en tire (carte de paramètres, contraintes en anglais) sont à jour. Chaque règle de
+validation refuse seule une table qui ne viole qu'elle.
 """
 
 import re
 from pathlib import Path
 
 import pytest
+from schema_francais import schema_francais
 
 from banc import anglais, correspondance
 from banc.correspondance import Correspondance, CorrespondanceError
 
-RACINE = Path(__file__).resolve().parents[2]
-ARCHITECTURE = (RACINE / ".claude" / "docs" / "conception" / "ARCHITECTURE.md").read_text()
-CONTRAINTES = (RACINE / "cypher" / "00-contraintes.cypher").read_text()
 TABLE = correspondance.charger()
-
-
-def section(titre: str) -> str:
-    """Le texte d'une sous-section « ### titre » de la section 5 d'ARCHITECTURE."""
-    cinq = ARCHITECTURE.split("\n## 5.", 1)[1].split("\n## 6.", 1)[0]
-    return cinq.split(f"\n### {titre}\n", 1)[1].split("\n### ", 1)[0]
-
-
-def colonne(texte: str, rang: int) -> list[str]:
-    """Une colonne des lignes d'un tableau Markdown (« \\| » échappé gardé dans la cellule)."""
-    lignes = [ligne for ligne in texte.splitlines() if ligne.startswith("| ")]
-    cellules = [re.split(r"(?<!\\)\|", ligne)[rang + 1] for ligne in lignes[2:]]
-    return [cellule.replace("\\|", "|").strip() for cellule in cellules]
-
-
-def schema_francais() -> dict[str, set[str]]:
-    """Les identifiants français, par genre : ARCHITECTURE § 5 et 00-contraintes.cypher."""
-    noeuds, relations = section("Nœuds"), section("Relations")
-    labels = set(re.findall(r"^`(\w+)`", "\n".join(colonne(noeuds, 0)), re.MULTILINE))
-    groupes = re.findall(r"\[:([\w |]+)\]", " ".join(colonne(relations, 0)))
-    types = {t.strip() for groupe in groupes for t in groupe.split("|")}
-    cles = set(re.findall(r"`(\w+)`", " ".join(colonne(noeuds, 1) + colonne(relations, 1))))
-    index = set(re.findall(r"CREATE (?:FULLTEXT )?(?:CONSTRAINT|INDEX) (\w+)", CONTRAINTES))
-    return {"labels": labels, "relations": types, "proprietes": cles, "index": index}
 
 
 def test_table_couvre_le_schema() -> None:
