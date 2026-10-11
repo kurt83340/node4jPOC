@@ -1572,3 +1572,112 @@ empreinte = "f99e40b455dbf8c0"
 date = 2026-10-11T21:12:03
 note = "juste"
 motif = "comparaison-juste"
+
+# Campagne fr-controle (2026-10-11, passe française de contrôle, T10.3) : décisions de Julien, sur la pré-analyse de
+# Claude, revue assistée de l'ADR-0014. Contre-épreuve : 8 cas sur 9 tirés au sort (graine 94cf111db62ab236), revus
+# seul par Julien avant de voir les propositions, d'après la référence ; Q1 et Q8 n'étaient plus tout à fait à
+# l'aveugle (raisonnement de Claude connu depuis la revue de en-1) ; pré-analyse scellée avant (SHA-256
+# e9569a38467ee94e…) ; accord 7/8 sur les notes, 3/3 sur les sources ; désaccord : Q1 (capacité Z en tête), tranché
+# en partiel par la décision de Julien pour le même cas de en-1.
+
+[[revue]]
+campagne = "fr-controle"
+cellule = "adk-gemini"
+passe = 1
+question = "Q27"
+essai = 1
+empreinte = "e87345bbc70fe1f2"
+date = 2026-10-11T21:59:07
+note = "juste"
+source = "oui"
+motif = "precision-expliquee"
+
+[[revue]]
+campagne = "fr-controle"
+cellule = "adk-gemini"
+passe = 1
+question = "Q12"
+essai = 1
+empreinte = "b7cd88a8000b05c0"
+date = 2026-10-11T21:59:07
+note = "juste"
+motif = "forme-signalee"
+
+[[revue]]
+campagne = "fr-controle"
+cellule = "adk-gemini"
+passe = 1
+question = "Q13"
+essai = 1
+empreinte = "6a802cf31519adb7"
+date = 2026-10-11T21:59:07
+note = "juste"
+motif = "zenith-en-tete"
+
+[[revue]]
+campagne = "fr-controle"
+cellule = "adk-gemini"
+passe = 1
+question = "Q28"
+essai = 1
+empreinte = "3aeb45e83cca4efd"
+date = 2026-10-11T21:59:07
+note = "juste"
+source = "oui"
+motif = "electrik-nul-signale"
+
+[[revue]]
+campagne = "fr-controle"
+cellule = "adk-gemini"
+passe = 1
+question = "Q29"
+essai = 1
+empreinte = "086bc5af8a3bfaea"
+date = 2026-10-11T21:59:07
+note = "juste"
+source = "oui"
+motif = "premisse-corrigee"
+
+[[revue]]
+campagne = "fr-controle"
+cellule = "adk-gemini"
+passe = 1
+question = "Q8"
+essai = 1
+empreinte = "1e285fb9696295c9"
+date = 2026-10-11T21:59:07
+note = "juste"
+motif = "mesure-alternative-signalee"
+
+[[revue]]
+campagne = "fr-controle"
+cellule = "adk-gemini"
+passe = 1
+question = "Q19"
+essai = 1
+empreinte = "92ba024b6b7cae1d"
+date = 2026-10-11T21:59:07
+note = "juste"
+motif = "mega-forme-signalee"
+
+[[revue]]
+campagne = "fr-controle"
+cellule = "adk-gemini"
+passe = 1
+question = "Q1"
+essai = 1
+empreinte = "0f06e875d9211610"
+date = 2026-10-11T21:59:07
+note = "partiel"
+motif = "capacite-z-en-tete"
+
+[[revue]]
+campagne = "fr-controle"
+cellule = "adk-gemini"
+passe = 1
+question = "Q14"
+essai = 1
+empreinte = "220c004d4fdd9641"
+date = 2026-10-11T21:59:07
+note = "juste"
+motif = "liste-complete"
