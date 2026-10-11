@@ -191,6 +191,45 @@ Avant de supprimer le sujet, le détacher du budget de 100 € : gcloud n'a pas 
 c'est la console, Budgets et alertes → le budget → « Manage notifications ». Le plafond natif se supprime
 aussi dans la console, hors des périodes où il agit.
 
+## Lancer une campagne du banc (spec 002)
+
+Une campagne pose les 30 questions aux cellules, passe après passe ; elle est payante. Avant : le feu vert de Julien et
+un plafond (`--plafond-usd`, réserve de 1 $ comprise), qui arrête la campagne en code 3 s'il allait être dépassé.
+
+```bash
+uv run --directory banc python -m banc traduire --vers logs/anglais   # schéma anglais seulement : traduction à jour
+scripts/banc.sh lancer --campagne <id> --passes 3 --plafond-usd <$> [--cellules adk-gemini] [--schema en]
+scripts/banc.sh lancer --campagne <id> --plafond-usd <$> --reprendre  # après un arrêt : rejoue pannes et coupures
+uv run --directory banc python -m banc rapport --campagne <id> --complet   # 0 : complète
+uv run --directory banc python -m banc revoir --campagne <id> --verifier   # 0 : aucun cas à revoir
+```
+
+- Avant de créer ou de reprendre une campagne, `banc lancer` vérifie que la base est dans la langue de la campagne
+  (`scripts/charger.sh --langue` : noms, contraintes et index) et, en anglais, que `logs/anglais` est à jour.
+- Une seule campagne à la fois sur le poste (verrou). Pendant qu'elle tourne, ne pas modifier `banc/` : chaque
+  cellule l'importe à son lancement.
+- Codes retour : 0 finie, 1 finie avec une passe invalide, 2 erreur technique, 3 plafond de dépense atteint (crédits
+  ou plafond de la campagne : décision de Julien, puis `--reprendre`), 130 interrompue.
+- Revue : assistée ([ADR-0014](adr/0014-mvp-revue-assistee.md)), avec une contre-épreuve de 8 cas tirés au sort.
+
+## Basculer le schéma en anglais, puis revenir (spec 002, D8)
+
+```bash
+scripts/charger.sh --schema en --explain   # à blanc : EXPLAIN de chaque requête, rien d'écrit
+scripts/charger.sh --schema en             # bascule (44 s le 2026-10-11) ; --tout est refusé tant qu'elle dure
+scripts/charger.sh --langue                # en ; contraintes et index de la langue en ligne ; db.propertyKeys()
+scripts/questions.sh --verifier --dossier logs/anglais   # les 27 requêtes traduites rendent attendu/
+scripts/questions.sh --exemples --dossier logs/anglais   # fiche anglaise, dracofeu~, balayage : aucun
+scripts/charger.sh --schema fr             # retour (40 s)
+scripts/verifier.sh && scripts/questions.sh --verifier && scripts/questions.sh --exemples   # base de référence intacte
+```
+
+- Une bascule coupée (réseau, Aura) se relance telle quelle : rien ne se fait deux fois. `--langue` dit alors
+  « mixte » (noms des deux langues) ou « incomplète » (contraintes ou index absents), et `banc lancer` refuse de
+  partir.
+- `db.propertyKeys()` garde les noms de clés de l'autre langue, orphelins : sans effet sur les données, à revoir avant
+  qu'Aura Agent lise le schéma (jalon 4). Repli complet : `--purge`, puis `--tout`.
+
 ## Recouper le coût d'une campagne (spec 002, D10)
 
 - Gemini : export de facturation BigQuery (`/google-facture`), une ligne par heure d'usage et par SKU (`usage_start_time`) ; une requête `bq` par heure isole la campagne, dont les jetons (entrée hors cache, lecture du cache, sortie) égalent ceux du CSV du banc. Google compte au prix standard et retire la promotion de 50 % en crédit `DISCOUNT` ; taux : `currency_conversion_rate`. Délai observé : 4 h 35 à 6 h 43 après le début de l'heure d'usage (2026-10-11).

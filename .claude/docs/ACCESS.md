@@ -104,6 +104,10 @@ exploitation : [RUNBOOK](RUNBOOK.md).
 
 Ouverts le 2026-10-07 pour la spec 002 ; appels par l'ADC de fr.julienleroy@gmail.com, sans clé API.
 
+Précision du 2026-10-11 : depuis le 2026-10-08, seul Gemini (`gemini-3.8-flash`) passe par Vertex ; Claude passe par
+l'API Anthropic ([ADR-0011](adr/0011-infra-claude-par-api-anthropic.md)), le quota de Model Garden ayant été refusé.
+Les accords Marketplace ci-dessous restent acceptés, sans usage.
+
 - **API** `aiplatform.googleapis.com` activée sur `jleroy-labo` (`gcloud services enable`).
 - **Claude dans Model Garden** : Sonnet 5.5, Sonnet 5 et Haiku 4.5. Conditions de Google Cloud Marketplace et
   d'Anthropic acceptées par Julien sur la page « Agreements » (accords `anthropic-915`, `anthropic-896`,

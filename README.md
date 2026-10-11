@@ -32,6 +32,11 @@ Un jalon, c'est un epic Jira et une technique mesurée.
 | 5     | La mémoire d'agent                                             | `neo4j-agent-memory`, Memory Bank | —                                                                               | —                                                         | en option |
 | 6     | Les briques data Google Cloud                                  | Graph Analytics, CDC → Pub/Sub    | —                                                                               | —                                                         | en option |
 
+**Jalon 2, résultats** ([rapport de la technique 2](banc/resultats/technique-2.md)) : avec Claude Sonnet 5.5, l'agent
+text-to-Cypher obtient 27,5 (Claude Code) et 27,8 (ADK) sur 30 ; avec Gemini 3.8 Flash, 20,7, faute de conclure
+dans ses 10 appels au modèle. Le client compte peu, le modèle beaucoup ; un schéma aux identifiants anglais n'apporte
+rien de mesurable.
+
 ## ✅ Critères de réussite
 
 1. **Une vérité de référence** : les 30 questions ont leur réponse attendue, calculée en Cypher pour 27 d'entre elles ; Q10, Q29 et Q30, comportementales, se notent par une règle (jalon 1).
@@ -73,6 +78,7 @@ Un jalon, c'est un epic Jira et une technique mesurée.
 | [0012](.claude/docs/adr/0012-mvp-second-tour-apres-echec.md)              | Second tour d'une paire après un échec : faux d'office                                |
 | [0013](.claude/docs/adr/0013-infra-plafond-natif-de-vertex.md)            | Plafond natif mensuel de Vertex, en plus de la coupure de l'option C                  |
 | [0014](.claude/docs/adr/0014-mvp-revue-assistee.md)                       | Revue assistée : pré-analyse de Claude, décision de Julien, contre-épreuve            |
+| [0015](.claude/docs/adr/0015-mvp-source-du-tour-precedent.md)             | Source d'un second tour : une requête du tour précédent compte                        |
 
 ## 🔗 Suivi et documentation
 
@@ -97,6 +103,13 @@ scripts/questions.sh --verifier  # rejoue les 27 questions de référence : 0 co
 ```
 
 Un fichier `cypher/` par groupe de données : `scripts/verifier.sh --section <nom>` n'en contrôle qu'un (`types`, `pokemon`, `attaques`…).
+
+Mesurer une technique (jalon 2, payant : [RUNBOOK](.claude/docs/RUNBOOK.md)) :
+
+```bash
+scripts/banc.sh lancer --campagne <id> --passes 3 --plafond-usd <$>    # clé Anthropic lue dans Secret Manager
+uv run --directory banc python -m banc rapport --campagne <id> --complet # scores, temps, coût
+```
 
 ## Contact
 
