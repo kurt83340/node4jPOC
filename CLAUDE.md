@@ -27,7 +27,7 @@ POC perso d'apprentissage de l'écosystème agentique de Neo4j : un banc d'essai
 
 > Les règles dans `.claude/rules/*.md` sont **déjà auto-chargées** par Claude Code — pas besoin de `@-import` ici (ce serait du double chargement). Idéalement, scope-les par chemin (frontmatter `paths:`) pour qu'elles ne chargent que sur les fichiers concernés.
 
-- [code-style Python](.claude/rules/code-style.md) · [testing Python](.claude/rules/testing.md) · [code-style web](.claude/rules/code-style-web.md) · [testing web](.claude/rules/testing-web.md) · [git-workflow](.claude/rules/git-workflow.md) · [doc-lookup](.claude/rules/doc-lookup.md)
+- [code-style Python](.claude/rules/code-style.md) · [testing Python](.claude/rules/testing.md) · [code-style web](.claude/rules/code-style-web.md) · [testing web](.claude/rules/testing-web.md) · [git-workflow](.claude/rules/git-workflow.md) · [doc-lookup](.claude/rules/doc-lookup.md) · [textes validés](.claude/rules/textes-valides.md)
 
 ## Reminders critiques
 

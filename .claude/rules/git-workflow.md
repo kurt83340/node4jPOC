@@ -52,6 +52,9 @@ commits n'est pas celui du compte Jira.
 - CI verte obligatoire (`.github/workflows/ci.yml` : tests, lint, types, shell, format, secrets) : `gh pr checks <n>`
   tout vert avant `gh pr merge`. GitHub Free et dépôt privé : aucune protection de branche, rien d'autre ne bloque
   la fusion d'une PR rouge
+- Ticket Jira de la phase : « En cours » dès sa première tâche ; à la fusion de sa PR, son format de clôture (« À faire »
+  cochés, « Résultats du AAAA-MM-JJ », PR en lien intelligent avec son état) est montré à Julien, puis publié ; « Terminé »
+  seulement après sa relecture (`--relu` du skill jira). Leçon du 2026-10-11 ([lecons.md](../docs/lecons.md))
 
 ## Tags
 

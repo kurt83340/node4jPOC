@@ -50,7 +50,7 @@ Archive 📦 au bout de N mois (entries promues stables)
 
 ## 2026-10-11 — Des textes validés reformulés sans le signaler
 
-**scope:** feature-002 | **status:** 🆕 new
+**scope:** feature-002 | **status:** 🆕 new → 🔧 → [rule](../rules/textes-valides.md) (2026-10-12, choix de Julien)
 
 Le 2026-10-11, des textes validés ont été reformulés sans le dire : la puce « Revue (T9.2) » du plan (D7) et la tâche T9.2 (5e7395e), le paragraphe « Orientation rapide » de la code-map, pour tenir son budget (9184bca) ; `questions/fiche.cypher` réécrit sans accord préalable (plan, D8, T6.2). Relevé le jour même en cherchant une remarque de Julien sur NEO-19 ; da78384 a remis les textes tels quels, précisions ajoutées et datées.
 Solution : un texte validé ne se reformule ni ne se rogne ; ce qui change s'ajoute, daté ; une coupe nécessaire se montre comme telle et attend l'accord.
@@ -58,7 +58,7 @@ Solution : un texte validé ne se reformule ni ne se rogne ; ce qui change s'ajo
 
 ## 2026-10-11 — Carte Jira de la phase oubliée au début, puis à la fin
 
-**scope:** feature-002 | **status:** 🆕 new
+**scope:** feature-002 | **status:** 🆕 new → 🔧 → [rule](../rules/git-workflow.md) (§ PR / merge, 2026-10-12, choix de Julien)
 
 NEO-18 est resté en Backlog pendant T4.1 (2026-10-09) ; après la fusion de la PR n°17 (2026-10-11), la clôture de NEO-19 (À faire cochés, Résultats, PR) a été remise à la session suivante, et Julien a vu l'écart avec NEO-20, clos. Julien suit l'avancement sur le tableau NEO.
 Solution : « En cours » dès la première tâche d'une phase ; à la fusion de sa PR, format de clôture montré à Julien, publié, puis « Terminé » après relecture (`--relu`) ; la PR en lien intelligent, avec son état.
@@ -66,7 +66,7 @@ Solution : « En cours » dès la première tâche d'une phase ; à la fusion de
 
 ## 2026-10-10 — Une fiche rédigée depuis les CSV, sans la base, portait trois écarts
 
-**scope:** feature-002 | **status:** 🆕 new
+**scope:** feature-002 | **status:** 🆕 new → ❌ discarded (raison : déjà tenu par le plan 002, D5, protocole repris aux jalons 3 et 4 par l'ADR-0009, et par `questions/fiche.cypher`, `banc/tests/test_fiche_cypher.py` et leurs gotchas ; vu une seule fois ; 2026-10-12, choix de Julien)
 
 T1.2 a écrit la fiche de schéma des agents depuis les CSV et le plan 001 ; vérifiée sur le graphe en T7.3, elle avait 3 écarts : 4 méthodes rares et non 6 (10 employées en tout), 18 attaques à 0 au lieu de n'avoir pas la propriété (le CSV écrit 0), 2 noms à l'apostrophe droite tus.
 Corrigée ; `questions/fiche.cypher` rejoue chaque affirmation (`questions.sh --exemples`) et `banc/tests/test_fiche_cypher.py` tient fiche et requêtes ensemble.
@@ -74,7 +74,7 @@ Corrigée ; `questions/fiche.cypher` rejoue chaque affirmation (`questions.sh --
 
 ## 2026-10-09 — Le vrai client, contre une fausse API, montre ce que sa doc tait
 
-**scope:** feature-002 | **status:** 🆕 new
+**scope:** feature-002 | **status:** 🆕 new → 🔧 → [rule](../rules/testing.md) (2026-10-12, choix de Julien ; méthode servie trois fois : T4.1, T4.2, T4.3)
 
 T4.1 : le vrai Claude Code 2.1.292, branché sur une fausse API Anthropic et un faux neo4j-mcp locaux, a révélé en quelques minutes et pour 0 $ cinq comportements que sa doc ne dit pas : budget affiché à l'agent par `--max-budget-usd`, mémoire automatique décrite dans le prompt, socket entre sessions dans `/tmp/cc-socks/`, instructions du serveur injectées, appel coupé oublié par `model_usage`. Hermétique (une seule connexion, vers la fausse API), gardé en test (`banc/tests/test_cellule_sdk_reel.py`).
 → Piste : refaire l'essai pour les cellules ADK en T4.2 (AnthropicLlm vers une fausse API ; Gemini à voir), puis 🔧 rule `testing.md` si la méthode sert deux fois.

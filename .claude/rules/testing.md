@@ -38,6 +38,16 @@ que la règle qu'il vise, et survit alors à sa suppression.
 - Une borne se teste pile dessus (`<` contre `<=`).
 - Vérification par mutation : désactiver la seule règle visée doit faire échouer son test.
 
+## Client tiers : le vrai, contre de faux services
+
+Leçon du 2026-10-09, servie trois fois (spec 002 : T4.1, T4.2, T4.3 ; [lecons.md](../docs/lecons.md)) : la doc d'un client
+tiers (CLI, SDK, framework d'agents) tait des comportements que le code doit connaître.
+
+- Avant d'en dépendre, lancer le vrai client, à sa version figée, contre de faux services locaux (fausse API, faux
+  serveur MCP, ADC factice) : aucun appel réel, aucune connexion hors des faux.
+- Relever ce qu'il envoie et ce qu'il fait (requêtes, variables lues, fichiers et sockets ouverts, reprises), puis le
+  garder en test.
+
 ## Lancer
 
 ```bash
