@@ -97,7 +97,9 @@ chaque Q2 ; sa plus longue est un Q8, une similarité de répertoires calculée 
 - **Recoupé avec les factures** (T9.3) : pour Claude, la Console Anthropic affiche 6,45 $ sur trente jours, pour
   6,450 $ calculés (sondes, répétition, pilote et `fr-1`) ; pour Gemini, l'export de facturation BigQuery compte les
   tokens de `fr-1` à l'unité près, 2,590 € net, soit 2,943 $ pour 2,943 $ calculés. Les coûts de `en-1` (2,76 $) et
-  de `fr-controle` (0,90 $) restent à recouper dans l'export.
+  de `fr-controle` (0,90 $) restent à recouper dans l'export. Précision du 2026-10-12 : recoupés dans l'export,
+  jetons égaux à ceux des CSV ; 2,759944 $ facturés pour 2,759954 $ calculés (`en-1`), 0,901309 $ pour 0,901313 $
+  (`fr-controle`).
 - **Toute la spec** a coûté environ 14,0 $ de LLM (Claude 6,45 $, Gemini 7,51 $), sous le budget de 35 $.
 
 ## Schéma anglais (FR/EN)
@@ -152,7 +154,8 @@ valide la pré-analyse de Claude.
 - **Une revue assistée** : décisions de Julien sur la pré-analyse de Claude. Ses contre-épreuves à l'aveugle donnent
   7 accords sur 8 pour les notes dans les deux campagnes de la phase 10, chaque désaccord portant sur Q1. Dans les
   cellules Claude, Claude pré-analyse des réponses de Claude ; l'aveugle masque la cellule, pas le style.
-- **Des coûts partiellement recoupés** : `en-1` et `fr-controle` attendent l'export de facturation.
+- **Des coûts partiellement recoupés** : `en-1` et `fr-controle` attendent l'export de facturation. Précision du
+  2026-10-12 : recoupés depuis (§ Coût) ; tous les coûts de la spec le sont, à moins d'un centime.
 
 ## Reproduire
 
