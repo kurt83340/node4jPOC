@@ -1,6 +1,6 @@
 ---
-status: in-progress # draft | validated | in-progress | done | parked
-progress: 26/34 # X/Y tasks (compté depuis tasks.md) — MAJ par /feature-done ou à la main
+status: done # draft | validated | in-progress | done | parked
+progress: 35/35 # X/Y tasks (compté depuis tasks.md) — MAJ par /feature-done ou à la main
 ---
 
 # Spec — Agent text-to-Cypher
@@ -27,9 +27,9 @@ Mesurer la technique 2 du banc d'essai : un agent LLM qui écrit lui-même le Cy
 
 **Critères d'acceptation :**
 
-- [ ] 3 passes comptées des 30 questions, Q18 et Q28 posées au second tour de leur conversation
-- [ ] aucune lecture des fichiers du dépôt par l'agent, aucune écriture dans la base, aucune réponse sans le serveur connecté (traces à l'appui)
-- [ ] chaque réponse notée (juste, partielle, fausse), avec la source citée vérifiée sur la trace, la durée, les tokens et le coût
+- [x] 3 passes comptées des 30 questions, Q18 et Q28 posées au second tour de leur conversation (T9.1, 2026-10-11 : campagne `fr-1`, 28 conversations par passe, dont `Q2+Q18` et `Q27+Q28` à deux tours)
+- [x] aucune lecture des fichiers du dépôt par l'agent, aucune écriture dans la base, aucune réponse sans le serveur connecté (traces à l'appui) — relu le 2026-10-12 sur les 84 traces de claude-code (`fr-1`) : serveur connecté à l'ouverture de chacune, 177 appels, tous `read-cypher`, aucune clause d'écriture, chaque réponse appuyée sur un résultat du serveur dans son tour ; le reste, garanti par la cellule et le serveur : [plan](plan.md), D3
+- [x] chaque réponse notée (juste, partielle, fausse), avec la source citée vérifiée sur la trace, la durée, les tokens et le coût (T9.1 et T9.2 : `banc/mesures/fr-1.csv`, revue sans cas restant, `banc revoir --verifier`)
 
 ### US2 — Séparer l'effet du client de celui du modèle
 
@@ -39,8 +39,8 @@ Mesurer la technique 2 du banc d'essai : un agent LLM qui écrit lui-même le Cy
 
 **Critères d'acceptation :**
 
-- [ ] 3 passes comptées pour ADK + Claude Sonnet 5.5 et pour ADK + Gemini 3.8 Flash, avec la même consigne, la même fiche et le même serveur MCP
-- [ ] un score par cellule et par catégorie ([ADR-0006](../../adr/0006-mvp-banc-essai-30-questions.md)), avec l'écart entre passes
+- [x] 3 passes comptées pour ADK + Claude Sonnet 5.5 et pour ADK + Gemini 3.8 Flash, avec la même consigne, la même fiche et le même serveur MCP (T9.1, `fr-1` : consigne et fiche inchangées depuis le gel du 2026-10-10, `neo4j-mcp` v1.6.0 dans l'en-tête des 252 conversations)
+- [x] un score par cellule et par catégorie ([ADR-0006](../../adr/0006-mvp-banc-essai-30-questions.md)), avec l'écart entre passes (T11.1 : [rapport de la technique 2](../../../../banc/resultats/technique-2.md))
 
 ### US3 — Une fiche de schéma commune
 
@@ -61,9 +61,9 @@ Mesurer la technique 2 du banc d'essai : un agent LLM qui écrit lui-même le Cy
 
 **Critères d'acceptation :**
 
-- [ ] bascule prouvée : les 27 requêtes de référence, traduites, rendent `questions/attendu/` à l'identique
-- [ ] 3 passes ADK + Gemini sur le schéma anglais, comparées question par question aux passes françaises
-- [ ] retour au français prouvé : `verifier.sh` et `questions.sh --verifier` conformes
+- [x] bascule prouvée : les 27 requêtes de référence, traduites, rendent `questions/attendu/` à l'identique (T10.1, 2026-10-11 : 28 requêtes conformes, liste des espèces comprise)
+- [x] 3 passes ADK + Gemini sur le schéma anglais, comparées question par question aux passes françaises (T10.2 et T10.3 : campagne `en-1`, verdict et questions qui basculent au [plan](plan.md), D8)
+- [x] retour au français prouvé : `verifier.sh` et `questions.sh --verifier` conformes (T10.3, 2026-10-11 ; de nouveau le 2026-10-12 : 34 contrôles, 28 requêtes)
 
 ### US5 — Retrouver un nom mal orthographié
 

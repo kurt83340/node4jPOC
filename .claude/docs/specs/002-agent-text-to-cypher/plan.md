@@ -134,6 +134,14 @@ Mode « faux serveur » (avant le 2026-10-04) : serveur MCP, validation des noms
 - `--max-budget-usd` affiche à l'agent « USD budget: $0.0097/$0.5; $0.4903 remaining » après chaque appel d'outil. Le budget (0,50 $ par conversation, choix de Julien) est donc compté par la cellule sur le flux de l'API (`include_partial_messages`, sans effet sur les requêtes), invisible de l'agent, comme pour ADK.
 - Cellule (`banc.cellule_sdk`) : un processus par conversation, la liste blanche pour seul environnement, sa commande en JSON sur stdin (`banc.cellule`) ; le message `init` de chaque requête est contrôlé (clé, `read-cypher` seul, `dontAsk`, modèle, version, un seul serveur, ni socket ni mémoire), un écart est une erreur technique (code 2).
 
+**Relevé du 2026-10-12 (T11.3, US1)** : traces des trois campagnes comptées relues par script, en lecture seule, pour le critère « traces à l'appui » d'US1 (une ligne dans la spec, le relevé ici : choix de Julien).
+
+- Serveur connecté : l'en-tête de chaque trace porte la version de `neo4j-mcp`, que la cellule ne lit qu'une fois le serveur connecté, avant le chrono (sinon « absent », et la conversation compte en panne) : v1.6.0 dans les 84 conversations de chaque cellule de `fr-1`, les 84 de `en-1` et les 28 de `fr-controle`.
+- Appels : 177 pour claude-code, 159 pour adk-claude et 483 pour adk-gemini dans `fr-1`, 478 dans `en-1`, 162 dans `fr-controle` ; tous `read-cypher`, aucun `get-schema`.
+- Écriture : aucune clause d'écriture (`CREATE`, `MERGE`, `SET`, `DELETE`, `DETACH`, `REMOVE`, `DROP`, `FOREACH`, `LOAD CSV`, `IN TRANSACTIONS`…), même dans les littéraux ; procédures appelées : `db.index.fulltext.queryNodes`, et une fois `db.labels()` (`en-1`, D8). 9 erreurs du serveur, toutes de syntaxe.
+- Réponses : chacune des 90 réponses de claude-code s'appuie sur au moins un résultat du serveur dans son tour ; dans les trois campagnes, une seule réponse n'a aucun appel dans son tour, Q18 d'adk-claude, passe 3 de `fr-1`, appuyée sur le tour précédent (D4, [ADR-0015](../../adr/0015-mvp-source-du-tour-precedent.md)).
+- Ce que la trace ne montre pas (elle n'enregistre que `read-cypher` et `get-schema`), la cellule le garantit : HOME, configuration de Claude Code et dossier de travail neufs, hors du dépôt ; aucun outil intégré (`tools=[]`) ; `read-cypher` seul, vérifié dans le message `init` de chaque requête ; statut « connected » relu à la fin de chaque tour, sinon panne « serveur ». Les écritures sont refusées par le serveur en lecture seule (T7.4), et la base de référence est intacte à la fin (34/34 contrôles, 28/28 requêtes, le 2026-10-12).
+
 ### D4 — Notation mixte, sans juge LLM ; source citée vérifiée sur la trace
 
 **Choix :**

@@ -8,7 +8,7 @@
 > il « perd le fil » (échecs ×4 constatés en télémétrie, Morph 2026) → découper la phase.
 
 **Date :** 2026-10-01
-**Status :** [~] 34/35 tasks → MAJ au fil de l'eau
+**Status :** [x] 35/35 tasks — livrée le 2026-10-12
 
 > Phases 0 à 6 : sans la base (prévues pendant la période creuse de NEO-13, close le 2026-10-07). Phases 7 à 11 : sur la base.
 > Les tests n'appellent aucun outil réel : PATH réduit aux faux outils, HOME temporaire.
@@ -119,21 +119,21 @@
   - DoD : `file_exists: banc/resultats/technique-2.md`
 - [x] **T11.2** : doc : code-map (relecture des règles du lanceur, du harnais, de `--schema` et de `transactions.sh`), stack (bibliothèques, LLM, coûts, perl du lanceur), ARCHITECTURE, RUNBOOK (lancer une campagne, basculer en anglais, revenir), ACCESS (Model Garden), README (jalon 2) — fait le 2026-10-11 : code-map relue (règles et références de lignes justes ; 3 070 jetons, un peu au-delà de son seuil de 3 000, à alléger par `/codemap`) ; stack (scripts, `mcp` 2.3.0, coûts mesurés) ; ARCHITECTURE (agents et harnais dans le schéma, modules, flux de mesure, sécurité, observabilité, jalon 2 fait) ; RUNBOOK (lancer une campagne, basculer en anglais et revenir) ; ACCESS (Model Garden sans usage depuis l'ADR-0011) ; README (résultats du jalon 2, ADR-0015, mesurer une technique) ; budget de contexte : 10 181 jetons
   - DoD : `command_passes: python3 .claude/skills/doc-health/scripts/context-budget.py`
-- [ ] **T11.3** : `/feature-done 002-agent-text-to-cypher` : dernière PR, fusion, puis tag `jalon-2` sur `main`
+- [x] **T11.3** : `/feature-done 002-agent-text-to-cypher` : dernière PR, fusion, puis tag `jalon-2` sur `main` — fait le 2026-10-12 : ROADMAP (jalon 2 livré ; clés orphelines de `db.propertyKeys()` reportées au jalon 4), CHANGELOG, HANDOFF et README à jour ; US1, US2 et US4 cochés ; Definition of Done vérifiée le même jour (ci-dessous) ; dernière PR, n°20, fusionnée en merge commit, puis tag annoté `jalon-2` sur son commit de fusion, sur l'accord de Julien
   - DoD : `command_passes: git rev-parse jalon-2`, et `manual: ROADMAP et CHANGELOG à jour`
 
 ## Definition of Done (global)
 
 La feature est livrée quand :
 
-- [ ] Tous les critères d'acceptation de [spec.md](spec.md) cochés
-- [ ] Tests verts (unitaires, intégration sans base, contrôles sur la base)
-- [ ] Pas de TODO ou `# FIXME` dans le code
-- [ ] Pas de fuite d'identifiants (gitleaks, traces masquées, agents en `env -i`)
-- [ ] Base de référence intacte : 34/34 contrôles, 27/27 réponses, exemples conformes
-- [ ] Documentation à jour (code-map, plan.md décisions)
+- [x] Tous les critères d'acceptation de [spec.md](spec.md) cochés — US1 à US5, le 2026-10-12 (preuves d'US1 : [plan](plan.md), D3)
+- [x] Tests verts (unitaires, intégration sans base, contrôles sur la base) — relancés le 2026-10-12 : banc 1 481 tests, `reveil-aura` 19, `coupure-vertex` 24 ; ruff, format et mypy propres ; shellcheck sur les 10 scripts ; Prettier ; contrôles sur la base : ligne « Base de référence » ci-dessous
+- [x] Pas de TODO ou `# FIXME` dans le code — `git grep` sur `banc/`, `scripts/`, `cypher/`, `questions/` et `infra/` : aucun (2026-10-12)
+- [x] Pas de fuite d'identifiants (gitleaks, traces masquées, agents en `env -i`) — le 2026-10-12 : gitleaks 8.30.1 sur tout l'historique (133 commits), aucune fuite ; l'identifiant de l'instance n'est dans aucune des 464 traces de `logs/banc/`, ni dans `banc/mesures/`, ni dans un fichier suivi (comptes seuls, valeur jamais affichée) ; agents lancés avec la seule liste blanche de `banc/src/banc/isolement.py` (`tests/test_isolement.py`)
+- [x] Base de référence intacte : 34/34 contrôles, 27/27 réponses, exemples conformes — le 2026-10-12 : `charger.sh --langue` fr ; `verifier.sh` 34 contrôles ; `questions.sh --verifier` 28 requêtes (les 27 et la liste des espèces) ; `questions.sh --exemples` 23 valeurs de la fiche et 10 exemples
+- [x] Documentation à jour (code-map, plan.md décisions) — `/doc-health` du 2026-10-12 traité ; code-map à 2 893 jetons ; décisions au plan (D1 à D13) ; budget de contexte : 10 460 jetons
 - [x] ADR du protocole de mesure créé ([ADR-0009](../../adr/0009-mvp-protocole-mesure-techniques.md), 2026-10-01)
-- [ ] Commit + PR
+- [x] Commit + PR — une PR par phase ; la dernière, n°20, pour la phase 11
 
 ## Blockers / questions
 

@@ -1,6 +1,6 @@
 # node4jPOC · Banc d'essai agentique Neo4j
 
-> **Initiative** · porteur : Julien Leroy · lancée le 2026-09-28 · **jalon 1 livré le 2026-10-01 et clos le 2026-10-07 (tag `jalon-1`), jalon 2 en cours**
+> **Initiative** · porteur : Julien Leroy · lancée le 2026-09-28 · **jalon 1 livré le 2026-10-01 et clos le 2026-10-07 (tag `jalon-1`), jalon 2 livré le 2026-10-12 (tag `jalon-2`)**
 >
 > Suivi : [tableau Jira NEO](https://frjulienleroy.atlassian.net/jira/software/projects/NEO/boards/40) · [chronologie](https://frjulienleroy.atlassian.net/jira/software/projects/NEO/boards/40/timeline) · [ROADMAP](.claude/docs/ROADMAP.md)
 
@@ -26,7 +26,7 @@ Un jalon, c'est un epic Jira et une technique mesurée.
 | Jalon | Résultat visé                                                  | Technique                         | Spec                                                                            | Jira                                                      | État      |
 | ----- | -------------------------------------------------------------- | --------------------------------- | ------------------------------------------------------------------------------- | --------------------------------------------------------- | --------- |
 | 1     | Le graphe chargé et vérifié, avec les 30 réponses de référence | Cypher à la main                  | [001-socle-donnees](.claude/docs/specs/001-socle-donnees/spec.md)               | [NEO-1](https://frjulienleroy.atlassian.net/browse/NEO-1) | livré     |
-| 2     | Un agent text-to-Cypher mesuré sur les 30 questions            | `neo4j/mcp`, agent ADK            | [002-agent-text-to-cypher](.claude/docs/specs/002-agent-text-to-cypher/spec.md) | [NEO-2](https://frjulienleroy.atlassian.net/browse/NEO-2) | en cours  |
+| 2     | Un agent text-to-Cypher mesuré sur les 30 questions            | `neo4j/mcp`, agent ADK            | [002-agent-text-to-cypher](.claude/docs/specs/002-agent-text-to-cypher/spec.md) | [NEO-2](https://frjulienleroy.atlassian.net/browse/NEO-2) | livré     |
 | 3     | GraphRAG sur les descriptions, mesuré sur les 30 questions     | vecteurs Gemini et graphe         | à écrire                                                                        | [NEO-3](https://frjulienleroy.atlassian.net/browse/NEO-3) | à venir   |
 | 4     | Les agents gérés mesurés, le tableau comparatif livré          | Aura Agent, Agent Runtime         | à écrire                                                                        | [NEO-4](https://frjulienleroy.atlassian.net/browse/NEO-4) | à venir   |
 | 5     | La mémoire d'agent                                             | `neo4j-agent-memory`, Memory Bank | —                                                                               | —                                                         | en option |
