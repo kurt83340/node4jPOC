@@ -5,7 +5,7 @@
 > ❌ **Ne contient PAS** : vision, périmètre, métriques → [cadrage](../cadrage/README.md) et [PRD.md](PRD.md)
 
 **Statut :** Validée par Julien le 2026-09-29 (modèle v2, tâche T1.2 de la spec 001)
-**Dernière MAJ :** 2026-10-01
+**Dernière MAJ :** 2026-10-11
 
 ## 1. Vue d'ensemble
 
@@ -22,8 +22,13 @@
 └──────────────────────────┘                                │
 ┌──────────────────────────┐  Query API, RETURN 1 par jour  │
 │ infra/reveil-aura/       │ ───────────────────────────────┤
-│ (Cloud Run, Scheduler)   │                                │ interrogé par
+│ (Cloud Run, Scheduler)   │                                │
 └──────────────────────────┘                                │
+┌──────────────────────────┐  MCP stdio, lecture seule      │
+│ banc/ : Claude Code, ADK │ ── scripts/mcp-neo4j.sh ───────┤
+│ (jalon 2)                │    (neo4j-mcp v1.6.0)          │ interrogé par
+└────────────┬─────────────┘                                │
+             └─► API Anthropic (Claude) · Vertex eu (Gemini)
         Cypher à la main (jalon 1) · agents MCP, ADK (jalon 2) · GraphRAG (jalon 3)
         Aura Agent, Gemini Enterprise (jalon 4) · mémoire d'agent (jalon 5)
 ```
@@ -65,22 +70,25 @@ scripts/verifier.sh : comptes, empreintes, doublons, limite de l'instance
 Stack résumé des choix **structurants** avec ADR liés.
 → **Inventaire complet** (libs + services tiers + LLM + deploy) : [../stack.md](../stack.md)
 
-| Couche                  | Choix                                       | Justification                                               | ADR                                                             |
-| ----------------------- | ------------------------------------------- | ----------------------------------------------------------- | --------------------------------------------------------------- |
-| Données                 | **PokéAPI, CSV au commit `168b1e8`**        | textes en français, graphe naturel, réponses vérifiables    | [0001](../adr/0001-mvp-jeu-de-donnees-pokeapi.md)               |
-| Environnement cible     | **Google Cloud** (dbt hors POC)             | transposable à l'entreprise de Julien                       | [0002](../adr/0002-cadrage-environnement-cible-google-cloud.md) |
-| Base de données         | **AuraDB Free**, Cypher 25 par défaut       | gratuite, hébergée sur Google Cloud, requise par Aura Agent | [0002](../adr/0002-cadrage-environnement-cible-google-cloud.md) |
-| Chargement              | **Cypher pur** (`LOAD CSV`, `cypher-shell`) | pratiquer le Cypher de chargement                           | [0003](../adr/0003-mvp-chargement-cypher-pur.md)                |
-| Modèle                  | **Pokémon (espèce) + toutes les formes**    | fidèle à la source ; identité et variantes                  | [0004](../adr/0004-mvp-modele-espece-formes.md)                 |
-| Nommage du schéma       | **conventions Neo4j, mots des questions**   | c'est tout ce que voit un agent text-to-Cypher              | [0005](../adr/0005-mvp-conventions-nommage-schema.md)           |
-| LLM, embeddings, agents | à décider aux jalons 2 à 4                  | —                                                           | —                                                               |
+| Couche              | Choix                                                                                                                                 | Justification                                                                 | ADR                                                                                                           |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| Données             | **PokéAPI, CSV au commit `168b1e8`**                                                                                                  | textes en français, graphe naturel, réponses vérifiables                      | [0001](../adr/0001-mvp-jeu-de-donnees-pokeapi.md)                                                             |
+| Environnement cible | **Google Cloud** (dbt hors POC)                                                                                                       | transposable à l'entreprise de Julien                                         | [0002](../adr/0002-cadrage-environnement-cible-google-cloud.md)                                               |
+| Base de données     | **AuraDB Free**, Cypher 25 par défaut                                                                                                 | gratuite, hébergée sur Google Cloud, requise par Aura Agent                   | [0002](../adr/0002-cadrage-environnement-cible-google-cloud.md)                                               |
+| Chargement          | **Cypher pur** (`LOAD CSV`, `cypher-shell`)                                                                                           | pratiquer le Cypher de chargement                                             | [0003](../adr/0003-mvp-chargement-cypher-pur.md)                                                              |
+| Modèle              | **Pokémon (espèce) + toutes les formes**                                                                                              | fidèle à la source ; identité et variantes                                    | [0004](../adr/0004-mvp-modele-espece-formes.md)                                                               |
+| Nommage du schéma   | **conventions Neo4j, mots des questions**                                                                                             | c'est tout ce que voit un agent text-to-Cypher                                | [0005](../adr/0005-mvp-conventions-nommage-schema.md)                                                         |
+| Agents (jalon 2)    | **Claude Code et ADK**, Claude Sonnet 5.5 par l'API Anthropic, Gemini 3.8 Flash sur Vertex `eu` ; `neo4j-mcp` v1.6.0 en lecture seule | séparer l'effet du client de celui du modèle, par un seul chemin vers la base | [0009](../adr/0009-mvp-protocole-mesure-techniques.md), [0011](../adr/0011-infra-claude-par-api-anthropic.md) |
+| LLM, embeddings     | à décider aux jalons 3 et 4                                                                                                           | —                                                                             | —                                                                                                             |
 
 ## 3. Modules & découpage
 
 - **Chargement** (`cypher/`) : un fichier `.cypher` par groupe de données, idempotent, exécuté dans l'ordre.
 - **Outillage** (`scripts/`) : chargement, purge, vérification, rejeu des questions ; avec le job ci-dessous, seul endroit qui lit les identifiants.
 - **Exploitation** (`infra/reveil-aura/`) : job Cloud Run lancé chaque jour par Cloud Scheduler, qui garde l'instance Free éveillée et alerte par e-mail en cas d'échec ; déployé par `deploy.sh`, exploité avec le [RUNBOOK](../RUNBOOK.md).
-- **Banc d'essai** (`questions/`) : les 30 questions, leurs requêtes de référence et leurs réponses attendues ; commun à tous les jalons.
+- **Banc d'essai** (`questions/`) : les 30 questions, leurs requêtes de référence et leurs réponses attendues, la consigne et la fiche de schéma ; commun à tous les jalons.
+- **Harnais du banc** (`banc/`, jalon 2) : mène une campagne (une conversation par processus isolé, cellules alternées), note les réponses, tient les traces et les mesures, la revue à l'aveugle et le rapport ; lancé par `scripts/banc.sh`, qui lui passe la clé Anthropic. Résultats : [rapport de la technique 2](../../../banc/resultats/technique-2.md).
+- **Schéma anglais** (`cypher/anglais/`) : table de correspondance, renommage et contraintes de l'autre langue, joués par `charger.sh --schema en|fr` pour la mesure FR/EN (spec 002, D8).
 
 > ⚠️ Ce qui **n'est PAS déductible du code** — règles de couplage, intention, gotchas — vit dans **[../code-map.md](../code-map.md)** (auto-chargé ; ses gotchas, dans `code-map-gotchas.md`, sont injectés par hook à l'édition du fichier ciblé). Ne pas le dupliquer ici.
 
@@ -89,7 +97,8 @@ Stack résumé des choix **structurants** avec ADR liés.
 1. **Lecture** : Aura lit chaque CSV en https depuis le commit figé (`$base` en paramètre) ; tout arrive en chaîne de caractères, converti au chargement.
 2. **Écriture** : `MERGE` sur une clé contrainte (ou sur un chemin pour `Description`), en lots pour les gros fichiers. Détail et cas limites : [plan de la spec 001](../specs/001-socle-donnees/plan.md).
 3. **Contrôle** : `verifier.sh` compare la base aux comptes et empreintes attendus.
-4. **Usage** : les techniques du banc d'essai lisent la base, le job `reveil-aura` y lit `RETURN 1` chaque jour ; seul le chargement y écrit (et la mémoire d'agent, au jalon 5).
+4. **Usage** : les techniques du banc d'essai lisent la base, le job `reveil-aura` y lit `RETURN 1` chaque jour ; seul le chargement y écrit, bascule du schéma comprise (et la mémoire d'agent, au jalon 5).
+5. **Mesure** (jalon 2) : `banc lancer` vérifie la langue de la base (`charger.sh --langue`), puis mène chaque conversation dans un processus isolé ; l'agent lit la base par `neo4j-mcp` ; sa trace (`logs/banc/`, sur le poste) donne une ligne notée par question au CSV versionné (`banc/mesures/`) ; la revue tranche les cas à revoir ; `banc rapport` en tire scores, temps et coût.
 
 ## 5. Mapping champs (si applicable)
 
@@ -126,6 +135,7 @@ Total attendu : **8 859 nœuds et 113 700 relations**.
 
 - Une contrainte d'unicité sur `id` pour `Pokemon`, `Forme`, `Type`, `Attaque` et `Talent`. `Description` n'a pas de clé : un `MERGE` sur le chemin (Pokémon, texte) la rend unique, et `verifier.sh` le contrôle.
 - Un index sur `nom` pour `Pokemon`, `Forme`, `Attaque`, `Talent` et `Type` : c'est la porte d'entrée de presque toutes les questions.
+- Sur la base anglaise (mesure FR/EN, le temps d'une campagne), les mêmes, aux noms anglais : `cypher/anglais/contraintes.cypher`, index plein texte `names_fulltext`.
 - Un index plein texte, `noms_plein_texte`, sur `nom` des mêmes 5 labels, analyseur `standard-folding` (sans casse ni accents) : la recherche d'un nom approché (`dracofeu~` trouve Dracaufeu, Q19), enseignée aux agents par la fiche de schéma (spec 002, D9). Ajouté le 2026-10-10 ; `verifier.sh` contrôle sa définition (34e contrôle), `questions.sh --exemples` qu'il trouve.
 
 ## 6. Sécurité
@@ -133,19 +143,21 @@ Total attendu : **8 859 nœuds et 113 700 relations**.
 - Identifiants Aura dans Secret Manager (secret `neo4j-aura-poc`, [ADR-0007](../adr/0007-infra-secrets-et-services-geres.md)) : `charger.sh` les lit au lancement et n'en passe que 4 variables à `cypher-shell`, jamais affichées ni écrites sur le disque. Le fichier `Neo4j-*.txt` téléchargé depuis Aura ne fait que transiter : ignoré par git, interdit en lecture, supprimé après le dépôt.
 - Les CSV ne sont ni copiés dans le dépôt ni republiés (univers Pokémon © Nintendo, [ADR-0001](../adr/0001-mvp-jeu-de-donnees-pokeapi.md)).
 - Les techniques du banc d'essai lisent la base en lecture seule quand l'outil le permet (mode lecture seule de `neo4j/mcp`, par exemple).
+- Les agents du banc ne voient que l'outil `read-cypher` de `neo4j-mcp`, en lecture seule ; chaque cellule tourne avec une liste blanche de variables (la clé Anthropic aux seules cellules Claude), dans un HOME et un dossier de travail neufs, hors du dépôt ; une lecture restée active est arrêtée par `scripts/transactions.sh`. Règles détaillées : [code-map](../code-map.md).
 - Le job `reveil-aura` lit le même secret, que Cloud Run monte en fichier, sous un compte de service qui ne peut que lire ce secret et lancer ce job ; il interroge Aura en lecture seule, et ses journaux ne contiennent ni le mot de passe ni l'identifiant de l'instance.
 
 ## 7. Observabilité
 
 - **Chargement** : un journal horodaté par fichier `.cypher` (durée, lignes traitées).
 - **Contrôle** : `verifier.sh` (comptes, empreintes, doublons, volume comparé à la limite de l'instance).
+- **Banc d'essai** : une trace JSONL par conversation (`logs/banc/`), un CSV de mesures par campagne (`banc/mesures/`), `banc rapport` ; le coût calculé se recoupe avec la Console Anthropic et l'export de facturation BigQuery ([RUNBOOK](../RUNBOOK.md)).
 - **Supervision** : le job quotidien `reveil-aura` interroge Aura ; toute erreur du job ou de son déclencheur envoie un e-mail (alerte Cloud Monitoring sur journaux, [RUNBOOK](../RUNBOOK.md)). L'alerte ne voit pas l'absence d'exécution : planification coupée, plus d'e-mail. Rien d'autre : c'est un POC, relancé à la demande.
 
 ## 8. Évolutions prévues (v2+)
 
 - **Jalon 2** :
-  - une **fiche de schéma** commune à toutes les techniques (règles, valeurs possibles, 5 à 10 exemples), donnée à l'identique pour ne pas biaiser la comparaison : `get-schema` de `neo4j/mcp` ne transmet ni les règles ni les valeurs ;
-  - une **mesure « schéma français contre anglais »** sur les 30 questions (effet jamais mesuré en text-to-Cypher) ;
+  - une **fiche de schéma** commune à toutes les techniques (règles, valeurs possibles, 5 à 10 exemples), donnée à l'identique pour ne pas biaiser la comparaison : `get-schema` de `neo4j/mcp` ne transmet ni les règles ni les valeurs : faite (`questions/fiche-schema.md`, 8 exemples, vérifiée sur la base le 2026-10-10) ;
+  - une **mesure « schéma français contre anglais »** sur les 30 questions (effet jamais mesuré en text-to-Cypher) : faite le 2026-10-11, pas d'effet mesurable pour Gemini 3.8 Flash ([rapport](../../../banc/resultats/technique-2.md)) ;
   - un index plein texte sur les noms (recherche approchée, utile à Q19 « Dracofeu ») : fait le 2026-10-10 (§ 5).
 - **Jalon 3** : index vectoriel sur `Description.texte`, avec `gemini-embedding-001` pour qu'un seul index serve aussi à Aura Agent (jalon 4). La fiche de schéma interdira de renvoyer des nœuds `Description` entiers (le vecteur remplirait la réponse).
 - **Propriétés écartées faute de question** (à ajouter si une question en a besoin) : conditions d'évolution (`pokemon_evolution`), génération, légendaire, habitat, taille, poids.

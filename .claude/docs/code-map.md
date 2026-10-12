@@ -33,24 +33,22 @@ Harnais du banc d'essai → `banc/` ([plan 002](specs/002-agent-text-to-cypher/p
 > Ces règles négatives sont l'information la plus précieuse de ce fichier.
 
 - ❌ Rien en dur dans `cypher/` ni `questions/` : ni identifiant, ni nom de base, ni URL de CSV. L'URL arrive par
-  `$base` (`cypher-shell -P`, plan 001 D1) ; utilisateur et base valent l'identifiant de l'instance, lus dans le secret.
+  `$base` (`cypher-shell -P`, plan 001 D1).
 - ❌ Aucun chargement hors Cypher pur : ni Python, ni driver, ni CSV pré-traité hors Neo4j
   ([ADR-0003](adr/0003-mvp-chargement-cypher-pur.md)) ; tout écart passe par Julien (circuit breaker du plan 001).
 - ✅ Seuls `scripts/` (poste local) et `infra/reveil-aura/` (Cloud Run) lisent les identifiants
   ([ADR-0007](adr/0007-infra-secrets-et-services-geres.md)). `scripts/` : secret lu au lancement, les 4 `NEO4J_*`
   passés par l'environnement (`scripts/commun.sh:59`), jamais en argument ni sur le disque ; toute sortie de
-  `cypher-shell` passe par `filtrer` (`scripts/commun.sh:74`). Le job : secret monté en fichier par Cloud Run,
-  sous un compte qui ne lit que lui ; tout message passe par `masquer` (`infra/reveil-aura/reveil.py:161`).
+  `cypher-shell` passe par `filtrer` (`scripts/commun.sh:74`).
   La clé Anthropic du banc ([ADR-0011](adr/0011-infra-claude-par-api-anthropic.md)) : lue par `scripts/banc.sh`,
   passée au harnais par l'environnement ; `banc/` ne lit jamais Secret Manager.
 - ✅ Les agents ne joignent la base que par `scripts/mcp-neo4j.sh`, chemin absolu (plan 002, D1) : `neo4j-mcp`
   y reçoit les `NEO4J_MCP_*` (lecture seule, sans télémétrie), sans option, ni `NEO4J_*` hérité, ni accès à Claude
   (`ANTHROPIC_*`), ni variable Vertex (`GOOGLE_*`) ; stderr par `filtrer_flux` (`scripts/commun.sh:128`), stdout
-  (canal MCP) par un masque de l'identifiant, qui ôte aussi les instructions du serveur (elles citent `get-schema`) :
+  (canal MCP) par un masque de l'identifiant :
   `banc/` ne voit jamais l'identifiant. ❌ Aucune config MCP sur le disque : `banc/` la passe en mémoire.
 - ✅ Agents isolés par la liste blanche de `banc/src/banc/isolement.py` (plan 002, D3) : la clé Anthropic aux seules
-  cellules Claude, jamais avec une variable Vertex (`CLAUDE_CODE_USE_VERTEX` passerait avant elle) ; la cellule
-  Gemini ne la reçoit jamais.
+  cellules Claude, jamais avec une variable Vertex ; la cellule Gemini ne la reçoit jamais.
 - ✅ Seul le chargement (purge et preuve d'idempotence comprises) écrit dans la base : go/no-go, vérification et techniques du banc
   d'essai lisent (`--access-mode read`, `scripts/verifier.sh:45`), le réveil quotidien aussi (`accessMode: Read`,
   `infra/reveil-aura/reveil.py:119`) ; exception prévue : la mémoire d'agent (jalon 5). Seul `scripts/transactions.sh`

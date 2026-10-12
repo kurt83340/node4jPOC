@@ -337,6 +337,15 @@ def test_second_tour_avec_le_precedent() -> None:
 
 
 @pytest.mark.parametrize(("source", "montrees"), [("à revoir", True), ("oui", False)])
+def test_lectures_du_tour_precedent(source: str, montrees: bool) -> None:
+    # ADR-0015 : la source d'un second tour peut venir du tour précédent, ses lectures se montrent.
+    q27 = TourMesure("Q27", "?", (LECTURE,), reponse="Électacle", issue="reponse", duree_s=1.0)
+    texte = presenter(ligne_csv("Q28", source=source), tour("Q28"), q27, "REF")
+    assert ("Lectures du tour précédent :" in texte) is montrees
+    assert texte.count("RETURN e.nom AS nom") == (2 if montrees else 0)
+
+
+@pytest.mark.parametrize(("source", "montrees"), [("à revoir", True), ("oui", False)])
 def test_lectures_si_la_source_est_a_revoir(source: str, montrees: bool) -> None:
     texte = presenter(ligne_csv(source=source), tour(), None, "REF")
     assert ("RETURN e.nom AS nom" in texte) is montrees

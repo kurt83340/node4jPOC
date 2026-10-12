@@ -1,6 +1,6 @@
 ---
-status: in-progress # draft | validated | in-progress | done | parked
-progress: 26/34 # X/Y tasks (compté depuis tasks.md) — MAJ par /feature-done ou à la main
+status: done # draft | validated | in-progress | done | parked
+progress: 35/35 # X/Y tasks (compté depuis tasks.md) — MAJ par /feature-done ou à la main
 ---
 
 # Spec — Agent text-to-Cypher
@@ -27,9 +27,9 @@ Mesurer la technique 2 du banc d'essai : un agent LLM qui écrit lui-même le Cy
 
 **Critères d'acceptation :**
 
-- [ ] 3 passes comptées des 30 questions, Q18 et Q28 posées au second tour de leur conversation
-- [ ] aucune lecture des fichiers du dépôt par l'agent, aucune écriture dans la base, aucune réponse sans le serveur connecté (traces à l'appui)
-- [ ] chaque réponse notée (juste, partielle, fausse), avec la source citée vérifiée sur la trace, la durée, les tokens et le coût
+- [x] 3 passes comptées des 30 questions, Q18 et Q28 posées au second tour de leur conversation (T9.1, 2026-10-11 : campagne `fr-1`, 28 conversations par passe, dont `Q2+Q18` et `Q27+Q28` à deux tours)
+- [x] aucune lecture des fichiers du dépôt par l'agent, aucune écriture dans la base, aucune réponse sans le serveur connecté (traces à l'appui) — relu le 2026-10-12 sur les 84 traces de claude-code (`fr-1`) : serveur connecté à l'ouverture de chacune, 177 appels, tous `read-cypher`, aucune clause d'écriture, chaque réponse appuyée sur un résultat du serveur dans son tour ; le reste, garanti par la cellule et le serveur : [plan](plan.md), D3
+- [x] chaque réponse notée (juste, partielle, fausse), avec la source citée vérifiée sur la trace, la durée, les tokens et le coût (T9.1 et T9.2 : `banc/mesures/fr-1.csv`, revue sans cas restant, `banc revoir --verifier`)
 
 ### US2 — Séparer l'effet du client de celui du modèle
 
@@ -39,8 +39,8 @@ Mesurer la technique 2 du banc d'essai : un agent LLM qui écrit lui-même le Cy
 
 **Critères d'acceptation :**
 
-- [ ] 3 passes comptées pour ADK + Claude Sonnet 5.5 et pour ADK + Gemini 3.8 Flash, avec la même consigne, la même fiche et le même serveur MCP
-- [ ] un score par cellule et par catégorie ([ADR-0006](../../adr/0006-mvp-banc-essai-30-questions.md)), avec l'écart entre passes
+- [x] 3 passes comptées pour ADK + Claude Sonnet 5.5 et pour ADK + Gemini 3.8 Flash, avec la même consigne, la même fiche et le même serveur MCP (T9.1, `fr-1` : consigne et fiche inchangées depuis le gel du 2026-10-10, `neo4j-mcp` v1.6.0 dans l'en-tête des 252 conversations)
+- [x] un score par cellule et par catégorie ([ADR-0006](../../adr/0006-mvp-banc-essai-30-questions.md)), avec l'écart entre passes (T11.1 : [rapport de la technique 2](../../../../banc/resultats/technique-2.md))
 
 ### US3 — Une fiche de schéma commune
 
@@ -61,9 +61,9 @@ Mesurer la technique 2 du banc d'essai : un agent LLM qui écrit lui-même le Cy
 
 **Critères d'acceptation :**
 
-- [ ] bascule prouvée : les 27 requêtes de référence, traduites, rendent `questions/attendu/` à l'identique
-- [ ] 3 passes ADK + Gemini sur le schéma anglais, comparées question par question aux passes françaises
-- [ ] retour au français prouvé : `verifier.sh` et `questions.sh --verifier` conformes
+- [x] bascule prouvée : les 27 requêtes de référence, traduites, rendent `questions/attendu/` à l'identique (T10.1, 2026-10-11 : 28 requêtes conformes, liste des espèces comprise)
+- [x] 3 passes ADK + Gemini sur le schéma anglais, comparées question par question aux passes françaises (T10.2 et T10.3 : campagne `en-1`, verdict et questions qui basculent au [plan](plan.md), D8)
+- [x] retour au français prouvé : `verifier.sh` et `questions.sh --verifier` conformes (T10.3, 2026-10-11 ; de nouveau le 2026-10-12 : 34 contrôles, 28 requêtes)
 
 ### US5 — Retrouver un nom mal orthographié
 
@@ -100,7 +100,7 @@ Mesurer la technique 2 du banc d'essai : un agent LLM qui écrit lui-même le Cy
 ## Dépendances
 
 - NEO-13 clos (période creuse de 72 h) avant toute requête sur la base : fait le 2026-10-07
-- accès à Claude par l'API Anthropic (workspace du banc, clé dans Secret Manager, [ADR-0011](../../adr/0011-infra-claude-par-api-anthropic.md)) : fait le 2026-10-08 (T0.2)
+- accès à Claude par l'API Anthropic (workspace du banc, clé dans Secret Manager, [ADR-0011](../../adr/0011-infra-claude-par-api-anthropic.md)) : fait le 2026-10-08 (T0.2) ; précision du 2026-10-12 : clé dans le workspace « Default », sous la limite de l'organisation (20 $ par mois depuis le 2026-10-11, [ACCESS](../../ACCESS.md))
 - spec [001-socle-donnees](../001-socle-donnees/spec.md) livrée (graphe, `questions/attendu/`)
 
 ## Liens
@@ -108,4 +108,4 @@ Mesurer la technique 2 du banc d'essai : un agent LLM qui écrit lui-même le Cy
 - Research : [research.md](research.md)
 - Plan technique : [plan.md](plan.md)
 - Tasks : [tasks.md](tasks.md)
-- ADRs liés : [0002](../../adr/0002-cadrage-environnement-cible-google-cloud.md), [0005](../../adr/0005-mvp-conventions-nommage-schema.md), [0006](../../adr/0006-mvp-banc-essai-30-questions.md), [0007](../../adr/0007-infra-secrets-et-services-geres.md), [0008](../../adr/0008-mvp-notation-questions-semantiques.md), [0010](../../adr/0010-infra-plafond-de-depense.md) ; protocole de mesure : [0009](../../adr/0009-mvp-protocole-mesure-techniques.md), amendé par [0011](../../adr/0011-infra-claude-par-api-anthropic.md) (Claude par l'API Anthropic) et précisé par [0012](../../adr/0012-mvp-second-tour-apres-echec.md) (second tour après un échec)
+- ADRs liés : [0002](../../adr/0002-cadrage-environnement-cible-google-cloud.md), [0005](../../adr/0005-mvp-conventions-nommage-schema.md), [0006](../../adr/0006-mvp-banc-essai-30-questions.md), [0007](../../adr/0007-infra-secrets-et-services-geres.md), [0008](../../adr/0008-mvp-notation-questions-semantiques.md), [0010](../../adr/0010-infra-plafond-de-depense.md) ; protocole de mesure : [0009](../../adr/0009-mvp-protocole-mesure-techniques.md), amendé par [0011](../../adr/0011-infra-claude-par-api-anthropic.md) (Claude par l'API Anthropic) et précisé par [0012](../../adr/0012-mvp-second-tour-apres-echec.md) (second tour après un échec) ; amendé aussi par [0014](../../adr/0014-mvp-revue-assistee.md) (revue assistée) et [0015](../../adr/0015-mvp-source-du-tour-precedent.md) (source d'un second tour) ; [0011](../../adr/0011-infra-claude-par-api-anthropic.md) amendé par [0016](../../adr/0016-infra-limite-anthropic-organisation.md) (clé dans « Default », limite de l'organisation) ; précision du 2026-10-12 : [0017](../../adr/0017-mvp-precisions-protocole-mesure.md) précise aussi l'ADR-0009 (plafonds invisibles, instructions du serveur ôtées, garde-fou, reprises)

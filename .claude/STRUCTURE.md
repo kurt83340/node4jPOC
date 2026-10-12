@@ -47,6 +47,7 @@ mon-projet/
     │   ├── testing-web.md          # TS/JS : framework, structure des tests (scopée) — retirée par les profils Python
     │   ├── git-workflow.md         # convention commits (Conventional Commits), branches, PRs, tags
     │   ├── doc-lookup.md           # recherche de doc externe : context7 (MCP) → MCP docs → web — SOURCE UNIQUE
+    │   ├── textes-valides.md       # texte validé par Julien : on ajoute, daté, on ne reformule pas (scopée doc, questions/, rapports) — propre au projet
     │   ├── template-maintenance.md # invariants d'écriture de la doc (scopée `paths: .claude/docs/**`) — formats → skills, conventions → CE fichier
     │   └── (agent-teams.md)        # HÉRITÉE (plugin ≤ 1.1) — plus jamais posée : invariants injectés au spawn par le plugin ; `/agent-teams:team on|off` la retire
     │

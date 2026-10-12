@@ -4,7 +4,7 @@
 > les secrets vivent dans GCP Secret Manager, lus au moment de servir, jamais affichés ni écrits sur le disque
 > ([ADR-0007](adr/0007-infra-secrets-et-services-geres.md)).
 
-**Dernière MAJ :** 2026-10-08
+**Dernière MAJ :** 2026-10-11
 
 ## Checklist
 
@@ -32,9 +32,11 @@
 - **Hébergement** : GCP `europe-west1` (Belgique), 1 Go de mémoire, 2 Go de stockage, Neo4j 2026.09.
 - **Limite réelle : 200 000 nœuds et 400 000 relations.** La console n'affiche qu'un pourcentage. Les
   valeurs viennent de son API interne (`limits.max_node_limit`, `limits.max_relationship_limit`).
-  Le graphe prévu (~10 000 nœuds, ~113 000 relations) en occupe ~5 % et ~28 %.
+  Le graphe prévu (~10 000 nœuds, ~113 000 relations) en occupe ~5 % et ~28 %. Précision du 2026-10-12 : chargé, il
+  compte 8 859 nœuds et 113 700 relations, soit 4,4 % et 28,4 % ([ROADMAP](ROADMAP.md)).
 - **Points d'accès** (valeurs dans la console, panneau « Inspect ») : Bolt `neo4j+s://`, Query API v2, et une
-  URL MCP propre à l'instance, pour le jalon 2.
+  URL MCP propre à l'instance, pour le jalon 2. Précision du 2026-10-12 : le jalon 2 ne s'en est pas servi (`neo4j-mcp`
+  local, [plan 002, D1](specs/002-agent-text-to-cypher/plan.md)) ; MCP for Aura est à revoir au jalon 4.
 - **Compte Aura** : organisation « MindToReal », projet « New project », noms posés par Aura. Questions
   d'accueil : objectif « personal or student project », rôle « Other : Personal learning project », cas
   d'usage « Generative AI ». Société pré-remplie (« Mindtorea »), laissée telle quelle. Aucun moyen de
@@ -103,6 +105,10 @@ exploitation : [RUNBOOK](RUNBOOK.md).
 ## Vertex AI et Model Garden (NEO-15)
 
 Ouverts le 2026-10-07 pour la spec 002 ; appels par l'ADC de fr.julienleroy@gmail.com, sans clé API.
+
+Précision du 2026-10-11 : depuis le 2026-10-08, seul Gemini (`gemini-3.8-flash`) passe par Vertex ; Claude passe par
+l'API Anthropic ([ADR-0011](adr/0011-infra-claude-par-api-anthropic.md)), le quota de Model Garden ayant été refusé.
+Les accords Marketplace ci-dessous restent acceptés, sans usage.
 
 - **API** `aiplatform.googleapis.com` activée sur `jleroy-labo` (`gcloud services enable`).
 - **Claude dans Model Garden** : Sonnet 5.5, Sonnet 5 et Haiku 4.5. Conditions de Google Cloud Marketplace et

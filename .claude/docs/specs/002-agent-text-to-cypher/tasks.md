@@ -8,7 +8,7 @@
 > il « perd le fil » (échecs ×4 constatés en télémétrie, Morph 2026) → découper la phase.
 
 **Date :** 2026-10-01
-**Status :** [~] 26/34 tasks → MAJ au fil de l'eau
+**Status :** [x] 35/35 tasks — livrée le 2026-10-12
 
 > Phases 0 à 6 : sans la base (prévues pendant la période creuse de NEO-13, close le 2026-10-07). Phases 7 à 11 : sur la base.
 > Les tests n'appellent aucun outil réel : PATH réduit aux faux outils, HOME temporaire.
@@ -61,7 +61,7 @@
 ## Phase 5 — Répétition générale (NEO-18)
 
 - [x] **T5.1** : vrais LLM, mode faux serveur (serveur MCP, validation des noms et contrôle de Q2 simulés) : 3 cellules sur Q19, puis Q2 suivie de Q18 ; un délai dépassé noté faux — fait le 2026-10-10 : `banc lancer --faux-serveur` (`banc.faux_serveur` : liste vide à chaque appel, choix de Julien ; contrôle de Q2 simulé, sans espèce reconnue : « à revoir » ; aucun nettoyage ; serveur lent pour la paire Q2 → Q18 d'adk-gemini) ; `scripts/banc.sh` passe au harnais le PATH de l'appelant, sans gcloud ; campagne `repetition-1` (`--plafond-usd 3`), lancée sans gcloud dans le PATH du harnais et avec un leurre de `cypher-shell`, jamais appelé : 9 lignes, 0,195 $ ; Q19 répondue par les deux cellules Claude, adk-gemini en échec sur ses 10 appels du modèle (« tours ») ; Q2 et Q18 répondues par les deux cellules Claude ; adk-gemini : Q2 en échec sur son délai (180,1 s), Q18 faux d'office (ADR-0012) ; relevés au plan (D13) ; 1 042 tests ; 10 fautes injectées (mode faux serveur, banc.sh), toutes détectées
-  - DoD : `command_passes: uv run --directory banc python -m banc lancer --faux-serveur --questions Q19,Q2,Q18`, lancé avec un PATH sans `gcloud` ni `cypher-shell` (traces, CSV et coût produits)
+  - DoD : `command_passes: uv run --directory banc python -m banc lancer --faux-serveur --questions Q19,Q2,Q18`, lancé avec un PATH sans `gcloud` ni `cypher-shell` (traces, CSV et coût produits) — précision du 2026-10-12 : `banc lancer` exige aussi `--campagne` et `--plafond-usd` (ici `repetition-1` et `--plafond-usd 3`, d'après le fait noté)
 
 ## Phase 6 — Schéma anglais, partie sans base (NEO-19)
 
@@ -106,34 +106,34 @@
 
 - [x] **T10.1** : bascule vers l'anglais, puis preuve d'isomorphisme : les 27 requêtes traduites rendent `attendu/` à l'identique, `dracofeu~` trouve Dracaufeu par l'index anglais, le balayage ne trouve aucun identifiant français ; `db.propertyKeys()` relevé — fait le 2026-10-11 : bascule en 43,7 s (2 583 labels, 113 700 relations recréées, aucun nœud ni relation perdu) ; `charger.sh --langue` : en, 5 contraintes et 11 index en ligne ; 28 requêtes conformes (27 et la liste des espèces) ; fiche : 24 valeurs et 10 exemples conformes, `dracofeu~` par `names_fulltext`, balayage : aucun ; `db.propertyKeys()` : 39 clés, dont 18 françaises orphelines et 18 anglaises (21 avant, dont 18 françaises) ; relevé : plan, D8
   - DoD : `command_passes: uv run --directory banc python -m banc traduire --vers logs/anglais && scripts/charger.sh --schema en && scripts/questions.sh --verifier --dossier logs/anglais && scripts/questions.sh --exemples --dossier logs/anglais`
-- [x] **T10.2** : 3 passes ADK + Gemini avec la fiche anglaise, puis leur revue — fait le 2026-10-11 : campagne `en-1` (`--schema en --passes 3 --cellules adk-gemini --plafond-usd 5.5`, feu vert de Julien), 84 conversations sans panne, 2,760 $ ; complète ; revue assistée (ADR-0014) : 16 cas, contre-épreuve de 8 cas tirés au sort, accord 7/8 sur les notes et 2/2 sur les sources, désaccord sur Q1 tranché en partiel ; 13 justes, 3 partielles ; scores sur 30 : 19,5, 19,5 et 18,5 (écart 1) ; aucun appel de `db.propertyKeys()` ; relevé : plan, D8
+- [x] **T10.2** : 3 passes ADK + Gemini avec la fiche anglaise, puis leur revue — fait le 2026-10-11 : campagne `en-1` (`--schema en --passes 3 --cellules adk-gemini --plafond-usd 5.5`, feu vert de Julien), 84 conversations sans panne, 2,760 $ ; complète ; revue assistée (ADR-0014) : 16 cas, contre-épreuve de 8 cas tirés au sort, accord 7/8 sur les notes et 2/2 sur les sources, désaccord sur Q1 tranché en partiel ; 13 justes, 3 partielles ; scores sur 30 : 19,5, 19,5 et 18,5 (écart 1) ; aucun appel de `db.propertyKeys()` ; relevé : plan, D8 ; précision du 2026-10-12 : coût recoupé dans l'export de facturation, jetons égaux à ceux du CSV, 2,759944 $ facturés pour 2,759954 $ calculés (plan, D8)
   - DoD : `command_passes: uv run --directory banc python -m banc rapport --campagne <id-anglais> --complet && uv run --directory banc python -m banc revoir --campagne <id-anglais> --verifier`
-- [x] **T10.3** : retour au français, prouvé, `db.propertyKeys()` relevé ; puis une passe Gemini française de contrôle, et sa revue — retour fait le 2026-10-11 : `charger.sh --schema fr` en 40,2 s ; `charger.sh --langue` : fr, 5 contraintes et 11 index en ligne ; `verifier.sh` : 34 contrôles conformes ; 28 requêtes conformes ; fiche : 23 valeurs et 10 exemples conformes, `dracofeu~` ; `db.propertyKeys()` : 39 clés, dont 18 anglaises orphelines ; passe de contrôle `fr-controle` (feu vert de Julien) : 28 conversations sans panne, 0,901 $ ; revue assistée, accord 7/8 sur les notes et 3/3 sur les sources, désaccord sur Q1 tranché en partiel ; score 21,5 sur 30, dans la fourchette attendue (18,5 à 23) ; verdict du FR/EN : pas d'effet mesurable (Δ = −1,5 pour un seuil de 2,5) ; relevé : plan, D8
+- [x] **T10.3** : retour au français, prouvé, `db.propertyKeys()` relevé ; puis une passe Gemini française de contrôle, et sa revue — retour fait le 2026-10-11 : `charger.sh --schema fr` en 40,2 s ; `charger.sh --langue` : fr, 5 contraintes et 11 index en ligne ; `verifier.sh` : 34 contrôles conformes ; 28 requêtes conformes ; fiche : 23 valeurs et 10 exemples conformes, `dracofeu~` ; `db.propertyKeys()` : 39 clés, dont 18 anglaises orphelines ; passe de contrôle `fr-controle` (feu vert de Julien) : 28 conversations sans panne, 0,901 $ ; revue assistée, accord 7/8 sur les notes et 3/3 sur les sources, désaccord sur Q1 tranché en partiel ; score 21,5 sur 30, dans la fourchette attendue (18,5 à 23) ; verdict du FR/EN : pas d'effet mesurable (Δ = −1,5 pour un seuil de 2,5) ; relevé : plan, D8 ; précision du 2026-10-12 : coût de `fr-controle` recoupé dans l'export de facturation, jetons égaux à ceux du CSV, 0,901309 $ facturés pour 0,901313 $ calculés (plan, D8)
   - DoD : `command_passes: scripts/charger.sh --schema fr && scripts/verifier.sh && scripts/questions.sh --verifier && scripts/questions.sh --exemples`, puis `command_passes: uv run --directory banc python -m banc rapport --campagne <id-controle> --complet && uv run --directory banc python -m banc revoir --campagne <id-controle> --verifier`
 
 ## Phase 11 — Résultats et livraison (NEO-24)
 
-- [ ] **T11.0** : source d'un second tour ([ADR-0015](../../adr/0015-mvp-source-du-tour-precedent.md)) : `banc.notation` lit aussi le tour précédent pour la source de Q18, hors de toute campagne ; colonne source des Q18 recalculée pour `fr-1`, la campagne anglaise et la passe de contrôle, avant le rapport
+- [x] **T11.0** : source d'un second tour ([ADR-0015](../../adr/0015-mvp-source-du-tour-precedent.md)) : `banc.notation` lit aussi le tour précédent pour la source de Q18, hors de toute campagne ; colonne source des Q18 recalculée pour `fr-1`, la campagne anglaise et la passe de contrôle, avant le rapport — fait le 2026-10-11 : `noter` reçoit le tour précédent d'un second tour, la revue en montre les lectures (Q28) ; 4 mutations détectées ; recalcul : `fr-1`, 6 réponses à Q18, une source changée (adk-claude, passe 3 : non → oui, aucun appel dans son tour) ; `en-1` et `fr-controle` : aucune réponse à Q18 ; rapports et scores inchangés ; relevé : plan, D4
   - DoD : `command_passes: uv run --directory banc pytest -q`, et `manual: colonnes source des Q18 recalculées, écarts notés au plan`
-- [ ] **T11.1** : rapport de la technique 2 : score par cellule et par catégorie, écart entre passes, causes d'échec, introspections, temps, coût, sources citées, FR/EN (seuils fixés d'avance, limite à un modèle), effort de mise en place
+- [x] **T11.1** : rapport de la technique 2 : score par cellule et par catégorie, écart entre passes, causes d'échec, introspections, temps, coût, sources citées, FR/EN (seuils fixés d'avance, limite à un modèle), effort de mise en place — fait le 2026-10-11 : [`banc/resultats/technique-2.md`](../../../../banc/resultats/technique-2.md), chiffres recalculés par script depuis les CSV et les décisions de revue ; Claude Code 27,5, ADK + Claude 27,8, ADK + Gemini 20,7 sur 30 ; l'écart du modèle vient des échecs de Gemini (27 sur 90, dont 24 appels épuisés), pas de ses réponses (61 justes et 2 partielles sur 63) ; FR/EN : pas d'effet mesurable
   - DoD : `file_exists: banc/resultats/technique-2.md`
-- [ ] **T11.2** : doc : code-map (relecture des règles du lanceur, du harnais, de `--schema` et de `transactions.sh`), stack (bibliothèques, LLM, coûts, perl du lanceur), ARCHITECTURE, RUNBOOK (lancer une campagne, basculer en anglais, revenir), ACCESS (Model Garden), README (jalon 2)
+- [x] **T11.2** : doc : code-map (relecture des règles du lanceur, du harnais, de `--schema` et de `transactions.sh`), stack (bibliothèques, LLM, coûts, perl du lanceur), ARCHITECTURE, RUNBOOK (lancer une campagne, basculer en anglais, revenir), ACCESS (Model Garden), README (jalon 2) — fait le 2026-10-11 : code-map relue (règles et références de lignes justes ; 3 070 jetons, un peu au-delà de son seuil de 3 000, à alléger par `/codemap`) ; stack (scripts, `mcp` 2.3.0, coûts mesurés) ; ARCHITECTURE (agents et harnais dans le schéma, modules, flux de mesure, sécurité, observabilité, jalon 2 fait) ; RUNBOOK (lancer une campagne, basculer en anglais et revenir) ; ACCESS (Model Garden sans usage depuis l'ADR-0011) ; README (résultats du jalon 2, ADR-0015, mesurer une technique) ; budget de contexte : 10 181 jetons
   - DoD : `command_passes: python3 .claude/skills/doc-health/scripts/context-budget.py`
-- [ ] **T11.3** : `/feature-done 002-agent-text-to-cypher` : dernière PR, fusion, puis tag `jalon-2` sur `main`
+- [x] **T11.3** : `/feature-done 002-agent-text-to-cypher` : dernière PR, fusion, puis tag `jalon-2` sur `main` — fait le 2026-10-12 : ROADMAP (jalon 2 livré ; clés orphelines de `db.propertyKeys()` reportées au jalon 4), CHANGELOG, HANDOFF et README à jour ; US1, US2 et US4 cochés ; Definition of Done vérifiée le même jour (ci-dessous) ; dernière PR, n°20, fusionnée en merge commit, puis tag annoté `jalon-2` sur son commit de fusion, sur l'accord de Julien
   - DoD : `command_passes: git rev-parse jalon-2`, et `manual: ROADMAP et CHANGELOG à jour`
 
 ## Definition of Done (global)
 
 La feature est livrée quand :
 
-- [ ] Tous les critères d'acceptation de [spec.md](spec.md) cochés
-- [ ] Tests verts (unitaires, intégration sans base, contrôles sur la base)
-- [ ] Pas de TODO ou `# FIXME` dans le code
-- [ ] Pas de fuite d'identifiants (gitleaks, traces masquées, agents en `env -i`)
-- [ ] Base de référence intacte : 34/34 contrôles, 27/27 réponses, exemples conformes
-- [ ] Documentation à jour (code-map, plan.md décisions)
+- [x] Tous les critères d'acceptation de [spec.md](spec.md) cochés — US1 à US5, le 2026-10-12 (preuves d'US1 : [plan](plan.md), D3)
+- [x] Tests verts (unitaires, intégration sans base, contrôles sur la base) — relancés le 2026-10-12 : banc 1 481 tests, `reveil-aura` 19, `coupure-vertex` 24 ; ruff, format et mypy propres ; shellcheck sur les 10 scripts ; Prettier ; contrôles sur la base : ligne « Base de référence » ci-dessous
+- [x] Pas de TODO ou `# FIXME` dans le code — `git grep` sur `banc/`, `scripts/`, `cypher/`, `questions/` et `infra/` : aucun (2026-10-12)
+- [x] Pas de fuite d'identifiants (gitleaks, traces masquées, agents en `env -i`) — le 2026-10-12 : gitleaks 8.30.1 sur tout l'historique (133 commits), aucune fuite ; l'identifiant de l'instance n'est dans aucune des 464 traces de `logs/banc/`, ni dans `banc/mesures/`, ni dans un fichier suivi (comptes seuls, valeur jamais affichée) ; agents lancés avec la seule liste blanche de `banc/src/banc/isolement.py` (`tests/test_isolement.py`)
+- [x] Base de référence intacte : 34/34 contrôles, 27/27 réponses, exemples conformes — le 2026-10-12 : `charger.sh --langue` fr ; `verifier.sh` 34 contrôles ; `questions.sh --verifier` 28 requêtes (les 27 et la liste des espèces) ; `questions.sh --exemples` 23 valeurs de la fiche et 10 exemples
+- [x] Documentation à jour (code-map, plan.md décisions) — `/doc-health` du 2026-10-12 traité ; code-map à 2 893 jetons ; décisions au plan (D1 à D13) ; budget de contexte : 10 460 jetons
 - [x] ADR du protocole de mesure créé ([ADR-0009](../../adr/0009-mvp-protocole-mesure-techniques.md), 2026-10-01)
-- [ ] Commit + PR
+- [x] Commit + PR — une PR par phase ; la dernière, n°20, pour la phase 11
 
 ## Blockers / questions
 

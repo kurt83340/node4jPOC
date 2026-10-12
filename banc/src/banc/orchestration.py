@@ -869,11 +869,18 @@ class Orchestration:
         tour a échoué, le second, faux d'office (ADR-0012)."""
         entete, tours = conversation.entete, conversation.tours
         lignes = []
-        for tour in tours:
+        for rang, tour in enumerate(tours):
             notation = None
             if tour.issue == "reponse":
                 question = self.banc.questions[tour.question]
-                notation = noter(question, tour.tour(), self.referentiel, self.controle)
+                # Un second tour lit aussi les lectures de son tour précédent (ADR-0015).
+                avant = tours[rang - 1] if rang else None
+                precedent = (
+                    avant.tour()
+                    if avant is not None and avant.question == question.tour_precedent
+                    else None
+                )
+                notation = noter(question, tour.tour(), self.referentiel, self.controle, precedent)
             lignes.append(ligne(entete, tour, notation, self.tarifs))
         if tours[-1].issue == "echec":
             for ident in entete.questions[len(tours) :]:
