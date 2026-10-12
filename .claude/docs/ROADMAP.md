@@ -40,6 +40,7 @@ La fiche de schéma reprend les règles de réponse du banc d'essai ([questions/
 ## 📋 Jalon 3 — GraphRAG sur les descriptions
 
 - [ ] Recherche vectorielle dans les descriptions en français (embeddings Gemini multilingues), puis parcours du graphe, mesurée sur les 30 questions
+- [ ] Préalables, repris du jalon 2 : avant la conception, un ADR qui amende l'[ADR-0009](adr/0009-mvp-protocole-mesure-techniques.md) pour les précisions du protocole restées au [plan 002](specs/002-agent-text-to-cypher/plan.md) (budget invisible de l'agent, instructions du serveur ôtées, garde-fou sur un gros résultat d'outil, reprises) ; avant la première campagne, la contre-épreuve de l'[ADR-0014](adr/0014-mvp-revue-assistee.md) promue dans `banc/`, en TDD, et la clé Anthropic du banc renouvelée (elle expire le 2026-11-07)
 
 ## 📋 Jalon 4 — Agents gérés et tableau comparatif
 
