@@ -62,23 +62,25 @@ rien de mesurable.
 
 ## 🧱 Décisions
 
-| ADR                                                                       | Décision                                                                              |
-| ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
-| [0001](.claude/docs/adr/0001-mvp-jeu-de-donnees-pokeapi.md)               | Jeu de données : Pokémon, CSV PokéAPI en français                                     |
-| [0002](.claude/docs/adr/0002-cadrage-environnement-cible-google-cloud.md) | Environnement cible Google Cloud, dbt hors POC                                        |
-| [0003](.claude/docs/adr/0003-mvp-chargement-cypher-pur.md)                | Chargement en Cypher pur (`LOAD CSV`)                                                 |
-| [0004](.claude/docs/adr/0004-mvp-modele-espece-formes.md)                 | Modèle du graphe : l'espèce et toutes ses formes                                      |
-| [0005](.claude/docs/adr/0005-mvp-conventions-nommage-schema.md)           | Conventions de nommage du schéma                                                      |
-| [0006](.claude/docs/adr/0006-mvp-banc-essai-30-questions.md)              | Banc d'essai : 30 questions en 6 catégories                                           |
-| [0007](.claude/docs/adr/0007-infra-secrets-et-services-geres.md)          | Secrets dans Secret Manager, services gérés seulement                                 |
-| [0008](.claude/docs/adr/0008-mvp-notation-questions-semantiques.md)       | Notation des questions sémantiques : grille, trois ensembles                          |
-| [0009](.claude/docs/adr/0009-mvp-protocole-mesure-techniques.md)          | Protocole de mesure : plan croisé, notation mixte sans juge LLM, pilote puis 3 passes |
-| [0010](.claude/docs/adr/0010-infra-plafond-de-depense.md)                 | Plafond de dépense : budget de 100 €, coupure automatique de Vertex                   |
-| [0011](.claude/docs/adr/0011-infra-claude-par-api-anthropic.md)           | Claude par l'API Anthropic, plafonné par des crédits prépayés                         |
-| [0012](.claude/docs/adr/0012-mvp-second-tour-apres-echec.md)              | Second tour d'une paire après un échec : faux d'office                                |
-| [0013](.claude/docs/adr/0013-infra-plafond-natif-de-vertex.md)            | Plafond natif mensuel de Vertex, en plus de la coupure de l'option C                  |
-| [0014](.claude/docs/adr/0014-mvp-revue-assistee.md)                       | Revue assistée : pré-analyse de Claude, décision de Julien, contre-épreuve            |
-| [0015](.claude/docs/adr/0015-mvp-source-du-tour-precedent.md)             | Source d'un second tour : une requête du tour précédent compte                        |
+| ADR                                                                       | Décision                                                                                          |
+| ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| [0001](.claude/docs/adr/0001-mvp-jeu-de-donnees-pokeapi.md)               | Jeu de données : Pokémon, CSV PokéAPI en français                                                 |
+| [0002](.claude/docs/adr/0002-cadrage-environnement-cible-google-cloud.md) | Environnement cible Google Cloud, dbt hors POC                                                    |
+| [0003](.claude/docs/adr/0003-mvp-chargement-cypher-pur.md)                | Chargement en Cypher pur (`LOAD CSV`)                                                             |
+| [0004](.claude/docs/adr/0004-mvp-modele-espece-formes.md)                 | Modèle du graphe : l'espèce et toutes ses formes                                                  |
+| [0005](.claude/docs/adr/0005-mvp-conventions-nommage-schema.md)           | Conventions de nommage du schéma                                                                  |
+| [0006](.claude/docs/adr/0006-mvp-banc-essai-30-questions.md)              | Banc d'essai : 30 questions en 6 catégories                                                       |
+| [0007](.claude/docs/adr/0007-infra-secrets-et-services-geres.md)          | Secrets dans Secret Manager, services gérés seulement                                             |
+| [0008](.claude/docs/adr/0008-mvp-notation-questions-semantiques.md)       | Notation des questions sémantiques : grille, trois ensembles                                      |
+| [0009](.claude/docs/adr/0009-mvp-protocole-mesure-techniques.md)          | Protocole de mesure : plan croisé, notation mixte sans juge LLM, pilote puis 3 passes             |
+| [0010](.claude/docs/adr/0010-infra-plafond-de-depense.md)                 | Plafond de dépense : budget de 100 €, coupure automatique de Vertex                               |
+| [0011](.claude/docs/adr/0011-infra-claude-par-api-anthropic.md)           | Claude par l'API Anthropic, plafonné par des crédits prépayés                                     |
+| [0012](.claude/docs/adr/0012-mvp-second-tour-apres-echec.md)              | Second tour d'une paire après un échec : faux d'office                                            |
+| [0013](.claude/docs/adr/0013-infra-plafond-natif-de-vertex.md)            | Plafond natif mensuel de Vertex, en plus de la coupure de l'option C                              |
+| [0014](.claude/docs/adr/0014-mvp-revue-assistee.md)                       | Revue assistée : pré-analyse de Claude, décision de Julien, contre-épreuve                        |
+| [0015](.claude/docs/adr/0015-mvp-source-du-tour-precedent.md)             | Source d'un second tour : une requête du tour précédent compte                                    |
+| [0016](.claude/docs/adr/0016-infra-limite-anthropic-organisation.md)      | Clé Anthropic dans « Default », bornée par la limite de l'organisation                            |
+| [0017](.claude/docs/adr/0017-mvp-precisions-protocole-mesure.md)          | Précisions du protocole : plafonds invisibles, instructions du serveur ôtées, garde-fou, reprises |
 
 ## 🔗 Suivi et documentation
 

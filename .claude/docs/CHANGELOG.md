@@ -46,6 +46,7 @@ Format : [Keep a Changelog](https://keepachangelog.com/). Versionning : `vYYYY.M
 - Revue assistée des cas « à revoir » : pré-analyse de Claude à l'aveugle, vérifiée par script, validée par Julien, et contre-épreuve de 8 cas tirés au sort qu'il revoit seul avant de voir les propositions ; `fr-1` garde ses décisions, la règle vaut pour la phase 10 et les jalons 3 et 4 ([ADR-0014](adr/0014-mvp-revue-assistee.md), amende l'ADR-0009)
 - Source d'un second tour de paire (Q18, Q28) : une requête exécutée au tour précédent de la même conversation compte, si son résultat contient la réponse ; Q28 dès la revue de `en-1`, Q18 après la phase 10 (T11.0) ([ADR-0015](adr/0015-mvp-source-du-tour-precedent.md), amende l'ADR-0009)
 - Clé Anthropic du banc dans le workspace « Default » ; dépense Claude bornée par la limite mensuelle de l'organisation, ramenée à 20 $, et par le solde des crédits ; remplace le workspace dédié de l'ADR-0011 ([ADR-0016](adr/0016-infra-limite-anthropic-organisation.md))
+- Précisions du protocole de mesure, sans en remplacer aucun point : plafonds de l'agent (10 appels au modèle et 180 s par question, 0,50 $ par conversation) tenus par la cellule et jamais annoncés ; entrée réduite à la consigne, la fiche et l'outil de lecture, instructions du serveur ôtées ; garde-fou sur un gros résultat d'outil ; 2 reprises au plus pour tout client, règles des pannes et de la reprise d'une campagne ([ADR-0017](adr/0017-mvp-precisions-protocole-mesure.md), précise l'ADR-0009)
 
 ---
 
