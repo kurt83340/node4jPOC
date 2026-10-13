@@ -39,6 +39,7 @@ La fiche de schéma reprend les règles de réponse du banc d'essai ([questions/
 
 ## 📋 Jalon 3 — GraphRAG sur les descriptions
 
+- [ ] [003-graphrag-descriptions](specs/003-graphrag-descriptions/spec.md) — pas commencé ; conception validée le 2026-10-13 (0/35 tasks, 18 phases ; NEO-28 à NEO-35 sous l'epic NEO-3) : option A′ (plugin GenAI au chargement, question encodée par le banc, recherche par `read-cypher`), deux cellules (Claude Sonnet 5.5, Gemini 3.8 Flash), index de 3 072 dimensions ([ADR-0018](adr/0018-mvp-technique-sans-outil.md) à [ADR-0020](adr/0020-mvp-index-vectoriel-des-descriptions.md)) ; coût estimé à 8 $
 - [ ] Recherche vectorielle dans les descriptions en français (embeddings Gemini multilingues), puis parcours du graphe, mesurée sur les 30 questions
 - [ ] Préalables, repris du jalon 2 : avant la première campagne, la contre-épreuve de l'[ADR-0014](adr/0014-mvp-revue-assistee.md) promue dans `banc/`, en TDD, et la clé Anthropic du banc renouvelée (elle expire le 2026-11-07). Le protocole du banc, précisé le 2026-10-12 par l'[ADR-0017](adr/0017-mvp-precisions-protocole-mesure.md), vaut tel quel
 
