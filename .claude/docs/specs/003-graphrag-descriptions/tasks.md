@@ -8,7 +8,7 @@
 > il « perd le fil » (échecs ×4 constatés en télémétrie, Morph 2026) → découper la phase.
 
 **Date :** 2026-10-12
-**Status :** [ ] 1/35 tasks → MAJ au fil de l'eau
+**Status :** [ ] 2/35 tasks → MAJ au fil de l'eau
 
 > Les tests n'appellent aucun service réel (Vertex, Anthropic, Aura) : faux outils, fausses API, HOME temporaire.
 > Une dépense passe par le feu vert de Julien, annoncée avec son estimation : phases 2, 6, 8, 13, 14 et 15.
@@ -24,9 +24,9 @@
 
 ## Phase 2 — Gels par jalon et clé Anthropic (environ 0,003 $ ; NEO-28 ; T2.2 : NEO-29)
 
-- [ ] **T2.1** : `revues.toml` accepte un gel et un pilote par jalon ; l'en-tête actuel (`gel`, `pilote`) se lit tel quel ; une décision d'un pilote ne se réutilise jamais ; une décision prise après le gel de son jalon se réutilise d'un jalon à l'autre (note seule, même question, même réponse courte) (plan, D15), en TDD
+- [x] **T2.1** : `revues.toml` accepte un gel et un pilote par jalon ; l'en-tête actuel (`gel`, `pilote`) se lit tel quel ; une décision d'un pilote ne se réutilise jamais ; une décision prise après le gel de son jalon se réutilise d'un jalon à l'autre (note seule, même question, même réponse courte) (plan, D15), en TDD — fait le 2026-10-13 : une table `[[jalon]]` (gel, pilote) par jalon après le premier, dont l'en-tête se lit tel quel ; pilotes de tous les jalons jamais réutilisés ; réutilisation dès le premier gel, d'un jalon à l'autre ; 14 tests ajoutés, rouges puis verts ; 11 mutations, toutes détectées ; `banc revoir --campagne fr-1 --verifier` : 0 cas à revoir ; notes reprises des campagnes du jalon 2 inchangées ; format au plan (D15, précision du 2026-10-13)
   - DoD : `command_passes: uv run --directory banc pytest -q tests/test_revue.py && uv run --directory banc python -m banc revoir --campagne fr-1 --verifier`
-- [ ] **T2.2** : clé Anthropic du banc renouvelée avant le pilote (elle expire le 2026-11-07) : nouvelle clé dans le workspace « Default », nouvelle version du secret `anthropic-api-banc` (skill `secret-manager`, rappel d'expiration), ancienne clé révoquée, [ACCESS](../../ACCESS.md) à jour ; action de Julien
+- [ ] **T2.2** : clé Anthropic du banc renouvelée avant le pilote (elle expire le 2026-11-07) : nouvelle clé dans le workspace « Default », nouvelle version du secret `anthropic-api-banc` (skill `secret-manager`, rappel d'expiration), ancienne clé révoquée, [ACCESS](../../ACCESS.md) à jour ; action de Julien — précision du 2026-10-13 : reportée par Julien, qui change la clé dans la semaine ; elle aura sa propre PR (NEO-29), la phase 2 ne livrant que T2.1
   - DoD : `manual: Julien crée la clé dans la Console et la range dans Secret Manager`, puis `command_passes: scripts/banc.sh acces` (sondes, environ 0,003 $, annoncées)
 
 ## Phase 3 — Garde-fous du chargement (sans dépense ; NEO-30)
