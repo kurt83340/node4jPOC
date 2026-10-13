@@ -11,7 +11,7 @@
 ## Globaux (injectés pour TOUTE édition de code — max 5 lignes)
 
 - ⚠️ Mesurer une durée (journal, temps de réponse du banc d'essai) : horloge monotone, `/proc/uptime` en bash
-  (`scripts/commun.sh:121`), `time.monotonic()` en Python. Sous WSL2, `date +%s`, `SECONDS`, `EPOCHREALTIME` reculent.
+  (`scripts/commun.sh:159`), `time.monotonic()` en Python. Sous WSL2, `date +%s`, `SECONDS`, `EPOCHREALTIME` reculent.
 - ⚠️ Write, Edit et Bash (heredoc de commit compris) décodent la séquence d'échappement de l'espace fine insécable
   U+202F en vrai caractère, invisible. Fichier : écrire un marqueur, le remplacer via Python par `chr(92) + "u202F"`,
   vérifier qu'aucun `chr(0x202F)` ne reste. Commit, doc, chat : écrire « U+202F » (vu le 2026-09-29 et le 2026-10-01).

@@ -38,13 +38,13 @@ Harnais du banc d'essai → `banc/` ([plan 002](specs/002-agent-text-to-cypher/p
   ([ADR-0003](adr/0003-mvp-chargement-cypher-pur.md)) ; tout écart passe par Julien (circuit breaker du plan 001).
 - ✅ Seuls `scripts/` (poste local) et `infra/reveil-aura/` (Cloud Run) lisent les identifiants
   ([ADR-0007](adr/0007-infra-secrets-et-services-geres.md)). `scripts/` : secret lu au lancement, les 4 `NEO4J_*`
-  passés par l'environnement (`scripts/commun.sh:59`), jamais en argument ni sur le disque ; toute sortie de
-  `cypher-shell` passe par `filtrer` (`scripts/commun.sh:74`).
+  passés par l'environnement (`scripts/commun.sh:66`), jamais en argument ni sur le disque ; toute sortie de
+  `cypher-shell` passe par `filtrer` (`scripts/commun.sh:82`).
   La clé Anthropic du banc ([ADR-0011](adr/0011-infra-claude-par-api-anthropic.md)) : lue par `scripts/banc.sh`,
   passée au harnais par l'environnement ; `banc/` ne lit jamais Secret Manager.
 - ✅ Les agents ne joignent la base que par `scripts/mcp-neo4j.sh`, chemin absolu (plan 002, D1) : `neo4j-mcp`
   y reçoit les `NEO4J_MCP_*` (lecture seule, sans télémétrie), sans option, ni `NEO4J_*` hérité, ni accès à Claude
-  (`ANTHROPIC_*`), ni variable Vertex (`GOOGLE_*`) ; stderr par `filtrer_flux` (`scripts/commun.sh:128`), stdout
+  (`ANTHROPIC_*`), ni variable Vertex (`GOOGLE_*`) ; stderr par `filtrer_flux` (`scripts/commun.sh:166`), stdout
   (canal MCP) par un masque de l'identifiant :
   `banc/` ne voit jamais l'identifiant. ❌ Aucune config MCP sur le disque : `banc/` la passe en mémoire.
 - ✅ Agents isolés par la liste blanche de `banc/src/banc/isolement.py` (plan 002, D3) : la clé Anthropic aux seules

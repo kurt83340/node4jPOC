@@ -6,6 +6,11 @@ cypher-shell note chaque appel et répond à toute requête (code 0, sans ligne)
 le test. La sonde passe tout par EXPLAIN en lecture seule, puis choisit le mécanisme ; la bascule
 supprime contraintes et index, renomme avec la carte, recrée ceux de la langue visée ; --explain
 n'écrit rien ; --tout refuse une base anglaise.
+
+Jeton du chargement (spec 003, T3.2) : la fonction de commun.sh, appelée par un script qui la
+source. Le faux gcloud rend un jeton factice, hors du motif ya29. des jetons Google ; le faux
+cypher-shell note aussi son stdin et son environnement : le jeton n'y passe que par la ligne :param
+de stdin.
 """
 
 import json
@@ -27,20 +32,37 @@ SECRET = (
     "NEO4J_PASSWORD=mot-de-passe-factice\nNEO4J_DATABASE=instance\n"
 )
 COMMANDES = ("bash", "cat", "dirname", "sed", "tr")
+# Emprunt du compte (journal/emprunt.json) : le jeton rendu, l'erreur et le code de gcloud.
 FAUX_GCLOUD = f"""
-import sys
-sys.stdout.write({SECRET!r})
-"""
-# Règles du test (journal/regles.json) : la première dont le motif est dans la requête répond ; une
-# règle à « fois » comptées s'efface après sa dernière réponse.
-FAUX_CYPHER_SHELL = """
 import json, sys
 from pathlib import Path
 journal = Path(__file__).resolve().parent.parent / "journal"
 argv = sys.argv[1:]
-requete = argv[-1]
+with (journal / "gcloud.jsonl").open("a") as note:
+    note.write(json.dumps(argv) + "\\n")
+if argv[:2] == ["auth", "print-access-token"]:
+    emprunt = json.loads((journal / "emprunt.json").read_text())
+    sys.stdout.write(emprunt["jeton"] + "\\n")
+    sys.stderr.write(emprunt["erreur"])
+    sys.exit(emprunt["code"])
+sys.stdout.write({SECRET!r})
+"""
+# Règles du test (journal/regles.json) : la première dont le motif est dans la requête répond ; une
+# règle à « fois » comptées s'efface après sa dernière réponse ; « {entree} » y cite la requête
+# reçue. Sans requête en argument ni --file, les requêtes arrivent sur stdin.
+FAUX_CYPHER_SHELL = """
+import json, os, sys
+from pathlib import Path
+journal = Path(__file__).resolve().parent.parent / "journal"
+argv = sys.argv[1:]
+entree = None
+a_valeur = {"--format", "--access-mode", "-P"}
+if "--file" not in argv and (argv[-1].startswith("-") or argv[-2] in a_valeur):
+    entree = sys.stdin.read()
+requete = argv[-1] if entree is None else entree
 with (journal / "cypher-shell.jsonl").open("a") as note:
-    note.write(json.dumps({"argv": argv, "requete": requete}) + "\\n")
+    appel = {"argv": argv, "requete": requete, "entree": entree, "env": dict(os.environ)}
+    note.write(json.dumps(appel) + "\\n")
 regles = json.loads((journal / "regles.json").read_text())
 for regle in regles:
     if regle["motif"] in requete:
@@ -49,12 +71,28 @@ for regle in regles:
             if regle["fois"] == 0:
                 regles.remove(regle)
             (journal / "regles.json").write_text(json.dumps(regles))
-        print(regle["sortie"])
+        print(regle["sortie"].replace("{entree}", requete))
         sys.exit(regle["code"])
 if "dbms.components" in requete:
     print('aura\\n"Neo4j 2026.09 (enterprise)"')
 """
 ABSENTE = "There is no procedure with the name `apoc.refactor.rename.label` registered."
+COMMUN = RACINE / "scripts" / "commun.sh"
+# Hors du motif ya29. des jetons Google, que gitleaks prendrait pour un vrai (plan, D17).
+JETON = "jeton-factice-du-chargement"
+COMPTE = "aura-genai@jleroy-labo.iam.gserviceaccount.com"
+# Un script qui source commun.sh comme charger.sh, lit les identifiants, exécute un fichier avec le
+# jeton, puis écrit SORTIE, le texte que charger.sh affiche et journalise.
+HARNAIS = """set -euo pipefail
+source "$1"
+shift
+trouver_outils
+lire_identifiants
+code=0
+cypher_fichier_avec_jeton "$@" || code=$?
+printf '%s\\n' "$SORTIE"
+exit "$code"
+"""
 
 
 @dataclass
@@ -78,9 +116,26 @@ class Bac:
         )
         (self.racine / "journal" / "regles.json").write_text(texte)
 
+    def emprunt(self, jeton: str = "", erreur: str = "", code: int = 0) -> None:
+        texte = json.dumps({"jeton": jeton or JETON, "erreur": erreur, "code": code})
+        (self.racine / "journal" / "emprunt.json").write_text(texte)
+
     def lancer(self, *arguments: str) -> Lancement:
+        return self.executer([str(SCRIPT), *arguments])
+
+    def avec_jeton(self, fichier: Path, *options: str) -> Lancement:
+        """cypher_fichier_avec_jeton de commun.sh, dans un script qui la source comme charger.sh."""
+        harnais = ["bash", "-c", HARNAIS, "harnais", str(COMMUN), str(fichier)]
+        return self.executer([*harnais, *options])
+
+    def gcloud(self) -> list[list[str]]:
+        journal = self.racine / "journal" / "gcloud.jsonl"
+        lignes = journal.read_text().splitlines() if journal.exists() else []
+        return [json.loads(ligne) for ligne in lignes]
+
+    def executer(self, commande: list[str]) -> Lancement:
         fini = subprocess.run(
-            [str(SCRIPT), *arguments],
+            commande,
             cwd=self.racine,
             env=self.env,
             capture_output=True,
@@ -109,6 +164,7 @@ def bac(tmp_path: Path) -> Bac:
         outil.chmod(0o755)
     nouveau = Bac(tmp_path, {"HOME": str(tmp_path / "home"), "PATH": str(tmp_path / "outils")})
     nouveau.regles()
+    nouveau.emprunt()
     return nouveau
 
 
@@ -515,3 +571,73 @@ def test_langue_releve_les_cles_connues(bac: Bac) -> None:
     assert "CALL db.propertyKeys()" in appel["requete"]
     assert appel["argv"][appel["argv"].index("--access-mode") + 1] == "read"
     assert parametres(appel)[0].startswith("{cartes: ")
+
+
+# --- Jeton du chargement (spec 003, T3.2 ; plan D4) ----------------------------------------------
+
+FICHIER_07 = "// Encodage (factice)\nRETURN $jeton IS NOT NULL AS jeton;\n"
+
+
+@pytest.fixture
+def encodage(bac: Bac) -> Path:
+    fichier = bac.racine / "07-embeddings.cypher"
+    fichier.write_text(FICHIER_07)
+    return fichier
+
+
+def test_jeton_emprunte_pour_15_minutes(bac: Bac, encodage: Path) -> None:
+    lancement = bac.avec_jeton(encodage)
+    assert lancement.code == 0, lancement.sortie
+    emprunts = [a for a in bac.gcloud() if a[:2] == ["auth", "print-access-token"]]
+    assert emprunts == [
+        ["auth", "print-access-token", f"--impersonate-service-account={COMPTE}", "--lifetime=900"]
+    ]
+
+
+def test_jeton_sur_l_entree_standard(bac: Bac, encodage: Path) -> None:
+    # Une ligne :param, puis le fichier : cypher-shell lit le tout sur stdin, sans --file.
+    lancement = bac.avec_jeton(encodage, "--format", "verbose")
+    assert lancement.code == 0, lancement.sortie
+    [appel] = lancement.requetes
+    assert appel["entree"] == f':param {{jeton: "{JETON}"}}\n' + FICHIER_07
+    assert "--file" not in appel["argv"]
+    assert appel["argv"][-2:] == ["--format", "verbose"]
+
+
+def test_jeton_ni_en_argument_ni_dans_l_environnement(bac: Bac, encodage: Path) -> None:
+    # Un argument se lit dans ps ; une variable exportée passerait à tout processus lancé.
+    lancement = bac.avec_jeton(encodage, "-P", "{base: 'x'}")
+    assert lancement.code == 0, lancement.sortie
+    [appel] = lancement.requetes
+    assert not [argument for argument in appel["argv"] if JETON in argument]
+    assert not [nom for nom, valeur in appel["env"].items() if JETON in valeur]
+
+
+def test_jeton_masque_dans_la_sortie(bac: Bac, encodage: Path) -> None:
+    # Une erreur de syntaxe cite la requête reçue, :param compris : SORTIE, que charger.sh affiche
+    # et journalise, n'en garde que ‹jeton›.
+    bac.regles((":param", "Invalid input, near: {entree}", 1))
+    lancement = bac.avec_jeton(encodage)
+    assert lancement.code == 1
+    assert JETON not in lancement.sortie
+    assert ':param {jeton: "‹jeton›"}' in lancement.sortie
+
+
+def test_emprunt_refuse(bac: Bac, encodage: Path) -> None:
+    # gcloud échoue (emprunt non autorisé) : rien ne part vers Aura, même si sa sortie a la forme
+    # d'un jeton.
+    bac.emprunt(erreur="ERROR: (gcloud.auth.print-access-token) PERMISSION_DENIED\n", code=1)
+    lancement = bac.avec_jeton(encodage)
+    assert lancement.code == 2
+    assert f"jeton du compte {COMPTE} non obtenu" in lancement.sortie
+    assert lancement.requetes == []
+
+
+def test_jeton_illisible(bac: Bac, encodage: Path) -> None:
+    # Un jeton qui sortirait de sa chaîne Cypher n'est jamais envoyé, ni affiché.
+    bac.emprunt(jeton='jeton"} RETURN 1 //')
+    lancement = bac.avec_jeton(encodage)
+    assert lancement.code == 2
+    assert f"jeton du compte {COMPTE} illisible" in lancement.sortie
+    assert lancement.requetes == []
+    assert "RETURN 1" not in lancement.sortie
