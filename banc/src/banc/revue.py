@@ -75,6 +75,9 @@ EN_TETE = """\
 # Un cas : campagne, cellule, passe, question, essai.
 type Cle = tuple[str, str, int, str, int]
 type Saisie = tuple[str | None, str | None, str | None] | Literal["sauter", "quitter"]
+# Des décisions venues d'ailleurs que du clavier (pré-analyse validée, banc.contre_epreuve) : le
+# décideur voit le cas et ce qui en reste à trancher.
+type Decideur = Callable[[Mapping[str, str], Finale], Saisie]
 
 
 class RevueError(Exception):
@@ -387,11 +390,13 @@ def _maintenant() -> datetime:
 @dataclass(frozen=True)
 class Console:
     """Ce que la revue lit et écrit, et l'heure de ses décisions (l'horloge murale : une
-    décision se date, elle ne se chronomètre pas)."""
+    décision se date, elle ne se chronomètre pas) ; avec un décideur, les décisions viennent de
+    lui, pas du clavier."""
 
     lire: Callable[[str], str] = input
     ecrire: Callable[[str], None] = print
     maintenant: Callable[[], datetime] = _maintenant
+    decideur: Decideur | None = None
 
 
 TERMINAL = Console()
@@ -427,7 +432,10 @@ def revoir(
         tour, precedent = index[cle(ligne)]
         ecrire(f"\n── Cas {rang}/{len(cas)} " + "─" * 60)
         ecrire(presenter(ligne, tour, precedent, reference(ligne["question"])))
-        saisie = _demander(besoins, console)
+        if console.decideur is None:
+            saisie = _demander(besoins, console)
+        else:
+            saisie = console.decideur(ligne, etat)
         if saisie == "quitter":
             break
         if saisie == "sauter":

@@ -1,0 +1,542 @@
+<title>Contre-épreuve {{CAMPAGNE}}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  rel="stylesheet"
+  href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap"
+/>
+<style>
+  /* Une colonne de lecture, un cas après l'autre ; la décision au pied de chaque cas, le relevé dans une barre basse. */
+  :root {
+    --fond: #eef2f1;
+    --carte: #ffffff;
+    --encre: #1b2624;
+    --discret: #586965;
+    --filet: #d3dcd9;
+    --accent: #0d6b60;
+    --accent-doux: #dcefeb;
+    --juste: #2e7a34;
+    --juste-fond: #e2f2e3;
+    --partiel: #9a6100;
+    --partiel-fond: #fbefd6;
+    --faux: #b02a22;
+    --faux-fond: #fbe3e1;
+    --code-fond: #f6f8f7;
+    --police-texte: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+    --police-code:
+      "IBM Plex Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --fond: #111816;
+      --carte: #18211f;
+      --encre: #e2eae7;
+      --discret: #9cada8;
+      --filet: #2b3835;
+      --accent: #5cc0b1;
+      --accent-doux: #1d3632;
+      --juste: #7ccb81;
+      --juste-fond: #1b3220;
+      --partiel: #e6b45c;
+      --partiel-fond: #3a2c12;
+      --faux: #f08b84;
+      --faux-fond: #3d1c1a;
+      --code-fond: #141b19;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --fond: #111816;
+    --carte: #18211f;
+    --encre: #e2eae7;
+    --discret: #9cada8;
+    --filet: #2b3835;
+    --accent: #5cc0b1;
+    --accent-doux: #1d3632;
+    --juste: #7ccb81;
+    --juste-fond: #1b3220;
+    --partiel: #e6b45c;
+    --partiel-fond: #3a2c12;
+    --faux: #f08b84;
+    --faux-fond: #3d1c1a;
+    --code-fond: #141b19;
+    color-scheme: dark;
+  }
+
+  body {
+    background: var(--fond);
+    color: var(--encre);
+    font-family: var(--police-texte);
+    font-size: 1rem;
+    line-height: 1.55;
+  }
+  .page {
+    max-width: 56rem;
+    margin-inline: auto;
+    padding-inline: 16px;
+    padding-block: 2rem 9rem;
+    display: grid;
+    gap: 1.5rem;
+  }
+  .intro h1 {
+    font-size: 1.9rem;
+    line-height: 1.2;
+    margin: 0 0 0.5rem;
+    text-wrap: balance;
+  }
+  .intro p {
+    margin: 0 0 0.6rem;
+    max-width: 65ch;
+  }
+  .graine {
+    font-family: var(--police-code);
+    font-size: 0.85rem;
+    color: var(--discret);
+  }
+  .legende {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1.25rem;
+    font-size: 0.9rem;
+    color: var(--discret);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .legende strong {
+    color: var(--encre);
+  }
+
+  .cas {
+    background: var(--carte);
+    border: 1px solid var(--filet);
+    border-radius: 10px;
+    padding: 1.25rem;
+    display: grid;
+    gap: 1rem;
+    min-width: 0;
+    scroll-margin-top: 1rem;
+  }
+  .cas-tete {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+  .cas-tete h2 {
+    font-size: 1.3rem;
+    margin: 0;
+  }
+  .question {
+    font-family: var(--police-code);
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: var(--accent);
+    margin-left: 0.6rem;
+  }
+  .statut {
+    font-size: 0.8rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    padding: 0.2rem 0.6rem;
+    border-radius: 999px;
+    background: var(--accent-doux);
+    color: var(--accent);
+  }
+  .statut.fait {
+    background: var(--juste-fond);
+    color: var(--juste);
+  }
+
+  .bloc {
+    display: grid;
+    gap: 0.35rem;
+    min-width: 0;
+  }
+  .bloc h3 {
+    font-size: 0.78rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--discret);
+    margin: 0;
+  }
+  .bloc h3 .valeur {
+    font-family: var(--police-code);
+    text-transform: none;
+    letter-spacing: 0;
+    color: var(--encre);
+    margin-left: 0.3rem;
+  }
+  pre {
+    margin: 0;
+    font-family: var(--police-code);
+    font-size: 0.86rem;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    background: var(--code-fond);
+    border: 1px solid var(--filet);
+    border-radius: 6px;
+    padding: 0.75rem 0.9rem;
+    max-height: 32rem;
+    overflow: auto;
+  }
+  pre.texte {
+    max-height: none;
+  }
+  .prenote {
+    margin: 0;
+    font-size: 0.92rem;
+    padding: 0.5rem 0.75rem;
+    border-left: 3px solid var(--accent);
+    background: var(--accent-doux);
+    border-radius: 0 6px 6px 0;
+  }
+  .etiquette {
+    font-size: 0.75rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-right: 0.4rem;
+  }
+
+  .decision {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem 1.5rem;
+    align-items: end;
+    border-top: 1px solid var(--filet);
+    padding-top: 1rem;
+  }
+  .choix {
+    border: 0;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 0.35rem;
+  }
+  .choix legend,
+  .motif > label {
+    font-size: 0.78rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--discret);
+    padding: 0;
+  }
+  .segments {
+    display: flex;
+    flex-wrap: wrap;
+  }
+  .segments input {
+    position: absolute;
+    opacity: 0;
+    width: 1px;
+    height: 1px;
+  }
+  .segments label {
+    cursor: pointer;
+    padding: 0.45rem 0.95rem;
+    border: 1px solid var(--filet);
+    background: var(--carte);
+    color: var(--encre);
+    font-weight: 700;
+    margin-left: -1px;
+  }
+  .segments label:first-of-type {
+    border-radius: 6px 0 0 6px;
+    margin-left: 0;
+  }
+  .segments label:last-of-type {
+    border-radius: 0 6px 6px 0;
+  }
+  .segments input:focus-visible + label {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    position: relative;
+  }
+  .segments input:checked + label.note-j,
+  .segments input:checked + label.source-o {
+    background: var(--juste-fond);
+    color: var(--juste);
+    border-color: var(--juste);
+    position: relative;
+  }
+  .segments input:checked + label.note-p,
+  .segments input:checked + label.source-e {
+    background: var(--partiel-fond);
+    color: var(--partiel);
+    border-color: var(--partiel);
+    position: relative;
+  }
+  .segments input:checked + label.note-f,
+  .segments input:checked + label.source-n {
+    background: var(--faux-fond);
+    color: var(--faux);
+    border-color: var(--faux);
+    position: relative;
+  }
+  .segments input:checked + label.note-x,
+  .segments input:checked + label.source-x {
+    background: var(--accent-doux);
+    color: var(--accent);
+    border-color: var(--accent);
+    position: relative;
+  }
+  .motif {
+    display: grid;
+    gap: 0.35rem;
+    flex: 1 1 14rem;
+    min-width: 0;
+  }
+  .motif .aide {
+    text-transform: none;
+    letter-spacing: 0;
+  }
+  .motif input {
+    font-family: var(--police-code);
+    font-size: 0.9rem;
+    padding: 0.45rem 0.6rem;
+    border: 1px solid var(--filet);
+    border-radius: 6px;
+    background: var(--carte);
+    color: var(--encre);
+    width: 100%;
+    box-sizing: border-box;
+  }
+  .motif input:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+  }
+  .motif input:invalid {
+    border-color: var(--faux);
+  }
+
+  .barre {
+    position: fixed;
+    inset-inline: 0;
+    bottom: 0;
+    background: var(--carte);
+    border-top: 1px solid var(--filet);
+    padding-block: 0.75rem calc(0.75rem + env(safe-area-inset-bottom, 0px));
+    padding-inline: 16px;
+  }
+  .barre-dedans {
+    max-width: 56rem;
+    margin-inline: auto;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.6rem 1rem;
+  }
+  .compte {
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+  .reponses {
+    flex: 1 1 16rem;
+    min-width: 0;
+    font-family: var(--police-code);
+    font-size: 0.85rem;
+    color: var(--discret);
+    overflow-wrap: anywhere;
+    user-select: all;
+  }
+  .barre button {
+    font: inherit;
+    font-weight: 700;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: var(--carte);
+    cursor: pointer;
+  }
+  .barre button:focus-visible {
+    outline: 2px solid var(--encre);
+    outline-offset: 2px;
+  }
+  .barre button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  .copie {
+    font-size: 0.85rem;
+    color: var(--juste);
+    min-width: 6rem;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .cas {
+      transition: border-color 0.2s;
+    }
+  }
+  .cas.fait {
+    border-color: var(--juste);
+  }
+</style>
+
+<main class="page">
+  <header class="intro">
+    <h1>Contre-épreuve {{CAMPAGNE}}</h1>
+    <p>
+      {{NOMBRE}} cas tirés au sort parmi les cas à revoir de la campagne
+      {{CAMPAGNE}}, à trancher seul, avant de voir la pré-analyse de Claude
+      (ADR-0014). Chaque cas est montré comme dans <code>banc revoir</code> : ni
+      la cellule, ni la passe, ni le modèle.
+    </p>
+    <p class="graine">
+      graine {{GRAINE}} · SHA-256 du CSV de la campagne finie : le tirage se
+      refait à l'identique
+    </p>
+    <ul class="legende">
+      <li>
+        <strong>Note</strong> : juste, partiel ou faux, d'après la référence et
+        les règles
+      </li>
+      <li>
+        <strong>Source</strong> : une requête dont le résultat contient la
+        réponse, au tour, ou au tour précédent pour Q18 et Q28 (ADR-0015)
+      </li>
+      <li><strong>Motif</strong> : un code court, facultatif</li>
+      <li>
+        <strong>Je ne sais pas</strong> : noté x, le cas sort de la comparaison
+      </li>
+      <li>
+        <strong>Méthode</strong> : compare la réponse de l'agent au bloc
+        Référence, calculé sur le graphe, et à sa règle ; ce qui n'est pas dans
+        la référence ne compte que si la règle l'accepte et que l'agent le
+        signale
+      </li>
+    </ul>
+  </header>
+  {{CARTES}}
+</main>
+
+<div class="barre" role="region" aria-label="Relevé de tes décisions">
+  <div class="barre-dedans">
+    <span class="compte" id="compte">0 / {{NOMBRE}} tranchés</span>
+    <span class="reponses" id="reponses">Tes réponses s'affichent ici.</span>
+    <button type="button" id="copier" disabled>Copier mes réponses</button>
+    <span class="copie" id="copie" aria-live="polite"></span>
+  </div>
+</div>
+
+<script>
+  (function () {
+    const CLE = "contre-epreuve-{{CAMPAGNE}}";
+    const cartes = Array.from(document.querySelectorAll(".cas"));
+    const compte = document.getElementById("compte");
+    const reponses = document.getElementById("reponses");
+    const copier = document.getElementById("copier");
+    const copie = document.getElementById("copie");
+    const MOTIF = /^[a-z0-9]+(-[a-z0-9]+)*$/;
+
+    function choisi(nom) {
+      const coche = document.querySelector('input[name="' + nom + '"]:checked');
+      return coche ? coche.value : null;
+    }
+
+    function relever() {
+      return cartes.map(function (carte) {
+        const n = carte.dataset.numero;
+        const besoins = carte.dataset.besoins.split(",");
+        const note = besoins.indexOf("note") >= 0 ? choisi("note-" + n) : "";
+        const source =
+          besoins.indexOf("source") >= 0 ? choisi("source-" + n) : "";
+        const motif = document.getElementById("motif-" + n).value.trim();
+        const complet = note !== null && source !== null;
+        return {
+          n: n,
+          note: note,
+          source: source,
+          motif: MOTIF.test(motif) ? motif : "",
+          brut: motif,
+          complet: complet,
+        };
+      });
+    }
+
+    function mettreAJour() {
+      const releve = relever();
+      const faits = releve.filter(function (r) {
+        return r.complet;
+      });
+      compte.textContent = faits.length + " / " + releve.length + " tranchés";
+      releve.forEach(function (r) {
+        const carte = document.getElementById("cas-" + r.n);
+        const statut = document.getElementById("statut-" + r.n);
+        carte.classList.toggle("fait", r.complet);
+        statut.classList.toggle("fait", r.complet);
+        statut.textContent = r.complet
+          ? "tranché"
+          : "à trancher : " + carte.dataset.besoins.split(",").join(" et ");
+      });
+      const texte = faits
+        .map(function (r) {
+          return [r.n, r.note, r.source, r.motif].filter(Boolean).join(" ");
+        })
+        .join(" | ");
+      reponses.textContent = texte || "Tes réponses s'affichent ici.";
+      copier.disabled = faits.length === 0;
+      copie.textContent = "";
+      try {
+        localStorage.setItem(CLE, JSON.stringify(releve));
+      } catch (e) {
+        /* stockage indisponible : la page marche sans */
+      }
+    }
+
+    function restaurer() {
+      let releve = null;
+      try {
+        releve = JSON.parse(localStorage.getItem(CLE) || "null");
+      } catch (e) {
+        releve = null;
+      }
+      if (!Array.isArray(releve)) return;
+      releve.forEach(function (r) {
+        [
+          ["note", r.note],
+          ["source", r.source],
+        ].forEach(function (paire) {
+          if (paire[1]) {
+            const entree = document.getElementById(
+              paire[0] + "-" + r.n + "-" + paire[1],
+            );
+            if (entree) entree.checked = true;
+          }
+        });
+        const motif = document.getElementById("motif-" + r.n);
+        if (motif && r.brut) motif.value = r.brut;
+      });
+    }
+
+    copier.addEventListener("click", function () {
+      const texte = reponses.textContent;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard
+          .writeText(texte)
+          .then(function () {
+            copie.textContent = "Copié";
+          })
+          .catch(selectionner);
+      } else {
+        selectionner();
+      }
+    });
+
+    function selectionner() {
+      const plage = document.createRange();
+      plage.selectNodeContents(reponses);
+      const selection = window.getSelection();
+      selection.removeAllRanges();
+      selection.addRange(plage);
+      copie.textContent = "Sélectionné : Ctrl+C";
+    }
+
+    document.addEventListener("change", mettreAJour);
+    document.addEventListener("input", mettreAJour);
+    restaurer();
+    mettreAJour();
+  })();
+</script>
