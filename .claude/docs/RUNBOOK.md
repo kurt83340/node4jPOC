@@ -3,7 +3,7 @@
 > Procédures d'exploitation des services déployés : redéployer, lancer, lire les journaux, réagir à une
 > alerte, couper. Accès et identifiants : [ACCESS.md](ACCESS.md). Aucun secret ici.
 
-**Dernière MAJ :** 2026-10-11
+**Dernière MAJ :** 2026-10-13
 
 ## Job `reveil-aura` (NEO-13)
 
@@ -240,6 +240,42 @@ scripts/verifier.sh && scripts/questions.sh --verifier && scripts/questions.sh -
   partir.
 - `db.propertyKeys()` garde les noms de clés de l'autre langue, orphelins : sans effet sur les données, à revoir avant
   qu'Aura Agent lise le schéma (jalon 4). Repli complet : `--purge`, puis `--tout`.
+
+## Index vectoriel des descriptions (spec 003, D2 à D4)
+
+L'index `descriptions_texte` (`Description.embedding`, 3 072 dimensions, `cosine`, sans quantification) se déclare
+dans `cypher/00-contraintes.cypher` ; `cypher/07-embeddings.cypher` encode les descriptions qui n'ont pas de vecteur
+([ADR-0020](adr/0020-mvp-index-vectoriel-des-descriptions.md)). Contrôle, en lecture seule :
+
+```bash
+scripts/verifier.sh --section embeddings   # 5 233 vecteurs de 3 072 dimensions, index en ligne avec ses options
+```
+
+Une écriture à la main, avec l'accord de Julien, passe par les fonctions des scripts : identifiants lus dans Secret
+Manager, jamais affichés, et sortie filtrée.
+
+```bash
+bash -c 'set -euo pipefail; source scripts/commun.sh; trouver_outils; lire_identifiants; code=0
+  cypher "$1" --format verbose || code=$?; printf "%s\n" "$SORTIE"; exit "$code"' _ "<requête>"
+```
+
+- **Réindexer** (index absent, en échec ou réglé autrement) : `DROP INDEX descriptions_texte IF EXISTS`, puis
+  `scripts/charger.sh --tout` : `00-contraintes.cypher` recrée l'index, qui se remplit des vecteurs déjà stockés, et
+  `07` n'encode rien quand tout est encodé (ni jeton, ni dépense). Puis `scripts/verifier.sh --section embeddings`.
+- **Retirer les vecteurs**, par lots :
+  `MATCH (d:Description) WHERE d.embedding IS NOT NULL CALL (d) { REMOVE d.embedding } IN TRANSACTIONS OF 1000 ROWS`.
+  Le chargement suivant réencode les 5 233 descriptions : c'est une reconstruction complète (ci-dessous).
+- **Changer la quantification ou la dimension** : un nouvel ADR d'abord (ADR-0020), sauf le repli `scalar` prévu par le
+  plan 003 (circuit breaker, noté daté au plan). Puis `00-contraintes.cypher`, l'attendu de
+  `cypher/90-verification.cypher` et `banc anglais` ; `DROP INDEX descriptions_texte` (`IF NOT EXISTS` garderait
+  l'ancien sans rien dire) ; pour une autre dimension, retirer aussi les vecteurs et régler `07` ; enfin `--tout` et
+  la vérification.
+- **Reconstruction complète** (purge puis `--tout`, `--idempotence`, ou vecteurs retirés) : les 5 233 descriptions se
+  réencodent, environ 0,03 $, avec le feu vert de Julien. Elle exige Vertex actif (coupure à 100 €, budget jusqu'au
+  2026-12-31) et l'emprunt du compte `aura-genai` par Julien (`gcloud auth login`, rôle `predictionVertex`,
+  [ADR-0019](adr/0019-infra-jeton-vertex-du-plugin-genai.md)) : jeton de 15 minutes, passé au seul `07` sur stdin.
+- `scripts/charger.sh --explain` planifie `CREATE VECTOR INDEX` sans en valider les options : une option inconnue y
+  passe (sondé le 2026-10-13). Seule `verifier.sh --section embeddings` les contrôle, une fois l'index créé.
 
 ## Recouper le coût d'une campagne (spec 002, D10)
 

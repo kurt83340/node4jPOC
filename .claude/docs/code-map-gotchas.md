@@ -222,3 +222,11 @@
 - ⚠️ `infra/reveil-aura/deploy.sh` et `infra/coupure-vertex/deploy.sh` — le composant `beta` de gcloud passe à l'état
   « Update Available » dès qu'une version plus récente de gcloud sort : un test contre « Installed » seul arrêtait le
   déploiement (vu le 2026-10-10, gcloud 587 face à 588).
+- ⚠️ `cypher/00-contraintes.cypher`, `scripts/charger.sh` — l'`EXPLAIN` d'un `CREATE VECTOR INDEX` ne valide pas ses
+  options : une option inconnue, une quantification invalide y sont planifiées (sondé sur Aura le 2026-10-13). `--explain`
+  ne prouve que la syntaxe ; seule `scripts/verifier.sh --section embeddings` contrôle dimension, similarité et
+  quantification, une fois l'index créé.
+- ⚠️ `scripts/commun.sh` — `cypher-shell` 2026.09.0, `:param` sur stdin (`cypher_fichier_avec_jeton`) : la valeur
+  n'est pas réécrite dans la sortie, et la première requête en erreur arrête la suite, code 1 (sondé le 2026-10-13) ;
+  mais `:param` s'évalue côté serveur, le jeton arrive chez Aura en littéral (vu le 2026-10-12,
+  [ADR-0019](adr/0019-infra-jeton-vertex-du-plugin-genai.md)).

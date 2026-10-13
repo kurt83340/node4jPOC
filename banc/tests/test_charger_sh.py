@@ -641,3 +641,52 @@ def test_jeton_illisible(bac: Bac, encodage: Path) -> None:
     assert f"jeton du compte {COMPTE} illisible" in lancement.sortie
     assert lancement.requetes == []
     assert "RETURN 1" not in lancement.sortie
+
+
+# --- Index vectoriel vu par --langue et --explain (spec 003, T3.3 ; plan D2) ---------------------
+
+# L'index que T4.1 ajoute à 00-contraintes.cypher, ajouté ici à une copie du dépôt s'il n'y est pas.
+INDEX_VECTORIEL = """
+CREATE VECTOR INDEX descriptions_texte IF NOT EXISTS
+FOR (d:Description) ON d.embedding
+OPTIONS {indexConfig: {`vector.dimensions`: 3072, `vector.similarity_function`: 'cosine',
+  `vector.quantization.type`: 'none'}};
+"""
+
+
+def depot_avec_index_vectoriel(bac: Bac) -> Path:
+    depot = bac.racine / "depot"
+    shutil.copytree(RACINE / "scripts", depot / "scripts")
+    shutil.copytree(RACINE / "cypher", depot / "cypher")
+    contraintes = depot / "cypher" / "00-contraintes.cypher"
+    if "CREATE VECTOR INDEX" not in contraintes.read_text():
+        contraintes.write_text(contraintes.read_text() + INDEX_VECTORIEL)
+    return depot / "scripts" / "charger.sh"
+
+
+def test_langue_compte_l_index_vectoriel(bac: Bac) -> None:
+    # 5 contraintes, 7 index (5 sur nom, plein texte, vectoriel) et les 5 des contraintes : 12.
+    charger = depot_avec_index_vectoriel(bac)
+    etat = ("AS etat", 'etat\n"12 index, 12 en ligne"', 0)
+    bac.regles(("AS restes", FRANCAIS, 0, 1), ("AS restes", SANS_RESTE, 0, 1), EN_PLACE[0], etat)
+    lancement = bac.executer([str(charger), "--langue"])
+    assert lancement.code == 0, lancement.sortie
+    assert "contraintes et index : 5/5 contraintes, 12 index, 12 en ligne (attendus : 12)" in (
+        lancement.sortie
+    )
+    [index] = [a["requete"] for a in lancement.requetes if a["requete"].startswith("SHOW INDEXES")]
+    assert "'descriptions_texte'" in index
+
+
+def test_explain_planifie_l_index_vectoriel(bac: Bac) -> None:
+    # EXPLAIN en lecture seule, comme les autres index : il ne valide pas les options (sondé le
+    # 2026-10-13), que seul verifier.sh --section embeddings contrôle, l'index créé.
+    charger = depot_avec_index_vectoriel(bac)
+    bac.regles(*REGLES_BASCULE)
+    lancement = bac.executer([str(charger), "--schema", "fr", "--explain"])
+    assert lancement.code == 0, lancement.sortie
+    assert "PLANIFIÉ : 17 requêtes, rien d'exécuté." in lancement.sortie
+    assert "✓ CREATE VECTOR INDEX descriptions_texte IF NOT EXISTS : planifiée" in lancement.sortie
+    [vectoriel] = [a for a in lancement.requetes if "CREATE VECTOR INDEX" in a["requete"]]
+    assert vectoriel["requete"].startswith("EXPLAIN CREATE VECTOR INDEX descriptions_texte")
+    assert vectoriel["argv"][vectoriel["argv"].index("--access-mode") + 1] == "read"

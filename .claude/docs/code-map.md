@@ -50,7 +50,7 @@ Harnais du banc d'essai → `banc/` ([plan 002](specs/002-agent-text-to-cypher/p
 - ✅ Agents isolés par la liste blanche de `banc/src/banc/isolement.py` (plan 002, D3) : la clé Anthropic aux seules
   cellules Claude, jamais avec une variable Vertex ; la cellule Gemini ne la reçoit jamais.
 - ✅ Seul le chargement (purge et preuve d'idempotence comprises) écrit dans la base : go/no-go, vérification et techniques du banc
-  d'essai lisent (`--access-mode read`, `scripts/verifier.sh:45`), le réveil quotidien aussi (`accessMode: Read`,
+  d'essai lisent (`--access-mode read`, `scripts/verifier.sh:46`), le réveil quotidien aussi (`accessMode: Read`,
   `infra/reveil-aura/reveil.py:119`) ; exception prévue : la mémoire d'agent (jalon 5). Seul `scripts/transactions.sh`
   arrête des transactions : celles de neo4j-mcp (métadonnée `app`), sans rien écrire ; `banc/` le lance sans `ANTHROPIC_*`.
 - ✅ Seul `charger.sh --schema en|fr` renomme (écrit) le schéma (D8) ; `--tout` refusé sur base anglaise ; `--langue`
