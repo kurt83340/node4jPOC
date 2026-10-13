@@ -202,3 +202,30 @@ CALL () {
       + toString(round(100.0 * relations / $limiteRelations, 1)) + ' %', '.', ',') AS obtenu
 }
 RETURN section + '|' + controle + '|' + attendu + '|' + obtenu AS ligne;
+
+// Vecteurs des descriptions (spec 003, plan D3), rangés par 07-embeddings.cypher : un VECTOR de 3 072 dimensions
+// par description, que l'index sert. Un vecteur absent ou d'une autre dimension échappe à l'index : la recherche
+// l'ignorerait sans bruit. Attendus : les 5 233 descriptions de la section descriptions, la dimension du plan (D2).
+// Le prédicat de type juge type et dimension sans erreur, et ne compte pas une description sans vecteur ;
+// vector_dimension_count() arrêterait toute la vérification sur une liste (22N27, sondé le 2026-10-13).
+MATCH (d:Description)
+WITH count(d.embedding) AS vecteurs, count(CASE WHEN d.embedding IS NOT :: VECTOR(3072) THEN 1 END) AS autres
+UNWIND ['embeddings|(:Description) à embedding|5233|' + toString(vecteurs),
+  'embeddings|embedding hors VECTOR de 3 072 dimensions|0|' + toString(autres)] AS ligne
+RETURN ligne;
+
+// Index vectoriel descriptions_texte (00-contraintes.cypher, plan D2), lu par SHOW INDEXES : sa définition en clair,
+// pour qu'un écart dise laquelle. IF NOT EXISTS garderait sans rien dire un index du même nom réglé autrement
+// (dimension, similarité, quantification, binary par défaut depuis Neo4j 2026.08). SHOW INDEXES écrit similarité et
+// quantification en capitales (« COSINE ») : elles se comparent en minuscules. Sans index : « aucun ».
+SHOW INDEXES YIELD name, type, entityType, labelsOrTypes, properties, options, state
+WHERE name = 'descriptions_texte'
+WITH options.indexConfig AS config, type, entityType, labelsOrTypes, properties, state
+WITH collect(type + ', '
+  + CASE WHEN entityType = 'NODE' AND labelsOrTypes = ['Description'] AND properties = ['embedding']
+      THEN 'Description.embedding' ELSE 'autre schéma' END + ', '
+  + coalesce(toString(config.`vector.dimensions`), '-') + ', '
+  + coalesce(toLower(config.`vector.similarity_function`), '-') + ', '
+  + coalesce(toLower(config.`vector.quantization.type`), '-') + ', ' + state) AS index
+RETURN 'embeddings|index descriptions_texte (type, schéma, dimensions, similarité, quantification, état)|VECTOR, Description.embedding, 3072, cosine, none, ONLINE|'
+  + coalesce(index[0], 'aucun') AS ligne;
