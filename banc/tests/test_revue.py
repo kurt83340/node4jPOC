@@ -19,6 +19,7 @@ from banc.revue import (
     Console,
     Decision,
     Finale,
+    Jalon,
     RevueError,
     Revues,
     ajouter,
@@ -305,6 +306,106 @@ def test_fichier_refuse(tmp_path: Path, contenu: str) -> None:
 def test_decision_refusee(champs: dict[str, Any]) -> None:
     with pytest.raises(RevueError):
         Decision(**{**decision().__dict__, **champs})
+
+
+# --- Un gel et un pilote par jalon (spec 003, T2.1 ; plan 003, D15) ------------------------------
+
+GEL_3 = datetime(2026, 11, 2, 10, 0)
+APRES_3 = datetime(2026, 11, 3, 9, 0)
+JALON_3 = Jalon(GEL_3, "pilote-3")
+EN_TETE_ET_JALON_3 = (
+    'gel = 2026-10-20T10:00:00\npilote = "pilote"\n\n'
+    '[[jalon]]\ngel = 2026-11-02T10:00:00\npilote = "pilote-3"\n'
+)
+
+
+def test_jalons_relus(tmp_path: Path) -> None:
+    # L'en-tête (gel et pilote du jalon 2) se lit tel quel ; chaque jalon suivant ajoute sa table.
+    fichier = tmp_path / "revues.toml"
+    fichier.write_text(EN_TETE_ET_JALON_3)
+    ajouter(fichier, decision())
+    assert charger(fichier) == Revues(GEL, (decision(),), "pilote", (JALON_3,))
+
+
+def test_pilote_d_un_jalon_jamais_reutilise() -> None:
+    # Le pilote du jalon 3 vient après le gel du jalon 2 : ses décisions ne se réutilisent jamais,
+    # même datées après le gel de son jalon.
+    du_pilote = decision(campagne="pilote-3", cellule="claude-code", date=APRES_3)
+    revues = Revues(GEL, (du_pilote,), "pilote", (JALON_3,))
+    assert en_attente([ligne_csv()], revues) == [ligne_csv()]
+
+
+@pytest.mark.parametrize("quand", [APRES, APRES_3], ids=["jalon-2", "jalon-3"])
+def test_reutilisee_d_un_jalon_a_l_autre(quand: datetime) -> None:
+    # Une décision prise après le gel de son jalon tranche la même réponse courte d'une autre
+    # campagne, d'un jalon à l'autre (note seule) : une de fr-1 pour g-1, une de g-1 pour fr-1.
+    autre = decision(campagne="autre", cellule="claude-code", date=quand)
+    revues = Revues(GEL, (autre,), "pilote", (JALON_3,))
+    assert finale(ligne_csv(), revues) == Finale("juste", "oui", "reutilisee", "")
+
+
+def test_premier_gel_d_un_fichier_sans_en_tete() -> None:
+    # Sans l'ancien en-tête, le gel du premier jalon ouvre la réutilisation.
+    avant = decision(campagne="autre", cellule="claude-code", date=APRES)
+    apres = decision(campagne="autre", cellule="claude-code", date=APRES_3)
+    assert en_attente([ligne_csv()], Revues(None, (avant,), None, (JALON_3,))) == [ligne_csv()]
+    assert en_attente([ligne_csv()], Revues(None, (apres,), None, (JALON_3,))) == []
+
+
+@pytest.mark.parametrize(
+    ("jalon", "attendu"),
+    [
+        pytest.param('pilote = "pilote-3"\n', "jalon incomplet", id="jalon-sans-gel"),
+        pytest.param("gel = 2026-11-02T10:00:00\n", "jalon incomplet", id="jalon-sans-pilote"),
+        pytest.param(
+            'gel = 2026-11-02T10:00:00\npilote = "pilote-3"\nnumero = 3\n',
+            "jalon incomplet",
+            id="cle-inconnue",
+        ),
+        pytest.param(
+            'gel = 2026-11-02T10:00:00+01:00\npilote = "pilote-3"\n',
+            r"jalon invalide \(gel\)",
+            id="gel-avec-fuseau",
+        ),
+        pytest.param(
+            'gel = 2026-11-02\npilote = "pilote-3"\n',
+            r"jalon invalide \(gel\)",
+            id="gel-sans-heure",
+        ),
+        pytest.param(
+            'gel = 2026-11-02T10:00:00\npilote = "Pilote 3"\n',
+            r"jalon invalide \(pilote\)",
+            id="pilote-en-prose",
+        ),
+        pytest.param(
+            'gel = 2026-10-19T10:00:00\npilote = "pilote-3"\n', "désordre", id="gel-du-passe"
+        ),
+        pytest.param(
+            'gel = 2026-11-02T10:00:00\npilote = "pilote"\n', "pilote en double", id="pilote-repris"
+        ),
+    ],
+)
+def test_jalon_refuse(tmp_path: Path, jalon: str, attendu: str) -> None:
+    fichier = tmp_path / "revues.toml"
+    fichier.write_text(f'gel = 2026-10-20T10:00:00\npilote = "pilote"\n\n[[jalon]]\n{jalon}')
+    with pytest.raises(RevueError, match=attendu):
+        charger(fichier)
+
+
+def test_revue_garde_les_jalons(tmp_path: Path) -> None:
+    # Après chaque décision, la revue relit ses décisions avec les jalons : celle du pilote du
+    # jalon 3 n'y devient pas réutilisable (elle contredirait celle qu'on vient de prendre).
+    fichier = tmp_path / "revues.toml"
+    fichier.write_text(EN_TETE_ET_JALON_3)
+    du_pilote = decision(campagne="pilote-3", cellule="claude-code", date=APRES_3, note="faux")
+    ajouter(fichier, du_pilote)
+    lignes = [ligne_csv(cellule="adk-claude"), ligne_csv(cellule="adk-gemini")]
+    index = {cle(ligne): (tour(ligne["question"]), None) for ligne in lignes}
+    sorties: list[str] = []
+    console = Console(Clavier("j"), sorties.append, lambda: APRES_3)
+    assert revoir(lignes, index, fichier, console, list) == 0
+    assert [d.note for d in charger(fichier).decisions] == ["faux", "juste"]
+    assert en_attente(lignes, charger(fichier)) == []
 
 
 # --- Présentation à l'aveugle --------------------------------------------------------------------

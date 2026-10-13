@@ -17,6 +17,11 @@ gel (gel = <date-heure>, en tête du fichier, posé en T8.1) : rien n'est hérit
 la source, qui dépend de la trace ; jamais pour une question dont la règle dépasse la réponse
 courte. Une espèce acceptée sur preuve (ADR-0008) entre dans sa table à la main : la revue ne
 touche pas aux tables.
+
+Un gel et un pilote par jalon (spec 003, T2.1 ; plan 003, D15) : l'en-tête est celui du premier
+jalon, chaque jalon suivant ajoute une table [[jalon]] (gel, pilote). Aucune décision d'un pilote ne
+se réutilise ; une décision prise après le gel de son jalon (le dernier gel posé à sa date) se
+réutilise d'un jalon à l'autre : en pratique, toute décision datée du premier gel ou après.
 """
 
 import functools
@@ -26,8 +31,9 @@ import re
 import sys
 import tomllib
 from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
-from dataclasses import asdict, astuple, dataclass
+from dataclasses import asdict, astuple, dataclass, replace
 from datetime import datetime
+from itertools import pairwise
 from pathlib import Path
 from typing import Literal
 
@@ -69,7 +75,8 @@ EN_TETE = """\
 # par `banc revoir`, jamais réécrite ; une correction se fait ici, à la main (diff versionné).
 # Le gel du protocole (T8.1) s'inscrit tout en haut, avant toute table : gel = AAAA-MM-JJTHH:MM:SS,
 # sans fuseau, avec la campagne pilote : pilote = "<identifiant>". Seules les décisions datées du
-# gel ou après, hors pilote, se réutilisent, par réponse courte normalisée.
+# gel ou après, hors pilote, se réutilisent, par réponse courte normalisée. Chaque jalon suivant
+# ajoute son gel et son pilote dans une table [[jalon]] (gel, pilote), avant les décisions.
 """
 
 # Un cas : campagne, cellule, passe, question, essai.
@@ -128,17 +135,45 @@ class Decision:
 
 
 @dataclass(frozen=True)
+class Jalon:
+    """Le gel du protocole d'un jalon et sa campagne pilote : une table [[jalon]] de revues.toml,
+    pour chaque jalon après le premier, dont l'en-tête garde le gel et le pilote."""
+
+    gel: datetime
+    pilote: str
+
+    def __post_init__(self) -> None:
+        problemes = {
+            "gel": not isinstance(self.gel, datetime) or self.gel.tzinfo is not None,
+            "pilote": not (isinstance(self.pilote, str) and CODE.fullmatch(self.pilote)),
+        }
+        if fautifs := [champ for champ, probleme in problemes.items() if probleme]:
+            raise RevueError(f"jalon invalide ({', '.join(fautifs)}) : {self}")
+
+
+@dataclass(frozen=True)
 class Revues:
     """revues.toml relu : le gel du protocole (None tant qu'il n'est pas posé), puis les décisions
-    dans l'ordre de leur saisie. Une décision par cas ; deux notes réutilisables contraires pour
-    une même réponse courte sont refusées."""
+    dans l'ordre de leur saisie, et les jalons suivants. Une décision par cas ; deux notes
+    réutilisables contraires pour une même réponse courte sont refusées ; chaque jalon se gèle
+    après le précédent, avec son propre pilote."""
 
     gel: datetime | None = None
     decisions: tuple[Decision, ...] = ()
     # Campagne pilote : aucune de ses décisions ne se réutilise, même datée après le gel.
     pilote: str | None = None
+    # Les jalons suivants (spec 003, T2.1), dans l'ordre de leurs gels.
+    jalons: tuple[Jalon, ...] = ()
 
     def __post_init__(self) -> None:
+        gels = self._gels()
+        if any(suivant <= precedent for precedent, suivant in pairwise(gels)):
+            raise RevueError(
+                f"gels dans le désordre : chaque jalon se gèle après le précédent {gels}"
+            )
+        pilotes = [p for p in (self.pilote, *(jalon.pilote for jalon in self.jalons)) if p]
+        if len(set(pilotes)) != len(pilotes):
+            raise RevueError(f"pilote en double : un pilote par jalon {pilotes}")
         vus: set[Cle] = set()
         for decision in self.decisions:
             if decision.cle in vus:
@@ -169,17 +204,23 @@ class Revues:
         )
 
     def _reutilisables(self) -> Iterator[Decision]:
-        if self.gel is None:
+        if not (gels := self._gels()):
             return
+        pilotes = {self.pilote, *(jalon.pilote for jalon in self.jalons)}
         for decision in self.decisions:
             if (
                 decision.note is not None
                 and decision.empreinte
                 and decision.question not in SANS_REUTILISATION
-                and decision.campagne != self.pilote
-                and decision.date >= self.gel
+                and decision.campagne not in pilotes
+                # Après le gel de son jalon, le dernier posé à sa date : du premier gel ou après.
+                and decision.date >= gels[0]
             ):
                 yield decision
+
+    def _gels(self) -> list[datetime]:
+        """Les gels posés, celui de l'en-tête puis ceux des jalons suivants."""
+        return [gel for gel in (self.gel, *(jalon.gel for jalon in self.jalons)) if gel is not None]
 
 
 @dataclass(frozen=True)
@@ -207,7 +248,7 @@ def charger(fichier: Path) -> Revues:
         return Revues()
     except (OSError, tomllib.TOMLDecodeError) as erreur:
         raise RevueError(f"{fichier} illisible : {erreur}") from erreur
-    if inconnues := sorted(set(brut) - {"gel", "pilote", "revue"}):
+    if inconnues := sorted(set(brut) - {"gel", "pilote", "jalon", "revue"}):
         raise RevueError(f"{fichier} : clés inconnues {inconnues}")
     gel, pilote = brut.get("gel"), brut.get("pilote")
     if gel is not None and (not isinstance(gel, datetime) or gel.tzinfo is not None):
@@ -221,10 +262,14 @@ def charger(fichier: Path) -> Revues:
     if gel is not None and pilote is None:
         raise RevueError(f'{fichier} : gel sans pilote = "<campagne pilote>"')
     try:
+        jalons = tuple(Jalon(**table) for table in brut.get("jalon", []))
+    except TypeError as erreur:
+        raise RevueError(f"{fichier} : jalon incomplet ou inconnu ({erreur})") from erreur
+    try:
         decisions = tuple(Decision(**table) for table in brut.get("revue", []))
     except TypeError as erreur:
         raise RevueError(f"{fichier} : décision incomplète ou inconnue ({erreur})") from erreur
-    return Revues(gel, decisions, pilote)
+    return Revues(gel, decisions, pilote, jalons)
 
 
 def ajouter(fichier: Path, decision: Decision) -> None:
@@ -443,7 +488,7 @@ def revoir(
         note, source, motif = saisie
         quand = console.maintenant()
         decision = Decision(*cle(ligne), ligne["empreinte"], quand, note, source, motif)
-        revues = Revues(revues.gel, (*revues.decisions, decision), revues.pilote)
+        revues = replace(revues, decisions=(*revues.decisions, decision))
         ajouter(fichier, decision)
         decidees += 1
     restants = len(en_attente(lignes, revues))
