@@ -212,6 +212,17 @@ uv run --directory banc python -m banc revoir --campagne <id> --verifier   # 0 :
   ou plafond de la campagne : décision de Julien, puis `--reprendre`), 130 interrompue.
 - Revue : assistée ([ADR-0014](adr/0014-mvp-revue-assistee.md)), avec une contre-épreuve de 8 cas tirés au sort.
 
+Précision du 2026-10-13 (spec 003, T1.1) : la revue assistée passe par `banc contre-epreuve`, une fois la campagne
+complète. Ordre : tirage ; page montrée à Julien ; pré-analyse de Claude écrite sur `tous.txt` dans
+`logs/revues/<id>/preanalyse.json`, son SHA-256 annoncé avant les réponses de Julien ; accord ; chaque désaccord
+présenté, puis tranché par Julien ; enregistrement.
+
+```bash
+uv run --directory banc python -m banc contre-epreuve --campagne <id>                      # page, tous.txt, cles.json
+uv run --directory banc python -m banc contre-epreuve --campagne <id> --accord "1 j | 2 p o"  # 0 : aucun désaccord
+uv run --directory banc python -m banc contre-epreuve --campagne <id> --enregistrer [<fichier>]  # 0 : plus rien à revoir
+```
+
 ## Basculer le schéma en anglais, puis revenir (spec 002, D8)
 
 ```bash

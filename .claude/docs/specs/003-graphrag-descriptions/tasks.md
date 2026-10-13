@@ -8,7 +8,7 @@
 > il « perd le fil » (échecs ×4 constatés en télémétrie, Morph 2026) → découper la phase.
 
 **Date :** 2026-10-12
-**Status :** [ ] 0/35 tasks → MAJ au fil de l'eau
+**Status :** [ ] 1/35 tasks → MAJ au fil de l'eau
 
 > Les tests n'appellent aucun service réel (Vertex, Anthropic, Aura) : faux outils, fausses API, HOME temporaire.
 > Une dépense passe par le feu vert de Julien, annoncée avec son estimation : phases 2, 6, 8, 13, 14 et 15.
@@ -19,7 +19,7 @@
 
 ## Phase 1 — Contre-épreuve dans le banc (sans base, sans dépense ; NEO-28)
 
-- [ ] **T1.1** : contre-épreuve de l'[ADR-0014](../../adr/0014-mvp-revue-assistee.md) promue dans `banc/`, en TDD, à partir de `logs/outils/` (`tirage.py`, `page.py`, `page-modele.html`, `tous-les-cas.py`, `enregistrer.py`) : `banc contre-epreuve --campagne <id>` tire 8 cas (graine = 16 premiers caractères hexadécimaux du SHA-256 du CSV fini), écrit la page à l'aveugle et les clés à part, puis rend le taux d'accord et les désaccords une fois les réponses de Julien relevées (plan, D15)
+- [x] **T1.1** : contre-épreuve de l'[ADR-0014](../../adr/0014-mvp-revue-assistee.md) promue dans `banc/`, en TDD, à partir de `logs/outils/` (`tirage.py`, `page.py`, `page-modele.html`, `tous-les-cas.py`, `enregistrer.py`) : `banc contre-epreuve --campagne <id>` tire 8 cas (graine = 16 premiers caractères hexadécimaux du SHA-256 du CSV fini), écrit la page à l'aveugle et les clés à part, puis rend le taux d'accord et les désaccords une fois les réponses de Julien relevées (plan, D15) — fait le 2026-10-13 : `banc contre-epreuve` en trois temps (tirage, `--accord`, `--enregistrer`, ce dernier par `banc.revue.revoir` et le décideur de sa `Console`), gabarit de la page dans le paquet ; 60 tests écrits d'abord, rouges puis verts ; 52 mutations, toutes détectées ; suite complète (1 541 tests), ruff et mypy verts ; tirages d'`en-1` et de `fr-controle` refaits à l'identique ; périmètre et garde-fous au plan (D15, précision du 2026-10-13)
   - DoD : `command_passes: uv run --directory banc pytest -q tests/test_contre_epreuve.py` (écrit d'abord, rouge, puis vert : même CSV, mêmes 8 cas ; moins de 8 cas, tous ; ni cellule, ni passe, ni modèle dans les cas ni dans la page ; clés dans un fichier à part ; stockage local de la page propre à la campagne ; accord = même note, désaccords listés), puis `uv run --directory banc pytest -q && uv run --directory banc ruff check && uv run --directory banc mypy .` ; chaque règle désactivée fait échouer son test
 
 ## Phase 2 — Gels par jalon et clé Anthropic (environ 0,003 $ ; NEO-28 ; T2.2 : NEO-29)

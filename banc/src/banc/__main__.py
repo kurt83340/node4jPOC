@@ -6,7 +6,7 @@ from collections.abc import Callable, Sequence
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
 
-from banc import anglais, essai_serveur, orchestration, rapport, revue
+from banc import anglais, contre_epreuve, essai_serveur, orchestration, rapport, revue
 from banc.acces import acces
 
 
@@ -70,6 +70,28 @@ def main(arguments: Sequence[str] | None = None) -> int:
     revoir.add_argument(
         "--verifier", action="store_true", help="code 0 s'il ne reste aucun cas à revoir, 1 sinon"
     )
+    contre = commandes.add_parser(
+        "contre-epreuve",
+        help="contre-épreuve de la revue assistée (ADR-0014, T1.1) : tirage de 8 cas, page à "
+        "l'aveugle et clés à part, cas de la pré-analyse ; puis taux d'accord et désaccords, et "
+        "enregistrement des décisions validées",
+    )
+    contre.add_argument("--campagne", required=True, help="identifiant de la campagne finie")
+    temps = contre.add_mutually_exclusive_group()
+    temps.add_argument(
+        "--accord",
+        metavar="RÉPONSES",
+        help="les réponses copiées de la page (« 1 j | 2 p o motif | 3 x ») contre "
+        "preanalyse.json : code 0 sans désaccord, 1 avec",
+    )
+    temps.add_argument(
+        "--enregistrer",
+        nargs="?",
+        const="",
+        metavar="FICHIER",
+        help="enregistre les décisions validées par la revue elle-même (défaut : preanalyse.json "
+        "du tirage ; chemin relatif à la racine du dépôt)",
+    )
     rapport_ = commandes.add_parser(
         "rapport",
         help="bilan d'une campagne, série par série (T9.1) ; scores une fois la revue finie",
@@ -108,6 +130,9 @@ def main(arguments: Sequence[str] | None = None) -> int:
         return orchestration.commande(demande)
     actions: dict[str, Callable[[], int]] = {
         "revoir": lambda: revue.commande(lus.campagne, seulement_verifier=lus.verifier),
+        "contre-epreuve": lambda: contre_epreuve.commande(
+            lus.campagne, reponses=lus.accord, decisions=lus.enregistrer
+        ),
         "rapport": lambda: rapport.commande(lus.campagne, complet=lus.complet),
         "essai-serveur": essai_serveur.commande,
         "anglais": anglais.commande,
