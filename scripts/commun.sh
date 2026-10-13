@@ -20,8 +20,15 @@ readonly PROJET="${GCP_PROJET:-jleroy-labo}"
 # gitleaks y voit une clé d'API (« API » dans le nom, valeur hexadécimale) : c'est un SHA de commit public.
 # shellcheck disable=SC2034 # lu par charger.sh (URL des CSV) et questions.sh (en-tête des réponses)
 readonly COMMIT_POKEAPI="168b1e89467054cda2e7df43ccebbb69b459497a" # gitleaks:allow
+# Compte de service du plugin GenAI d'Aura (spec 003, D4 ; ADR-0019) : rôle predictionVertex seul, emprunté
+# par Julien seul, pour un jeton de 15 minutes, le temps d'un chargement qui encode.
+readonly COMPTE_GENAI="aura-genai@$PROJET.iam.gserviceaccount.com"
+readonly DUREE_JETON=900
 # Texte filtré de la dernière commande cypher-shell (voir filtrer).
 SORTIE=""
+# Jeton emprunté par cypher_fichier_avec_jeton : jamais exporté ni écrit ; filtrer le masque jusqu'à la fin
+# du script.
+JETON=""
 
 erreur() {
   printf '%s : %s\n' "${0##*/}" "$*" >&2
@@ -70,13 +77,17 @@ lire_identifiants() {
 }
 
 # Garde-fou de sortie : SORTIE reçoit le texte sûr. Le mot de passe arrête tout ; l'identifiant de
-# l'instance, qui est aussi l'utilisateur et le nom de la base, devient ‹instance›.
+# l'instance, qui est aussi l'utilisateur et le nom de la base, devient ‹instance› ; le jeton Vertex
+# emprunté, ‹jeton›.
 filtrer() {
   if [[ "$1" == *"$NEO4J_PASSWORD"* ]]; then
     erreur "sortie masquée : elle contenait le mot de passe"
     exit 2
   fi
   SORTIE="${1//"$NEO4J_USERNAME"/‹instance›}"
+  if [[ -n "$JETON" ]]; then
+    SORTIE="${SORTIE//"$JETON"/‹jeton›}"
+  fi
 }
 
 # Exécute une requête Cypher (options de cypher-shell en plus après la requête) : SORTIE reçoit
@@ -94,6 +105,33 @@ cypher_fichier() {
   local fichier="$1" brut code=0
   shift
   brut="$(cypher-shell --non-interactive --format plain "$@" --file "$fichier" 2>&1)" || code=$?
+  filtrer "$brut"
+  return "$code"
+}
+
+# Exécute un fichier .cypher avec le jeton du compte aura-genai en $jeton (spec 003, D4 ; ADR-0019), comme
+# cypher_fichier. Le jeton, emprunté pour DUREE_JETON secondes, passe par une ligne :param sur le stdin de
+# cypher-shell, suivie du fichier : jamais en argument (ps le montrerait), ni dans l'environnement, ni sur le
+# disque. cypher-shell évalue :param côté serveur : le jeton arrive chez Aura en littéral, d'où un rôle limité
+# à la prédiction et 15 minutes.
+cypher_fichier_avec_jeton() {
+  local fichier="$1" brut code=0
+  # Syntaxe d'un jeton Bearer (RFC 6750) : rien qui puisse sortir de la chaîne Cypher qui le porte.
+  local -r syntaxe='^[A-Za-z0-9._~+/-]+=*$'
+  shift
+  if ! JETON="$(gcloud auth print-access-token --impersonate-service-account="$COMPTE_GENAI" \
+    --lifetime="$DUREE_JETON")"; then
+    JETON=""
+    erreur "jeton du compte $COMPTE_GENAI non obtenu (gcloud auth login ? emprunt autorisé ?)"
+    exit 2
+  fi
+  if [[ ! "$JETON" =~ $syntaxe ]]; then
+    JETON=""
+    erreur "jeton du compte $COMPTE_GENAI illisible : rien n'est envoyé à Aura"
+    exit 2
+  fi
+  brut="$({ printf ':param {jeton: "%s"}\n' "$JETON"; cat "$fichier"; } |
+    cypher-shell --non-interactive --format plain "$@" 2>&1)" || code=$?
   filtrer "$brut"
   return "$code"
 }

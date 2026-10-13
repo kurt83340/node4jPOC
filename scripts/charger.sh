@@ -341,9 +341,10 @@ schema_en_place() {
   while IFS= read -r nom; do
     contraintes+=("'$nom'")
   done < <(sed -nE 's/^CREATE CONSTRAINT ([A-Za-z0-9_]+) IF NOT EXISTS.*/\1/p' "$fichier")
+  # Index sur nom, plein texte et vectoriel (spec 003, D2 : descriptions_texte).
   while IFS= read -r nom; do
     index+=("'$nom'")
-  done < <(sed -nE 's/^CREATE (FULLTEXT )?INDEX ([A-Za-z0-9_]+) IF NOT EXISTS.*/\2/p' "$fichier")
+  done < <(sed -nE 's/^CREATE (FULLTEXT |VECTOR )?INDEX ([A-Za-z0-9_]+) IF NOT EXISTS.*/\2/p' "$fichier")
   if ((${#contraintes[@]} == 0 || ${#index[@]} == 0)); then
     erreur "aucune contrainte ou aucun index lu dans ${fichier#"$DOSSIER_CYPHER"/}"
     exit 2

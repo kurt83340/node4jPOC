@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Vérifie le graphe chargé dans AuraDB Free (spec 001, T3.1) : comptes par motif, empreintes, noms en
-# double, volume sous la limite de l'instance. Tout en lecture seule (--access-mode read).
+# double, volume sous la limite de l'instance ; vecteurs des descriptions et leur index (spec 003, T3.1).
+# Tout en lecture seule (--access-mode read).
 #
 # Écrit avant le chargement (plan, D8) : sur une base vide, il constate des écarts (code 1). Chaque
 # fichier de cypher/ fait ensuite passer sa section au vert (--section).
@@ -19,7 +20,7 @@ readonly VERIFICATION
 # Limite réelle de l'instance AuraDB Free, lue dans la console le 2026-09-30 (ACCESS.md).
 readonly LIMITE_NOEUDS="${AURA_LIMITE_NOEUDS:-200000}"
 readonly LIMITE_RELATIONS="${AURA_LIMITE_RELATIONS:-400000}"
-readonly SECTIONS="contraintes types pokemon formes talents attaques descriptions global"
+readonly SECTIONS="contraintes types pokemon formes talents attaques descriptions global embeddings"
 
 usage() {
   cat <<'EOF'
@@ -29,7 +30,7 @@ Compare le graphe aux valeurs attendues, calculées depuis les CSV du commit Pok
 (cypher/90-verification.cypher). Sans option : toutes les sections.
 
   --section NOM   une seule section : contraintes, types, pokemon, formes, talents, attaques,
-                  descriptions ou global
+                  descriptions, global ou embeddings (vecteurs des descriptions et leur index)
 
 Variables : NEO4J_SECRET (défaut neo4j-aura-poc), GCP_PROJET (défaut jleroy-labo),
 AURA_LIMITE_NOEUDS (défaut 200000), AURA_LIMITE_RELATIONS (défaut 400000).
