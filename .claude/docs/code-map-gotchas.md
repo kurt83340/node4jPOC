@@ -130,6 +130,8 @@
   l'assistant ou de `ContextCacheConfig`. `output_tokens` d'Anthropic comprend la réflexion,
   `candidates_token_count` d'ADK non. `ModelUsage` cumule en outre toute la session : le tour se tire de deux
   relevés par `usage_du_tour`, sinon Q18 compte Q2 (vu le 2026-10-08).
+- ⚠️ `banc/src/banc/mesures.py` — `ecrire` ajoute des lignes au CSV d'une campagne : un test qui réécrit un CSV le
+  supprime d'abord, sinon les lignes se doublent et la revue refuse « ligne en double » (vu le 2026-10-13, T1.1).
 - ⚠️ `banc/tests/test_lanceur.py` — un faux outil écrit en Python ajoute `LC_CTYPE` à son `os.environ` quand aucune
   locale n'est fixée (PEP 538) : lire l'environnement reçu à l'exec dans `/proc/self/environ` (vu le 2026-10-07).
 - ⚠️ `banc/src/banc/isolement.py` — Claude Code choisit son accès dans un ordre fixe : fournisseur cloud
