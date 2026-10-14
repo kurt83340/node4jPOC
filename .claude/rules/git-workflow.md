@@ -55,6 +55,9 @@ commits n'est pas celui du compte Jira.
 - Ticket Jira de la phase : « En cours » dès sa première tâche ; à la fusion de sa PR, son format de clôture (« À faire »
   cochés, « Résultats du AAAA-MM-JJ », PR en lien intelligent avec son état) est montré à Julien, puis publié ; « Terminé »
   seulement après sa relecture (`--relu` du skill jira). Leçon du 2026-10-11 ([lecons.md](../docs/lecons.md))
+- Fin de session : `/handoff` sur la branche de la dernière phase, avant la fusion de sa PR : le HANDOFF
+  auto-chargé est celui de `main`. Si tout est déjà fusionné, une petite PR doc pour lui (« docs(00X): handoff du
+  AAAA-MM-JJ (NEO-NN) »), comme la n°24 le 2026-10-13
 
 ## Tags
 
