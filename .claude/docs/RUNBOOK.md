@@ -3,7 +3,7 @@
 > Procédures d'exploitation des services déployés : redéployer, lancer, lire les journaux, réagir à une
 > alerte, couper. Accès et identifiants : [ACCESS.md](ACCESS.md). Aucun secret ici.
 
-**Dernière MAJ :** 2026-10-13
+**Dernière MAJ :** 2026-10-14
 
 ## Job `reveil-aura` (NEO-13)
 
@@ -283,3 +283,15 @@ bash -c 'set -euo pipefail; source scripts/commun.sh; trouver_outils; lire_ident
 - Claude : usage de la Console Anthropic, jours en UTC, rafraîchi environ toutes les 4 h ; capture au moins 4 à 5 h après la fin de la campagne.
 - Fuseaux : l'export compte les jours à l'heure du Pacifique, la Console en UTC ; une campagne de nuit (heure de Paris) tombe sur deux jours UTC.
 - L'écart se note au relevé de la campagne (plan 002, D7) ; pour `en-1` et `fr-controle`, D8.
+
+Précision du 2026-10-14 (vécu du 2026-10-12, phase 10 de la spec 002) :
+
+- l'export peut tarder bien plus : l'heure de 17 h UTC du 2026-10-11 n'est devenue lisible qu'environ 9 h après son
+  début ; `export_time` ne dit pas quand une ligne devient lisible, et une heure peut arriver en plusieurs lots : ne
+  conclure qu'une fois les jetons égaux à ceux du CSV ;
+- surveillance : une requête toutes les 20 min, jusqu'à ce que les jetons d'entrée atteignent ceux du CSV (compter
+  12 h ou plus), arrêtée en fin de session ; requête par heure et par SKU : `logs/outils/export-par-heure.sh`
+  (local, hors git, lecture seule) ;
+- Console Anthropic lue par Claude dans le Chrome de débogage, connecté par « Continue with Google » : page `/cost`,
+  « Last 30 days », vue « Table » (coût par jour UTC, au centime) ; crédits : `/settings/billing` ; toute cellule de
+  clé masquée ; Chrome fermé ensuite.

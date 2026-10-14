@@ -3,7 +3,7 @@
 > Vocabulaire du banc d'essai, une ligne par terme. Le pourquoi vit dans les ADR et dans le
 > [plan 002](specs/002-agent-text-to-cypher/plan.md) (D1 à D13).
 
-**Dernière MAJ :** 2026-10-12
+**Dernière MAJ :** 2026-10-13
 
 ## Banc d'essai
 

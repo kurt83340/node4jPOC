@@ -7,7 +7,7 @@
 >
 > ⚠️ Avant d'éditer un fichier, vérifie les **règles de couplage** ci-dessous.
 
-**Dernière MAJ :** 2026-10-11
+**Dernière MAJ :** 2026-10-14
 
 ## Vue d'ensemble (macro — sous-systèmes, pas fichiers)
 
@@ -42,6 +42,8 @@ Harnais du banc d'essai → `banc/` ([plan 002](specs/002-agent-text-to-cypher/p
   `cypher-shell` passe par `filtrer` (`scripts/commun.sh:82`).
   La clé Anthropic du banc ([ADR-0011](adr/0011-infra-claude-par-api-anthropic.md)) : lue par `scripts/banc.sh`,
   passée au harnais par l'environnement ; `banc/` ne lit jamais Secret Manager.
+- ✅ Jeton Vertex du chargement (ADR-0019) : seule `cypher_fichier_avec_jeton` (`scripts/commun.sh`) emprunte
+  `aura-genai` ; jeton sur stdin, jamais en argument, exporté ni remis à `banc/`.
 - ✅ Les agents ne joignent la base que par `scripts/mcp-neo4j.sh`, chemin absolu (plan 002, D1) : `neo4j-mcp`
   y reçoit les `NEO4J_MCP_*` (lecture seule, sans télémétrie), sans option, ni `NEO4J_*` hérité, ni accès à Claude
   (`ANTHROPIC_*`), ni variable Vertex (`GOOGLE_*`) ; stderr par `filtrer_flux` (`scripts/commun.sh:166`), stdout
