@@ -63,6 +63,8 @@ forme_nom = "form_name"
 talent_nom = "ability_name"
 attaque_nom = "move_name"
 noms_plein_texte = "names_fulltext"
+# Index vectoriel (spec 003, D2), nommé le 2026-10-16 mot à mot, comme noms_plein_texte.
+descriptions_texte = "descriptions_text"
 
 # Identifiants communs aux deux langues (relus le 2026-10-11) : ils restent tels quels.
 [communs]

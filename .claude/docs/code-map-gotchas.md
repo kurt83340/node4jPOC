@@ -226,6 +226,11 @@
   options : une option inconnue, une quantification invalide y sont planifiées (sondé sur Aura le 2026-10-13). `--explain`
   ne prouve que la syntaxe ; seule `scripts/verifier.sh --section embeddings` contrôle dimension, similarité et
   quantification, une fois l'index créé.
+- ⚠️ `cypher/00-contraintes.cypher` — un index ajouté exige son nom anglais dans `[index]` de
+  `cypher/anglais/correspondance.toml`, puis `banc anglais`, dans le même commit : sinon `TraductionError` et
+  `test_produits_a_jour` rouge. `banc/tests/schema_francais.py` lit les noms par une expression qui ne connaît que
+  `FULLTEXT` et `VECTOR` : un autre genre d'index y serait invisible. `charger.sh --explain` nomme une requête par le
+  commentaire collé au-dessus (`lire_requetes`) : les commentaires vont dans l'en-tête, suivi d'une ligne vide (T4.1).
 - ⚠️ `scripts/commun.sh` — `cypher-shell` 2026.09.0, `:param` sur stdin (`cypher_fichier_avec_jeton`) : la valeur
   n'est pas réécrite dans la sortie, et la première requête en erreur arrête la suite, code 1 (sondé le 2026-10-13) ;
   mais `:param` s'évalue côté serveur, le jeton arrive chez Aura en littéral (vu le 2026-10-12,

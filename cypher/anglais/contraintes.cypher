@@ -19,3 +19,8 @@ CREATE INDEX move_name IF NOT EXISTS FOR (n:Move) ON (n.name);
 CREATE FULLTEXT INDEX names_fulltext IF NOT EXISTS
 FOR (n:Type|Pokemon|Form|Ability|Move) ON EACH [n.name]
 OPTIONS {indexConfig: {`fulltext.analyzer`: 'standard-folding'}};
+
+CREATE VECTOR INDEX descriptions_text IF NOT EXISTS
+FOR (d:Description) ON d.embedding
+OPTIONS {indexConfig: {`vector.dimensions`: 3072, `vector.similarity_function`: 'cosine',
+  `vector.quantization.type`: 'none'}};

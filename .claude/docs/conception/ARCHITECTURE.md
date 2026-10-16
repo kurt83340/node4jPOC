@@ -137,6 +137,7 @@ Total attendu : **8 859 nœuds et 113 700 relations**.
 - Un index sur `nom` pour `Pokemon`, `Forme`, `Attaque`, `Talent` et `Type` : c'est la porte d'entrée de presque toutes les questions.
 - Sur la base anglaise (mesure FR/EN, le temps d'une campagne), les mêmes, aux noms anglais : `cypher/anglais/contraintes.cypher`, index plein texte `names_fulltext`.
 - Un index plein texte, `noms_plein_texte`, sur `nom` des mêmes 5 labels, analyseur `standard-folding` (sans casse ni accents) : la recherche d'un nom approché (`dracofeu~` trouve Dracaufeu, Q19), enseignée aux agents par la fiche de schéma (spec 002, D9). Ajouté le 2026-10-10 ; `verifier.sh` contrôle sa définition (34e contrôle), `questions.sh --exemples` qu'il trouve.
+- Un index vectoriel, `descriptions_texte`, sur `embedding` des `Description` : 3 072 dimensions, `cosine`, sans quantification, pour la recherche par le sens (GraphRAG au jalon 3, Aura Agent au jalon 4 ; [ADR-0020](../adr/0020-mvp-index-vectoriel-des-descriptions.md)). Écrit dans `00-contraintes.cypher` le 2026-10-16 (spec 003, D2), `descriptions_text` sur la base anglaise ; créé sur la base au chargement de la phase 6, que `cypher/07-embeddings.cypher` remplit ; `verifier.sh --section embeddings` contrôle ses réglages et son état.
 
 ## 6. Sécurité
 

@@ -45,7 +45,9 @@ def schema_francais() -> dict[str, set[str]]:
     types = {t.strip() for groupe in groupes for t in groupe.split("|")}
     cles = set(re.findall(r"`(\w+)`", " ".join(_colonne(noeuds, 1) + _colonne(relations, 1))))
     contraintes = CONTRAINTES.read_text()
-    index = set(re.findall(r"CREATE (?:FULLTEXT )?(?:CONSTRAINT|INDEX) (\w+)", contraintes))
+    index = set(
+        re.findall(r"CREATE (?:(?:FULLTEXT|VECTOR) )?(?:CONSTRAINT|INDEX) (\w+)", contraintes)
+    )
     return {"labels": labels, "relations": types, "proprietes": cles, "index": index}
 
 
