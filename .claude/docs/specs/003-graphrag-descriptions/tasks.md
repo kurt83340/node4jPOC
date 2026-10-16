@@ -8,7 +8,7 @@
 > il « perd le fil » (échecs ×4 constatés en télémétrie, Morph 2026) → découper la phase.
 
 **Date :** 2026-10-12
-**Status :** [ ] 5/35 tasks → MAJ au fil de l'eau
+**Status :** [ ] 6/35 tasks → MAJ au fil de l'eau
 
 > Les tests n'appellent aucun service réel (Vertex, Anthropic, Aura) : faux outils, fausses API, HOME temporaire.
 > Une dépense passe par le feu vert de Julien, annoncée avec son estimation : phases 2, 6, 8, 13, 14 et 15.
@@ -40,14 +40,14 @@
 
 ## Phase 4 — Index et fichier d'encodage, sans base (aucune dépense ; NEO-30)
 
-- [ ] **T4.1** : `cypher/00-contraintes.cypher` (index `descriptions_texte`, D2) ; `cypher/07-embeddings.cypher` (lots de 100 descriptions sans vecteur, `ai.text.embedBatch`, `task_type: 'RETRIEVAL_DOCUMENT'`, `outputDimensionality: 3072`, `europe-west1`, `$jeton`, vecteur rattaché par `index`, nombre encodé rendu, attente de l'index, D3), testés sur leur texte (clés de configuration, `task_type` en snake_case, aucun littéral de jeton, aucun `CONCURRENT`)
+- [x] **T4.1** : `cypher/00-contraintes.cypher` (index `descriptions_texte`, D2) ; `cypher/07-embeddings.cypher` (lots de 100 descriptions sans vecteur, `ai.text.embedBatch`, `task_type: 'RETRIEVAL_DOCUMENT'`, `outputDimensionality: 3072`, `europe-west1`, `$jeton`, vecteur rattaché par `index`, nombre encodé rendu, attente de l'index, D3), testés sur leur texte (clés de configuration, `task_type` en snake_case, aucun littéral de jeton, aucun `CONCURRENT`) — fait le 2026-10-16 : index traduit dans le même commit (`descriptions_text` dans `correspondance.toml`, `schema_francais.py` qui voit `CREATE VECTOR INDEX`, `contraintes.cypher` régénéré ; choix de Julien) ; `07` en une requête (lots de 100, `IN TRANSACTIONS OF 1 ROW`, fournisseur `'vertexai'`, `$jeton` et `$projet` en paramètres, choix de Julien), puis `db.awaitIndex` (600 s) ; 17 tests écrits d'abord, rouges puis verts ; 29 mutations, toutes détectées ; comptes de `--langue` (12 index) et de `--explain` (17 requêtes) à jour, le test de T3.3 sur `--langue` fondu dans celui des deux langues ; suite complète (1 594 tests), ruff, mypy, shellcheck et Prettier verts ; ARCHITECTURE § 5 complétée (ajout daté) ; précisions au plan (D2, D3)
   - DoD : `command_passes: uv run --directory banc pytest -q tests/test_cypher_embeddings.py && uv run --directory banc pytest -q`
 
 ## Phase 5 — Aiguillage du chargement, sans base (aucune dépense ; NEO-30)
 
 - [ ] **T5.1** : `scripts/charger.sh` compte les descriptions sans vecteur juste avant `07`, après `06`, et n'emprunte le compte que s'il en reste ; `--idempotence` exige « 0 encodée » au second chargement
   - DoD : `command_passes: uv run --directory banc pytest -q tests/test_charger_sh.py` (base entièrement encodée : aucun emprunt ; purge puis chargement : emprunt juste avant `07` ; second chargement qui encoderait encore : refusé)
-- [ ] **T5.2** : schéma anglais : `embedding` dans `cypher/anglais/correspondance.toml`, l'index traduit avec `00-contraintes.cypher` (`banc anglais`)
+- [ ] **T5.2** : schéma anglais : `embedding` dans `cypher/anglais/correspondance.toml`, l'index traduit avec `00-contraintes.cypher` (`banc anglais`) — précision du 2026-10-16 : l'index est traduit dès T4.1 (plan, D2, choix de Julien) ; reste `embedding` : `[communs]` de la table, `COMMUNS` de `banc/tests/schema_francais.py`, et ARCHITECTURE § 5 (ligne `Description`), où `schema_francais` lit les clés (ajout daté, montré à Julien)
   - DoD : `command_passes: uv run --directory banc pytest -q tests/test_correspondance.py tests/test_traduction.py && uv run --directory banc pytest -q`
 
 ## Phase 6 — Index sur la base et fiche à jour (environ 0,06 $, feu vert de Julien ; NEO-30)
