@@ -276,6 +276,9 @@ bash -c 'set -euo pipefail; source scripts/commun.sh; trouver_outils; lire_ident
   [ADR-0019](adr/0019-infra-jeton-vertex-du-plugin-genai.md)) : jeton de 15 minutes, passé au seul `07` sur stdin.
 - `scripts/charger.sh --explain` planifie `CREATE VECTOR INDEX` sans en valider les options : une option inconnue y
   passe (sondé le 2026-10-13). Seule `verifier.sh --section embeddings` les contrôle, une fois l'index créé.
+- Précision du 2026-10-16 (T5.1) : `charger.sh` compte les descriptions sans vecteur juste avant `07`. S'il n'en reste
+  aucune, il saute `07` (ni jeton, ni dépense) et attend les index en ligne (10 minutes au plus) ; s'il en reste, le
+  journal annonce l'emprunt du jeton. `--idempotence` refuse, sans emprunt, un second chargement qui encoderait encore.
 
 ## Recouper le coût d'une campagne (spec 002, D10)
 

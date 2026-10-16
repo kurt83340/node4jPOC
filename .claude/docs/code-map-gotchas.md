@@ -231,6 +231,9 @@
   `test_produits_a_jour` rouge. `banc/tests/schema_francais.py` lit les noms par une expression qui ne connaît que
   `FULLTEXT` et `VECTOR` : un autre genre d'index y serait invisible. `charger.sh --explain` nomme une requête par le
   commentaire collé au-dessus (`lire_requetes`) : les commentaires vont dans l'en-tête, suivi d'une ligne vide (T4.1).
+- ⚠️ `cypher/07-embeddings.cypher`, `scripts/charger.sh` — `charger.sh` saute `07` quand aucune description n'est sans
+  vecteur (`a_encoder`) : ce que `07` fait d'autre que l'encodage (l'attente de l'index) ne se fait alors pas, et
+  `a_encoder` le refait lui-même (`db.awaitIndexes`). Toute requête ajoutée à `07` relève de la même règle (T5.1).
 - ⚠️ `scripts/commun.sh` — `cypher-shell` 2026.09.0, `:param` sur stdin (`cypher_fichier_avec_jeton`) : la valeur
   n'est pas réécrite dans la sortie, et la première requête en erreur arrête la suite, code 1 (sondé le 2026-10-13) ;
   mais `:param` s'évalue côté serveur, le jeton arrive chez Aura en littéral (vu le 2026-10-12,
