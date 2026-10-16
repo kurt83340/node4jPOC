@@ -2,7 +2,8 @@
 # Charge le graphe Pokémon dans AuraDB Free (spec 001) : --tout exécute les fichiers de cypher/ dans
 # l'ordre (depuis T4.1), --idempotence prouve que le chargement est rejouable (T6.1). Autour : --ping
 # (T2.1), --go-no-go (T2.2) et --purge (T3.1). Spec 002 : --schema bascule le schéma en anglais ou le
-# ramène en français (D8), --sonde-renommage a choisi son mécanisme (T7.5).
+# ramène en français (D8), --sonde-renommage a choisi son mécanisme (T7.5). Spec 003 : 07 encode les
+# descriptions avec le jeton d'aura-genai, emprunté seulement s'il en reste à encoder (D3, D4).
 #
 # Identifiants, garde-fou de sortie et codes retour communs (0 = succès · 1 = écart constaté ·
 # 2 = erreur technique) : voir commun.sh (ADR-0007).
@@ -25,6 +26,13 @@ readonly DOSSIER_JOURNAUX
 JOURNAL=""
 # Statistiques d'écriture du dernier --tout, une ligne par requête (voir idempotence).
 STATISTIQUES=""
+# Fichier d'encodage (spec 003, D3 et D4) : le seul qui reçoit le jeton d'aura-genai ($jeton) et le projet
+# ($projet), et seulement s'il reste des descriptions sans vecteur (voir a_encoder).
+readonly ENCODAGE="$DOSSIER_CYPHER/07-embeddings.cypher"
+# Second chargement de --idempotence : plus rien ne doit y rester à encoder ; un reste y est refusé, et
+# ENCODAGE_REFUSE le décrit.
+SECOND_CHARGEMENT=0
+ENCODAGE_REFUSE=""
 # Vérification en lecture seule, appelée par --idempotence pour prendre l'empreinte du graphe.
 VERIFIER="$(dirname "${BASH_SOURCE[0]}")/verifier.sh"
 readonly VERIFIER
@@ -47,9 +55,11 @@ Usage : scripts/charger.sh --tout | --idempotence | --ping | --go-no-go | --purg
        scripts/charger.sh --schema en|fr [--explain] | --langue
 
   --tout         exécute dans l'ordre les fichiers de chargement de cypher/ (00 à 89) ; une relance ne crée
-                 rien ; journal dans logs/, à suivre avec tail -f quand le chargement tourne en arrière-plan
+                 rien ; journal dans logs/, à suivre avec tail -f quand le chargement tourne en arrière-plan ;
+                 07 n'emprunte le jeton d'aura-genai (Vertex, dépense) que s'il reste des descriptions sans vecteur
   --idempotence  prouve le chargement rejouable (T6.1) : purge, chargement, vérification, second chargement
-                 qui ne doit rien créer, même vérification ; efface et recharge toute la base
+                 qui ne doit rien créer ni encoder, même vérification ; efface et recharge toute la base, et
+                 réencode toutes les descriptions (environ 0,03 $)
   --ping         vérifie qu'Aura répond, avec les identifiants lus dans Secret Manager
   --go-no-go     contrôles en lecture seule avant tout chargement (T2.2)
   --purge        efface tout le graphe, ses contraintes et ses index, pour repartir d'une base vide
@@ -576,12 +586,46 @@ journal() {
   printf '%s\n' "$@" | tee -a "$JOURNAL"
 }
 
-# Écrit : exécute dans l'ordre les fichiers de chargement, avec $base en paramètre. Chacun est idempotent
-# (MERGE sur une clé contrainte, IF NOT EXISTS) : une relance ne crée rien, et après une coupure on relance
-# tout. Au premier fichier en erreur, arrêt : les suivants dépendent de lui. Par fichier, le journal garde
-# l'heure de début, la durée et les statistiques d'écriture de cypher-shell (une ligne par requête).
+# 07 (spec 003, D3 et D4 ; T5.1) : les descriptions sans vecteur, comptées en lecture juste avant lui, après 06 (une
+# purge suivie d'un chargement en recrée 5 233). Code 0 s'il en reste : charger emprunte alors le jeton d'aura-genai
+# et exécute 07 avec lui. Sinon, code 1, sans emprunt (un rechargement marche même Vertex coupé), après l'attente
+# des index, que 07 aurait faite. Au second chargement de --idempotence, un reste n'est pas encodé :
+# ENCODAGE_REFUSE le note, sans emprunt ni dépense.
+a_encoder() {
+  local restantes
+  cypher "MATCH (d:Description) WHERE d.embedding IS NULL RETURN count(d) AS restantes" --access-mode read || {
+    erreur "descriptions sans vecteur non comptées : ${SORTIE%%$'\n'*}"
+    exit 2
+  }
+  restantes="$(valeur)"
+  if [[ ! "$restantes" =~ ^[0-9]+$ ]]; then
+    erreur "compte des descriptions sans vecteur illisible : $restantes"
+    exit 2
+  fi
+  if ((restantes == 0)); then
+    # 07 sauté, son attente de l'index aussi : un index que 00 vient de recréer (réindexation) peut encore se remplir.
+    cypher "CALL db.awaitIndexes(600)" --access-mode read || {
+      erreur "index pas en ligne après 600 s : ${SORTIE%%$'\n'*}"
+      exit 2
+    }
+    journal "$(date +%T) ✓ ${ENCODAGE##*/} : 0 description sans vecteur, aucun jeton emprunté ; index en ligne"
+    return 1
+  fi
+  if ((SECOND_CHARGEMENT)); then
+    ENCODAGE_REFUSE="$restantes description(s) sans vecteur"
+    journal "$(date +%T) ✗ ${ENCODAGE##*/} : $ENCODAGE_REFUSE au second chargement, aucun jeton emprunté"
+    return 1
+  fi
+  journal "  $restantes description(s) sans vecteur : emprunt du jeton d'aura-genai (15 minutes)"
+}
+
+# Écrit : exécute dans l'ordre les fichiers de chargement, avec $base en paramètre, sauf 07 (a_encoder), qui
+# reçoit $jeton sur stdin et $projet. Chacun est idempotent (MERGE sur une clé contrainte, IF NOT EXISTS, vecteur
+# des seules descriptions qui n'en ont pas) : une relance ne crée rien, et après une coupure on relance tout. Au
+# premier fichier en erreur, arrêt : les suivants dépendent de lui. Par fichier, le journal garde l'heure de début,
+# la durée et les statistiques d'écriture de cypher-shell (une ligne par requête), jamais le jeton (filtrer).
 charger() {
-  local fichier debut dixiemes stats
+  local fichier debut dixiemes stats code
   local fichiers=("$DOSSIER_CYPHER"/[0-8][0-9]-*.cypher)
   if [[ ! -f "${fichiers[0]}" ]]; then
     erreur "aucun fichier de chargement dans cypher/"
@@ -594,7 +638,14 @@ charger() {
   for fichier in "${fichiers[@]}"; do
     journal "$(date +%T) ▶ ${fichier##*/}"
     debut="$(centiemes)"
-    if ! cypher_fichier "$fichier" --format verbose -P "{base: '$BASE'}"; then
+    code=0
+    if [[ "$fichier" == "$ENCODAGE" ]]; then
+      a_encoder || continue
+      cypher_fichier_avec_jeton "$fichier" --format verbose -P "{projet: '$PROJET'}" || code=$?
+    else
+      cypher_fichier "$fichier" --format verbose -P "{base: '$BASE'}" || code=$?
+    fi
+    if ((code != 0)); then
       journal "$(date +%T) ✗ ${fichier##*/}" "$SORTIE" >&2
       erreur "chargement arrêté à ${fichier##*/}"
       exit 2
@@ -620,14 +671,16 @@ empreinte() {
 
 # Preuve d'idempotence (T6.1, plan § Tests) : purge, chargement, empreinte, second chargement, même empreinte.
 # Efface et réécrit toute la base : seul charger.sh le peut (code-map) ; verifier.sh, appelé deux fois, ne
-# fait que lire. Idempotent si le second chargement ne crée ni ne supprime rien (ses statistiques n'ont que
-# des SET) et si les deux empreintes sont conformes et identiques.
+# fait que lire. La purge recrée les descriptions sans vecteur : le premier chargement les réencode (environ
+# 0,03 $). Idempotent si le second chargement ne crée ni ne supprime rien (ses statistiques n'ont que des SET),
+# n'a rien à encoder (« 0 encodée », aucun jeton emprunté), et si les deux empreintes sont conformes et identiques.
 idempotence() {
   local avant apres code_avant=0 code_apres=0 ecarts=0
   purger
   charger
   avant="$(empreinte)" || code_avant=$?
   printf 'Vérification après le premier chargement : %s\n' "${avant##*$'\n'}"
+  SECOND_CHARGEMENT=1
   charger
   apres="$(empreinte)" || code_apres=$?
   printf 'Vérification après le second chargement : %s\n' "${apres##*$'\n'}"
@@ -647,6 +700,12 @@ idempotence() {
   else
     printf '✓ second chargement : rien de créé ni de supprimé, seulement des SET\n'
   fi
+  if [[ -n "$ENCODAGE_REFUSE" ]]; then
+    printf '✗ second chargement : %s, encodage refusé (aucun jeton emprunté)\n' "$ENCODAGE_REFUSE"
+    ecarts=$((ecarts + 1))
+  else
+    printf '✓ second chargement : 0 encodée, aucun jeton emprunté\n'
+  fi
   if ((code_avant == 0 && code_apres == 0)); then
     printf '✓ base conforme après chacun des deux chargements\n'
   else
@@ -664,7 +723,7 @@ idempotence() {
     printf 'NON IDEMPOTENT : %d écart(s).\n' "$ecarts"
     exit 1
   fi
-  printf 'IDEMPOTENT : 3 contrôles.\n'
+  printf 'IDEMPOTENT : 4 contrôles.\n'
 }
 
 main() {
