@@ -231,6 +231,13 @@
   `test_produits_a_jour` rouge. `banc/tests/schema_francais.py` lit les noms par une expression qui ne connaît que
   `FULLTEXT` et `VECTOR` : un autre genre d'index y serait invisible. `charger.sh --explain` nomme une requête par le
   commentaire collé au-dessus (`lire_requetes`) : les commentaires vont dans l'en-tête, suivi d'une ligne vide (T4.1).
+- ⚠️ `logs/outils/` — un script lancé par `uv run --directory banc` résout ses chemins relatifs depuis `banc/`, et y
+  écrirait ses fichiers : lui passer des chemins absolus (scratchpad). Une mutation passe par
+  `logs/outils/mutations/mutations.py` (motif unique, copie d'abord, restauration dans un `finally`, empreinte
+  revérifiée) : faite à la main, un échec laissait le fichier muté (vu le 2026-10-13).
+- ⚠️ `banc/tests/test_charger_sh.py` — les faux `gcloud` et `cypher-shell` sont du code Python dans des chaînes, où un
+  saut de ligne s'écrit déjà échappé : un remplacement par script qui vise ce code rate son motif. Écrire le motif en
+  chaîne brute, sans barre oblique finale (vu le 2026-10-13).
 - ⚠️ `cypher/07-embeddings.cypher`, `scripts/charger.sh` — `charger.sh` saute `07` quand aucune description n'est sans
   vecteur (`a_encoder`) : ce que `07` fait d'autre que l'encodage (l'attente de l'index) ne se fait alors pas, et
   `a_encoder` le refait lui-même (`db.awaitIndexes`). Toute requête ajoutée à `07` relève de la même règle (T5.1).
