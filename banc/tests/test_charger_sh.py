@@ -334,8 +334,8 @@ def test_explain_n_ecrit_rien(bac: Bac) -> None:
     bac.regles(*REGLES_BASCULE)
     lancement = bac.lancer("--schema", "en", "--explain")
     assert lancement.code == 0, lancement.sortie
-    # 4 requêtes du renommage, 11 contraintes et index, l'attente des index.
-    assert "PLANIFIÉ : 16 requêtes, rien d'exécuté." in lancement.sortie
+    # 4 requêtes du renommage, 12 contraintes et index (le vectoriel compris), l'attente des index.
+    assert "PLANIFIÉ : 17 requêtes, rien d'exécuté." in lancement.sortie
     assert "  · contraintes à supprimer : type_id forme_id" in lancement.sortie
     for appel in lancement.requetes:
         argv = appel["argv"]
@@ -343,8 +343,9 @@ def test_explain_n_ecrit_rien(bac: Bac) -> None:
         assert "--file" not in argv
         assert not appel["requete"].startswith(("DROP ", "CALL db.awaitIndexes"))
     expliquees = [a["requete"] for a in lancement.requetes if a["requete"].startswith("EXPLAIN ")]
-    assert len(expliquees) == 16
+    assert len(expliquees) == 17
     assert any("CREATE FULLTEXT INDEX names_fulltext" in r for r in expliquees)
+    assert any("CREATE VECTOR INDEX descriptions_text IF NOT EXISTS" in r for r in expliquees)
     assert all(
         "{langue: 'en'}" in parametres(a) for a in lancement.requetes if "EXPLAIN" in a["requete"]
     )
@@ -365,7 +366,7 @@ def test_explain_non_planifie(bac: Bac) -> None:
     bac.regles(("EXPLAIN CREATE FULLTEXT", "Invalid input 'FULLTEXT'", 1), *REGLES_BASCULE)
     lancement = bac.lancer("--schema", "en", "--explain")
     assert lancement.code == 1
-    assert "NON PLANIFIÉ : 1 requête(s) sur 16." in lancement.sortie
+    assert "NON PLANIFIÉ : 1 requête(s) sur 17." in lancement.sortie
 
 
 @pytest.mark.parametrize(
@@ -452,8 +453,9 @@ def test_fichier_absent_rien_n_est_supprime(
 
 
 FRANCAIS = 'restes\n"2583 nœuds, 113700 relations, 30245 clés"'
-# Contraintes et index de la langue trouvée : 5 contraintes, 6 index et les 5 des contraintes.
-EN_PLACE = (("AS presentes", "presentes\n5", 0), ("AS etat", 'etat\n"11 index, 11 en ligne"', 0))
+# Contraintes et index de la langue trouvée : 5 contraintes, 7 index (5 sur nom, plein texte,
+# vectoriel) et les 5 des contraintes.
+EN_PLACE = (("AS presentes", "presentes\n5", 0), ("AS etat", 'etat\n"12 index, 12 en ligne"', 0))
 
 
 @pytest.mark.parametrize(
@@ -486,13 +488,13 @@ def test_langue(bac: Bac, vers_en: str, vers_fr: str, langue: str, code: int) ->
     [
         (
             "fr",
-            ("'forme_id'", "'attaque_nom'", "'noms_plein_texte'"),
-            ("'form_id'", "'names_fulltext'"),
+            ("'forme_id'", "'attaque_nom'", "'noms_plein_texte'", "'descriptions_texte'"),
+            ("'form_id'", "'names_fulltext'", "'descriptions_text'"),
         ),
         (
             "en",
-            ("'form_id'", "'move_name'", "'names_fulltext'"),
-            ("'forme_id'", "'noms_plein_texte'"),
+            ("'form_id'", "'move_name'", "'names_fulltext'", "'descriptions_text'"),
+            ("'forme_id'", "'noms_plein_texte'", "'descriptions_texte'"),
         ),
     ],
 )
@@ -509,14 +511,14 @@ def test_langue_lit_les_contraintes_de_sa_langue(
     assert index.startswith("SHOW INDEXES")
     crochets = re.findall(r"IN \[([^\]]*)\]", contraintes + index)
     listes = [re.findall(r"'(\w+)'", liste) for liste in crochets]
-    # SHOW CONSTRAINTS : les 5 contraintes ; SHOW INDEXES : les 6 index, puis les 5 contraintes
+    # SHOW CONSTRAINTS : les 5 contraintes ; SHOW INDEXES : les 7 index, puis les 5 contraintes
     # (l'index de chacune).
-    assert [len(liste) for liste in listes] == [5, 6, 5]
+    assert [len(liste) for liste in listes] == [5, 7, 5]
     assert listes[0] == listes[2]
     lus = {nom for liste in listes for nom in liste}
     assert {nom.strip("'") for nom in noms} <= lus
     assert not {nom.strip("'") for nom in autres} & lus
-    assert "contraintes et index : 5/5 contraintes, 11 index, 11 en ligne (attendus : 11)" in (
+    assert "contraintes et index : 5/5 contraintes, 12 index, 12 en ligne (attendus : 12)" in (
         lancement.sortie
     )
 
@@ -645,45 +647,16 @@ def test_jeton_illisible(bac: Bac, encodage: Path) -> None:
 
 # --- Index vectoriel vu par --langue et --explain (spec 003, T3.3 ; plan D2) ---------------------
 
-# L'index que T4.1 ajoute à 00-contraintes.cypher, ajouté ici à une copie du dépôt s'il n'y est pas.
-INDEX_VECTORIEL = """
-CREATE VECTOR INDEX descriptions_texte IF NOT EXISTS
-FOR (d:Description) ON d.embedding
-OPTIONS {indexConfig: {`vector.dimensions`: 3072, `vector.similarity_function`: 'cosine',
-  `vector.quantization.type`: 'none'}};
-"""
-
-
-def depot_avec_index_vectoriel(bac: Bac) -> Path:
-    depot = bac.racine / "depot"
-    shutil.copytree(RACINE / "scripts", depot / "scripts")
-    shutil.copytree(RACINE / "cypher", depot / "cypher")
-    contraintes = depot / "cypher" / "00-contraintes.cypher"
-    if "CREATE VECTOR INDEX" not in contraintes.read_text():
-        contraintes.write_text(contraintes.read_text() + INDEX_VECTORIEL)
-    return depot / "scripts" / "charger.sh"
-
-
-def test_langue_compte_l_index_vectoriel(bac: Bac) -> None:
-    # 5 contraintes, 7 index (5 sur nom, plein texte, vectoriel) et les 5 des contraintes : 12.
-    charger = depot_avec_index_vectoriel(bac)
-    etat = ("AS etat", 'etat\n"12 index, 12 en ligne"', 0)
-    bac.regles(("AS restes", FRANCAIS, 0, 1), ("AS restes", SANS_RESTE, 0, 1), EN_PLACE[0], etat)
-    lancement = bac.executer([str(charger), "--langue"])
-    assert lancement.code == 0, lancement.sortie
-    assert "contraintes et index : 5/5 contraintes, 12 index, 12 en ligne (attendus : 12)" in (
-        lancement.sortie
-    )
-    [index] = [a["requete"] for a in lancement.requetes if a["requete"].startswith("SHOW INDEXES")]
-    assert "'descriptions_texte'" in index
+# Depuis T4.1, l'index est dans 00-contraintes.cypher : --langue le compte avec les autres
+# (test_langue_lit_les_contraintes_de_sa_langue), --explain le planifie, sur le vrai fichier.
 
 
 def test_explain_planifie_l_index_vectoriel(bac: Bac) -> None:
     # EXPLAIN en lecture seule, comme les autres index : il ne valide pas les options (sondé le
-    # 2026-10-13), que seul verifier.sh --section embeddings contrôle, l'index créé.
-    charger = depot_avec_index_vectoriel(bac)
+    # 2026-10-13), que seul verifier.sh --section embeddings contrôle, l'index créé. Son libellé est
+    # le début de sa ligne : aucun commentaire n'est collé au-dessus (lire_requetes de charger.sh).
     bac.regles(*REGLES_BASCULE)
-    lancement = bac.executer([str(charger), "--schema", "fr", "--explain"])
+    lancement = bac.lancer("--schema", "fr", "--explain")
     assert lancement.code == 0, lancement.sortie
     assert "PLANIFIÉ : 17 requêtes, rien d'exécuté." in lancement.sortie
     assert "✓ CREATE VECTOR INDEX descriptions_texte IF NOT EXISTS : planifiée" in lancement.sortie

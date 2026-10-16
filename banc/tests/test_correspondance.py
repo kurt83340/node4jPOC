@@ -23,7 +23,7 @@ def test_table_couvre_le_schema() -> None:
     assert attendu["labels"] == {"Pokemon", "Forme", "Type", "Attaque", "Talent", "Description"}
     assert len(attendu["relations"]) == 10
     assert len(attendu["proprietes"]) == 21
-    assert len(attendu["index"]) == 11
+    assert len(attendu["index"]) == 12
     for genre, noms in attendu.items():
         traduits = set(TABLE.vers_anglais[genre])
         assert traduits | TABLE.communs[genre] == noms, genre

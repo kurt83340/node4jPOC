@@ -11,6 +11,12 @@
 // il se tient à jour à chaque écriture ; IF NOT EXISTS ne dit rien d'un index du même nom réglé autrement :
 // verifier.sh contrôle son analyseur et son état.
 //
+// Un index vectoriel sur embedding de Description (spec 003, D2) : la recherche par le sens, du GraphRAG
+// (jalon 3) comme d'Aura Agent (jalon 4). 3 072 dimensions, le défaut de gemini-embedding-001 ; cosine ; sans
+// quantification (le défaut binary rogne le rappel, et 5 233 vecteurs ne pèsent que 64 Mo). 07-embeddings.cypher
+// le remplit. Changer un réglage passe par DROP INDEX (RUNBOOK) : IF NOT EXISTS garderait l'ancien sans rien
+// dire ; verifier.sh --section embeddings contrôle ses réglages et son état.
+//
 // IF NOT EXISTS : une relance ne fait rien, sans erreur. Noms explicites, comme le conseille le manuel
 // Cypher, faits de lettres, de chiffres et de _ : charger.sh --purge refuse tout autre nom. Les labels
 // suivent l'ordre du chargement (01 types, 02 Pokémon, 03 formes, 04 talents, 05 attaques).
@@ -30,3 +36,8 @@ CREATE INDEX attaque_nom IF NOT EXISTS FOR (n:Attaque) ON (n.nom);
 CREATE FULLTEXT INDEX noms_plein_texte IF NOT EXISTS
 FOR (n:Type|Pokemon|Forme|Talent|Attaque) ON EACH [n.nom]
 OPTIONS {indexConfig: {`fulltext.analyzer`: 'standard-folding'}};
+
+CREATE VECTOR INDEX descriptions_texte IF NOT EXISTS
+FOR (d:Description) ON d.embedding
+OPTIONS {indexConfig: {`vector.dimensions`: 3072, `vector.similarity_function`: 'cosine',
+  `vector.quantization.type`: 'none'}};
