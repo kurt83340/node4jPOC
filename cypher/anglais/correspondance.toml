@@ -66,9 +66,10 @@ noms_plein_texte = "names_fulltext"
 # Index vectoriel (spec 003, D2), nommé le 2026-10-16 mot à mot, comme noms_plein_texte.
 descriptions_texte = "descriptions_text"
 
-# Identifiants communs aux deux langues (relus le 2026-10-11) : ils restent tels quels.
+# Identifiants communs aux deux langues (relus le 2026-10-11 ; embedding le 2026-10-16, spec 003) : ils
+# restent tels quels.
 [communs]
 labels = ["Pokemon", "Type", "Description"]
 relations = []
-proprietes = ["id", "pp", "statDefense"]
+proprietes = ["id", "pp", "statDefense", "embedding"]
 index = ["type_id", "pokemon_id"]

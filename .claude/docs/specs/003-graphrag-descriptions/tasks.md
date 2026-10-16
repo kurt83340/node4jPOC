@@ -8,7 +8,7 @@
 > il « perd le fil » (échecs ×4 constatés en télémétrie, Morph 2026) → découper la phase.
 
 **Date :** 2026-10-12
-**Status :** [ ] 6/35 tasks → MAJ au fil de l'eau
+**Status :** [ ] 8/35 tasks → MAJ au fil de l'eau
 
 > Les tests n'appellent aucun service réel (Vertex, Anthropic, Aura) : faux outils, fausses API, HOME temporaire.
 > Une dépense passe par le feu vert de Julien, annoncée avec son estimation : phases 2, 6, 8, 13, 14 et 15.
@@ -45,9 +45,9 @@
 
 ## Phase 5 — Aiguillage du chargement, sans base (aucune dépense ; NEO-30)
 
-- [ ] **T5.1** : `scripts/charger.sh` compte les descriptions sans vecteur juste avant `07`, après `06`, et n'emprunte le compte que s'il en reste ; `--idempotence` exige « 0 encodée » au second chargement
+- [x] **T5.1** : `scripts/charger.sh` compte les descriptions sans vecteur juste avant `07`, après `06`, et n'emprunte le compte que s'il en reste ; `--idempotence` exige « 0 encodée » au second chargement — fait le 2026-10-16 : `a_encoder` (compte en lecture après `06` ; s'il en reste, emprunt et `07` avec `$jeton` sur stdin et `$projet` par `-P` ; sinon `07` sauté, sans emprunt, et attente des index, choix de Claude validé par Julien) ; `--idempotence` refuse, sans emprunt, un second chargement qui encoderait (quatrième contrôle) ; jeton absent du journal, prouvé de bout en bout ; tests sur une copie du dépôt ; 11 tests (10 écrits d'abord, rouges puis verts ; l'attente des index validée par mutation) ; 15 mutations, toutes détectées ; suite complète (1 605 tests), ruff, mypy, shellcheck verts ; précision au plan (D4), RUNBOOK
   - DoD : `command_passes: uv run --directory banc pytest -q tests/test_charger_sh.py` (base entièrement encodée : aucun emprunt ; purge puis chargement : emprunt juste avant `07` ; second chargement qui encoderait encore : refusé)
-- [ ] **T5.2** : schéma anglais : `embedding` dans `cypher/anglais/correspondance.toml`, l'index traduit avec `00-contraintes.cypher` (`banc anglais`) — précision du 2026-10-16 : l'index est traduit dès T4.1 (plan, D2, choix de Julien) ; reste `embedding` : `[communs]` de la table, `COMMUNS` de `banc/tests/schema_francais.py`, et ARCHITECTURE § 5 (ligne `Description`), où `schema_francais` lit les clés (ajout daté, montré à Julien)
+- [x] **T5.2** : schéma anglais : `embedding` dans `cypher/anglais/correspondance.toml`, l'index traduit avec `00-contraintes.cypher` (`banc anglais`) — précision du 2026-10-16 : l'index est traduit dès T4.1 (plan, D2, choix de Julien) ; reste `embedding` : `[communs]` de la table, `COMMUNS` de `banc/tests/schema_francais.py`, et ARCHITECTURE § 5 (ligne `Description`), où `schema_francais` lit les clés (ajout daté, montré à Julien) — fait le 2026-10-16 : `embedding` commun aux deux langues, ARCHITECTURE § 5 complétée (texte validé par Julien) ; `banc anglais` ne change aucun fichier produit ; 1 test ajouté et 1 compte mis à jour d'abord, rouges puis verts ; 3 mutations, toutes détectées ; suite complète (1 606 tests) verte ; précision au plan (D2)
   - DoD : `command_passes: uv run --directory banc pytest -q tests/test_correspondance.py tests/test_traduction.py && uv run --directory banc pytest -q`
 
 ## Phase 6 — Index sur la base et fiche à jour (environ 0,06 $, feu vert de Julien ; NEO-30)

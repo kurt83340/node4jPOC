@@ -1,7 +1,7 @@
 """Sonde du renommage (scripts/charger.sh --sonde-renommage, spec 002 T7.5) et bascule du schéma
 (--schema en|fr, --explain, T6.1), sans base ni réseau.
 
-Le PATH ne contient que bash, cat, dirname, sed, tr et de faux gcloud et cypher-shell. Le faux
+Le PATH ne contient que les commandes de COMMANDES et de faux gcloud et cypher-shell. Le faux
 cypher-shell note chaque appel et répond à toute requête (code 0, sans ligne), sauf règle posée par
 le test. La sonde passe tout par EXPLAIN en lecture seule, puis choisit le mécanisme ; la bascule
 supprime contraintes et index, renomme avec la carte, recrée ceux de la langue visée ; --explain
@@ -9,8 +9,11 @@ n'écrit rien ; --tout refuse une base anglaise.
 
 Jeton du chargement (spec 003, T3.2) : la fonction de commun.sh, appelée par un script qui la
 source. Le faux gcloud rend un jeton factice, hors du motif ya29. des jetons Google ; le faux
-cypher-shell note aussi son stdin et son environnement : le jeton n'y passe que par la ligne :param
-de stdin.
+cypher-shell note aussi son stdin, son environnement et le nombre d'emprunts qui précèdent l'appel :
+le jeton n'y passe que par la ligne :param de stdin.
+
+Encodage au chargement (spec 003, T5.1) : --tout et --idempotence sur une copie du dépôt, dont le
+journal reste hors du vrai logs/.
 """
 
 import json
@@ -31,7 +34,8 @@ SECRET = (
     "NEO4J_URI=neo4j+s://instance.databases.neo4j.io\nNEO4J_USERNAME=instance\n"
     "NEO4J_PASSWORD=mot-de-passe-factice\nNEO4J_DATABASE=instance\n"
 )
-COMMANDES = ("bash", "cat", "dirname", "sed", "tr")
+# Le chargement ajoute mkdir, date et tee (son journal), la preuve d'idempotence grep et diff.
+COMMANDES = ("bash", "cat", "date", "diff", "dirname", "grep", "mkdir", "sed", "tee", "tr")
 # Emprunt du compte (journal/emprunt.json) : le jeton rendu, l'erreur et le code de gcloud.
 FAUX_GCLOUD = f"""
 import json, sys
@@ -60,9 +64,12 @@ a_valeur = {"--format", "--access-mode", "-P"}
 if "--file" not in argv and (argv[-1].startswith("-") or argv[-2] in a_valeur):
     entree = sys.stdin.read()
 requete = argv[-1] if entree is None else entree
+gcloud = journal / "gcloud.jsonl"
+notes = gcloud.read_text().splitlines() if gcloud.exists() else []
+emprunts = sum('"print-access-token"' in ligne for ligne in notes)
 with (journal / "cypher-shell.jsonl").open("a") as note:
     appel = {"argv": argv, "requete": requete, "entree": entree, "env": dict(os.environ)}
-    note.write(json.dumps(appel) + "\\n")
+    note.write(json.dumps(appel | {"emprunts": emprunts}) + "\\n")
 regles = json.loads((journal / "regles.json").read_text())
 for regle in regles:
     if regle["motif"] in requete:
@@ -663,3 +670,175 @@ def test_explain_planifie_l_index_vectoriel(bac: Bac) -> None:
     [vectoriel] = [a for a in lancement.requetes if "CREATE VECTOR INDEX" in a["requete"]]
     assert vectoriel["requete"].startswith("EXPLAIN CREATE VECTOR INDEX descriptions_texte")
     assert vectoriel["argv"][vectoriel["argv"].index("--access-mode") + 1] == "read"
+
+
+# --- Encodage au chargement (spec 003, T5.1 ; plan D3 et D4) -------------------------------------
+
+# Le chargement écrit son journal dans logs/, à côté de scripts/ : il tourne sur une copie du dépôt.
+# verifier.sh y devient un double qui rend toujours la même empreinte, conforme : la preuve
+# d'idempotence ne juge ici que ce que charger.sh fait de ses deux chargements.
+VERIFIER_DOUBLE = "#!/usr/bin/env bash\nprintf 'CONFORME : 37 contrôles (0,1 s).\\n'\n"
+RESTANTES = "AS restantes"
+ENCODAGE = "ai.text.embedBatch"
+# Une base française ; des SET à chaque chargement (06, et 07 quand il encode) : un second
+# chargement idempotent n'écrit que des SET.
+REGLES_CHARGEMENT = (
+    ("AS restes", SANS_RESTE, 0),
+    (ENCODAGE, "Set 5233 properties", 0),
+    ("06-descriptions.cypher", "Set 5233 properties", 0),
+)
+REGLES_PURGE = (
+    ("AS compte", AVANT, 0),
+    ("SHOW CONSTRAINTS", CONTRAINTES, 0),
+    ("SHOW INDEXES", INDEX, 0),
+)
+
+
+def restantes(*comptes: int) -> list[tuple[str, str, int, int]]:
+    """Les comptes successifs des descriptions sans vecteur, un par chargement."""
+    return [(RESTANTES, f"restantes\n{n}", 0, 1) for n in comptes]
+
+
+def charger(bac: Bac, option: str) -> tuple[Lancement, Path]:
+    """charger.sh sur une copie du dépôt (scripts/, cypher/), verifier.sh devenu son double."""
+    depot = bac.racine / "depot"
+    shutil.copytree(RACINE / "scripts", depot / "scripts")
+    shutil.copytree(RACINE / "cypher", depot / "cypher")
+    (depot / "scripts" / "verifier.sh").write_text(VERIFIER_DOUBLE)
+    return bac.executer([str(depot / "scripts" / "charger.sh"), option]), depot
+
+
+def emprunts(bac: Bac) -> list[list[str]]:
+    return [a for a in bac.gcloud() if a[:2] == ["auth", "print-access-token"]]
+
+
+def appels(lancement: Lancement, motif: str) -> list[int]:
+    """Les rangs des appels à cypher-shell dont la requête (ou le fichier) contient le motif."""
+    return [i for i, a in enumerate(lancement.requetes) if motif in a["requete"]]
+
+
+def test_base_encodee_aucun_emprunt(bac: Bac) -> None:
+    # Rien à encoder : 07 ne part pas, aucun jeton n'est pris ; un rechargement marche Vertex coupé.
+    bac.regles(*restantes(0), *REGLES_CHARGEMENT)
+    lancement, _ = charger(bac, "--tout")
+    assert lancement.code == 0, lancement.sortie
+    assert emprunts(bac) == []
+    assert appels(lancement, ENCODAGE) == []
+    assert "✓ 07-embeddings.cypher : 0 description sans vecteur, aucun jeton emprunté" in (
+        lancement.sortie
+    )
+
+
+def test_base_encodee_attente_des_index(bac: Bac) -> None:
+    # 07 sauté, son attente de l'index aussi : charger.sh attend les index après le compte, en
+    # lecture (un index que 00 vient de recréer peut encore se remplir).
+    bac.regles(*restantes(0), *REGLES_CHARGEMENT)
+    lancement, _ = charger(bac, "--tout")
+    [compte] = appels(lancement, RESTANTES)
+    [attente] = appels(lancement, "CALL db.awaitIndexes(600)")
+    assert compte < attente == len(lancement.requetes) - 1
+    argv = lancement.requetes[attente]["argv"]
+    assert argv[argv.index("--access-mode") + 1] == "read"
+
+
+def test_emprunt_juste_avant_07(bac: Bac) -> None:
+    # Après une purge, 06 recrée 5 233 descriptions sans vecteur : compte après 06, emprunt, puis
+    # 07.
+    bac.regles(*restantes(5233), *REGLES_CHARGEMENT)
+    lancement, _ = charger(bac, "--tout")
+    assert lancement.code == 0, lancement.sortie
+    assert len(emprunts(bac)) == 1
+    [six], [compte], [sept] = (appels(lancement, m) for m in ("06-desc", RESTANTES, ENCODAGE))
+    assert six < compte < sept
+    assert [lancement.requetes[i]["emprunts"] for i in (six, compte, sept)] == [0, 0, 1]
+    assert "5233 description(s) sans vecteur : emprunt du jeton d'aura-genai (15 minutes)" in (
+        lancement.sortie
+    )
+
+
+def test_compte_en_lecture_seule(bac: Bac) -> None:
+    bac.regles(*restantes(0), *REGLES_CHARGEMENT)
+    lancement, _ = charger(bac, "--tout")
+    [compte] = [lancement.requetes[i] for i in appels(lancement, RESTANTES)]
+    assert compte["requete"].startswith("MATCH (d:Description) WHERE d.embedding IS NULL ")
+    assert compte["argv"][compte["argv"].index("--access-mode") + 1] == "read"
+
+
+def test_07_recoit_le_jeton_et_le_projet(bac: Bac) -> None:
+    # Les deux paramètres de 07 (T4.1) : $jeton par la ligne :param de stdin, $projet par -P.
+    bac.regles(*restantes(5233), *REGLES_CHARGEMENT)
+    lancement, depot = charger(bac, "--tout")
+    [sept] = [lancement.requetes[i] for i in appels(lancement, ENCODAGE)]
+    fichier_07 = (depot / "cypher" / "07-embeddings.cypher").read_text()
+    assert sept["entree"] == f':param {{jeton: "{JETON}"}}\n' + fichier_07
+    assert parametres(sept) == ["{projet: 'jleroy-labo'}"]
+
+
+def test_projet_du_compte_emprunte(bac: Bac) -> None:
+    # GCP_PROJET change ensemble le compte emprunté et le projet de l'appel (plan, D3).
+    bac.env["GCP_PROJET"] = "autre-projet"
+    bac.regles(*restantes(5233), *REGLES_CHARGEMENT)
+    lancement, _ = charger(bac, "--tout")
+    [emprunt] = emprunts(bac)
+    assert "--impersonate-service-account=aura-genai@autre-projet.iam.gserviceaccount.com" in (
+        emprunt
+    )
+    [sept] = [lancement.requetes[i] for i in appels(lancement, ENCODAGE)]
+    assert parametres(sept) == ["{projet: 'autre-projet'}"]
+
+
+def test_jeton_masque_dans_le_journal(bac: Bac) -> None:
+    # De bout en bout (D4) : 07 échoue en citant la requête reçue, :param compris ; le journal du
+    # chargement et la sortie de charger.sh n'en gardent que ‹jeton›.
+    echec = (ENCODAGE, "Invalid input, near: {entree}", 1)
+    bac.regles(echec, *restantes(5233), *REGLES_CHARGEMENT)
+    lancement, depot = charger(bac, "--tout")
+    assert lancement.code == 2
+    assert "chargement arrêté à 07-embeddings.cypher" in lancement.sortie
+    [journal] = (depot / "logs").glob("chargement-*.log")
+    texte = journal.read_text()
+    assert ':param {jeton: "‹jeton›"}' in texte
+    assert JETON not in texte
+    assert JETON not in lancement.sortie
+
+
+def test_compte_illisible(bac: Bac) -> None:
+    # Un compte qui n'est pas un nombre ne décide de rien : arrêt, sans emprunt.
+    bac.regles((RESTANTES, "restantes\nnull", 0), *REGLES_CHARGEMENT)
+    lancement, _ = charger(bac, "--tout")
+    assert lancement.code == 2
+    assert "compte des descriptions sans vecteur illisible : null" in lancement.sortie
+    assert emprunts(bac) == []
+
+
+def test_compte_en_erreur(bac: Bac) -> None:
+    erreur = (RESTANTES, "Neo.TransientError.General.DatabaseUnavailable", 1)
+    bac.regles(erreur, *REGLES_CHARGEMENT)
+    lancement, _ = charger(bac, "--tout")
+    assert lancement.code == 2
+    assert "descriptions sans vecteur non comptées : Neo.TransientError" in lancement.sortie
+    assert emprunts(bac) == []
+
+
+def test_second_chargement_sans_rien_a_encoder(bac: Bac) -> None:
+    # La purge recrée les descriptions sans vecteur : le premier chargement emprunte et encode, le
+    # second n'a plus rien à encoder (« 0 encodée »).
+    bac.regles(*restantes(5233, 0), *REGLES_CHARGEMENT, *REGLES_PURGE)
+    lancement, _ = charger(bac, "--idempotence")
+    assert lancement.code == 0, lancement.sortie
+    assert "✓ second chargement : 0 encodée, aucun jeton emprunté" in lancement.sortie
+    assert lancement.sortie.splitlines()[-1] == "IDEMPOTENT : 4 contrôles."
+    assert len(emprunts(bac)) == 1
+
+
+def test_second_chargement_qui_encoderait_est_refuse(bac: Bac) -> None:
+    # Tout le reste est idempotent (seulement des SET, empreintes conformes et identiques) : seul le
+    # reste à encoder du second chargement fait l'écart, constaté sans emprunt ni dépense.
+    bac.regles(*restantes(5233, 12), *REGLES_CHARGEMENT, *REGLES_PURGE)
+    lancement, _ = charger(bac, "--idempotence")
+    assert lancement.code == 1, lancement.sortie
+    refus = "✗ second chargement : 12 description(s) sans vecteur, encodage refusé (aucun jeton"
+    assert f"{refus} emprunté)" in lancement.sortie
+    assert "NON IDEMPOTENT : 1 écart(s)." in lancement.sortie
+    assert len(emprunts(bac)) == 1
+    assert len(appels(lancement, ENCODAGE)) == 1

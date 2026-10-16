@@ -22,11 +22,18 @@ def test_table_couvre_le_schema() -> None:
     attendu = schema_francais()
     assert attendu["labels"] == {"Pokemon", "Forme", "Type", "Attaque", "Talent", "Description"}
     assert len(attendu["relations"]) == 10
-    assert len(attendu["proprietes"]) == 21
+    assert len(attendu["proprietes"]) == 22
     assert len(attendu["index"]) == 12
     for genre, noms in attendu.items():
         traduits = set(TABLE.vers_anglais[genre])
         assert traduits | TABLE.communs[genre] == noms, genre
+
+
+def test_embedding_commun_aux_deux_langues() -> None:
+    # Le vecteur d'une Description (spec 003, T5.2) : même nom dans les deux schémas, permis par le
+    # balayage d'une base anglaise qui porte des vecteurs.
+    assert "embedding" in TABLE.communs["proprietes"]
+    assert "'embedding'" in anglais.balayage(TABLE)
 
 
 def test_carte_a_jour() -> None:
