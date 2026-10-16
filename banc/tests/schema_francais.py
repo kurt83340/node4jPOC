@@ -16,9 +16,19 @@ from pathlib import Path
 RACINE = Path(__file__).resolve().parents[2]
 ARCHITECTURE = RACINE / ".claude" / "docs" / "conception" / "ARCHITECTURE.md"
 CONTRAINTES = RACINE / "cypher" / "00-contraintes.cypher"
-# Identiques dans les deux langues (relus le 2026-10-11).
+# Identiques dans les deux langues (relus le 2026-10-11 ; embedding le 2026-10-16, spec 003).
 COMMUNS = frozenset(
-    {"Pokemon", "Type", "Description", "id", "pp", "statDefense", "type_id", "pokemon_id"}
+    {
+        "Pokemon",
+        "Type",
+        "Description",
+        "id",
+        "pp",
+        "statDefense",
+        "embedding",
+        "type_id",
+        "pokemon_id",
+    }
 )
 LITTERAL = re.compile(r"'(?:[^'\\]|\\.)*'|\"(?:[^\"\\]|\\.)*\"")
 NOM = r"[^\W\d]\w*"
