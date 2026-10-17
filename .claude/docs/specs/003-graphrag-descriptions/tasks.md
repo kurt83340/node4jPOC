@@ -8,7 +8,7 @@
 > il « perd le fil » (échecs ×4 constatés en télémétrie, Morph 2026) → découper la phase.
 
 **Date :** 2026-10-12
-**Status :** [ ] 8/35 tasks → MAJ au fil de l'eau
+**Status :** [ ] 9/35 tasks → MAJ au fil de l'eau
 
 > Les tests n'appellent aucun service réel (Vertex, Anthropic, Aura) : faux outils, fausses API, HOME temporaire.
 > Une dépense passe par le feu vert de Julien, annoncée avec son estimation : phases 2, 6, 8, 13, 14 et 15.
@@ -52,7 +52,7 @@
 
 ## Phase 6 — Index sur la base et fiche à jour (environ 0,06 $, feu vert de Julien ; NEO-30)
 
-- [ ] **T6.1** : fiche : la ligne `Description` et la puce « Vecteurs » de D8, telles que Julien les a validées, datées au plan ; requête de la ligne dans `questions/fiche.cypher` ; fiche anglaise régénérée
+- [x] **T6.1** : fiche : la ligne `Description` et la puce « Vecteurs » de D8, telles que Julien les a validées, datées au plan ; requête de la ligne dans `questions/fiche.cypher` ; fiche anglaise régénérée — fait le 2026-10-17 : les deux textes recopiés du plan par script ; `fiche.cypher` attend `embedding` (commentaire daté) ; fiche anglaise régénérée (`embedding` commun) ; « Vecteurs » dans la liste blanche de `test_contamination.py` ; vérification écrite avant la fiche et 1 cas ajouté d'abord (`vecteur-retire`) : 3 tests rouges, puis verts ; 8 mutations, toutes détectées ; suite complète (1 607 tests), ruff, mypy et Prettier verts ; sur la base, une seule ligne en écart, `Description` (`5233 ; jeux, texte`, attendu `5233 ; embedding, jeux, texte`), 10 exemples conformes ; précision au plan (D8)
   - DoD : `command_passes: uv run --directory banc pytest -q tests/test_contamination.py tests/test_fiche_cypher.py tests/test_fiche_anglaise.py`, puis, avant le chargement, une seule ligne en écart, celle de `Description` : `command_passes: test "$(scripts/questions.sh --exemples | grep -c '^✗')" -eq 1 && scripts/questions.sh --exemples | grep -q '^✗ Description : nœuds ; propriétés'`
 - [ ] **T6.2** : `scripts/verifier.sh --section embeddings` rouge ; chargement complet, qui encode les 5 233 descriptions ; base conforme, fiche comprise
   - DoD : `manual: feu vert de Julien (environ 0,03 $)`, puis `command_passes: scripts/charger.sh --tout && scripts/verifier.sh && scripts/questions.sh --verifier && scripts/questions.sh --exemples`
