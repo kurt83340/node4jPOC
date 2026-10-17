@@ -1,6 +1,6 @@
 ---
 status: in-progress # draft | validated | in-progress | done | parked
-progress: 11/35 # X/Y tasks (compté depuis tasks.md) — MAJ par /feature-done ou à la main
+progress: 13/35 # X/Y tasks (compté depuis tasks.md) — MAJ par /feature-done ou à la main
 ---
 
 # Spec — GraphRAG sur les descriptions

@@ -51,11 +51,16 @@
   chaque bloc de code `cypher` est un exemple, exécuté par `scripts/questions.sh --exemples` (T7.3) et comparé aux
   27 requêtes de référence ; une majuscule nouvelle (nom, mot en tête de phrase) s'ajoute, relue, à la liste blanche
   de `banc/tests/test_contamination.py`. Pas de tableau Markdown : Prettier l'aligne d'espaces, payés en tokens.
+  Depuis le 2026-10-17 (T7.1), `questions/consigne-contexte.md` aussi : la consigne d'une technique sans outil.
 - ⚠️ `questions/fiche.cypher` — chaque requête cite en commentaire (`// fiche : « … »`) la phrase exacte de
   `questions/fiche-schema.md` qu'elle prouve et recopie ses valeurs dans l'ordre de la fiche (`valeurFiche`,
   `nombreFiche`) : `banc/tests/test_fiche_cypher.py` le vérifie sans base. Corriger la fiche, c'est corriger sa requête
   dans le même commit. Le CSV du commit figé écrit 0, et non l'absence, pour la puissance ou la précision de 18 attaques
   récentes, et la base n'a que 10 méthodes d'apprentissage : la fiche disait le contraire (vu le 2026-10-10, T7.3).
+- ⚠️ `questions/recherche.cypher` — `SEARCH` (Cypher 25 seulement) veut un `MATCH` à une seule variable, sans autre
+  élément, et un `LIMIT` ; le nom d'index ne peut pas être un paramètre (Cypher Manual, lu le 2026-10-17). Le `MATCH`
+  du parcours ne garde pas l'ordre des espèces : le `RETURN` le refait. Ni `embedding` ni nœud entier dans aucun
+  `RETURN`, sous-requêtes comprises, et pas de point-virgule final : `banc/tests/test_recherche_cypher.py` (T7.2).
 - ⚠️ `questions/banc.toml`, `questions/README.md` — `banc/tests/test_banc_toml.py` les tient cohérents entre eux et
   avec `questions/attendu/` (texte posé, catégorie, tour précédent, équipe de Q2, scores de Q8 cités par le README) :
   changer l'un, c'est mettre l'autre à jour dans le même commit.
