@@ -163,6 +163,11 @@
   voit rien ; ses reprises se lisent dans le journal de tenacity (`google_genai._api_client`, niveau INFO), qui note
   aussi sa reprise d'une erreur de connexion d'aiohttp (1 à 10 s). Le SDK Anthropic 1.11.0 a un middleware public,
   appelé à chaque tentative (`retries_taken`) (vu le 2026-10-09).
+- ⚠️ `banc/src/banc/encodage.py` — google-genai 2.28.0 envoie `gemini-embedding-001`, et lui seul, par `:predict`
+  (`instances[]`) ; tout autre modèle Gemini d'embeddings passe par `:embedContent`, sous une autre forme de corps et de
+  jetons (`_transformers.t_is_vertex_embed_content_model`) : changer de modèle change le contrat, et les tests de la
+  fausse API. `google.auth.default()` rend un `Credentials` de base : `with_quota_project` n'existe que sur
+  `CredentialsWithQuotaProject` (vu le 2026-10-17, T8.1).
 - ⚠️ `banc/tests/fixtures/` — Vertex hermétique : une ADC `authorized_user` impose le vrai point de jeton de Google ;
   une ADC de compte de service factice (clé RSA générée, `token_uri` vers la fausse API) l'évite, et
   `GOOGLE_VERTEX_BASE_URL` pointe google-genai vers la fausse API. google-genai ne lit pas un commentaire SSE

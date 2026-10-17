@@ -8,7 +8,7 @@
 > il « perd le fil » (échecs ×4 constatés en télémétrie, Morph 2026) → découper la phase.
 
 **Date :** 2026-10-12
-**Status :** [ ] 13/35 tasks → MAJ au fil de l'eau
+**Status :** [ ] 14/35 tasks → MAJ au fil de l'eau
 
 > Les tests n'appellent aucun service réel (Vertex, Anthropic, Aura) : faux outils, fausses API, HOME temporaire.
 > Une dépense passe par le feu vert de Julien, annoncée avec son estimation : phases 2, 6, 8, 13, 14 et 15.
@@ -68,7 +68,7 @@
 
 ## Phase 8 — Encodage des questions et essai de la recherche (environ 0,001 $, feu vert de Julien ; NEO-31)
 
-- [ ] **T8.1** : `banc.encodage` (plan, D5), en TDD : vrai google-genai contre une fausse API Vertex (modèle, `europe-west1`, projet de quota `jleroy-labo`, `RETRIEVAL_QUERY`, 3 072 dimensions, jetons, latence ; un vecteur d'une autre dimension refusé) ; `banc/prix.toml` : `gemini-embedding-001`, voie `vertex-europe-west1`, daté et sourcé (D11)
+- [x] **T8.1** : `banc.encodage` (plan, D5), en TDD : vrai google-genai contre une fausse API Vertex (modèle, `europe-west1`, projet de quota `jleroy-labo`, `RETRIEVAL_QUERY`, 3 072 dimensions, jetons, latence ; un vecteur d'une autre dimension refusé) ; `banc/prix.toml` : `gemini-embedding-001`, voie `vertex-europe-west1`, daté et sourcé (D11) — fait le 2026-10-17 : vrai client relevé d'abord contre une fausse API locale (`:predict`, `x-goog-user-project`, 429 repris, jetons en `float`) ; `connexion()` et `encoder()` ; fausse API `tests/fixtures/fausse_api_encodage.py` (ADC de compte de service factice) ; refus : autre dimension, texte tronqué, jetons absents, erreur de Vertex, ADC refusée ou sans projet de quota ; tarif relu sur la page de prix (0,15 $ le million, réponses 200 seules facturées) ; 12 tests écrits d'abord, rouges puis verts, valeurs de D5 en clair, et 1 pour la garde du projet de quota, venue de mypy, validé par mutation ; 17 mutations, toutes détectées ; suite complète (1 638 tests) verte ; précisions au plan (D5, D11), gotcha
   - DoD : `command_passes: uv run --directory banc pytest -q tests/test_encodage.py tests/test_prix.py`
 - [ ] **T8.2** : `banc essai-recherche`, sur la vraie base et sans LLM, son code retour portant chaque contrôle : `EXPLAIN` de `recherche.cypher` ; deux phrases maison (hors banc) encodées, cherchées par `read-cypher` (au plus 20 espèces et 2 descriptions chacune, ni vecteur ni nœud entier, taille du contexte et latence relevées) ; preuve de symétrie sur une vraie description (similarité ≥ 0,9999) ; puis estimation du coût refaite au plan sur la taille mesurée
   - DoD : `command_passes: uv run --directory banc pytest -q tests/test_essai_recherche.py` (faux serveur), puis `manual: feu vert de Julien (3 encodages)` et `command_passes: uv run --directory banc python -m banc essai-recherche`
