@@ -140,3 +140,54 @@ def test_empreinte_de_la_fiche(schema: str) -> None:
     autre = empreinte_prompt("en" if schema == "fr" else "fr")
     with pytest.raises(CelluleError, match="changées depuis la création de la campagne"):
         consigne_et_fiche(schema=schema, empreinte=autre)
+
+
+def test_consigne_de_contexte_puis_fiche() -> None:
+    # Cellule GraphRAG, sans outil (ADR-0018) : la consigne de contexte, puis la même fiche ; la
+    # consigne d'un agent reste celle par défaut.
+    consigne = (QUESTIONS / "consigne-contexte.md").read_text(encoding="utf-8")
+    fiche = (QUESTIONS / "fiche-schema.md").read_text(encoding="utf-8")
+    assert consigne_et_fiche(consigne="contexte") == f"{consigne}\n\n{fiche}"
+    assert consigne_et_fiche(consigne="contexte").startswith("# Consigne")
+    assert consigne_et_fiche(consigne="outil") == consigne_et_fiche()
+
+
+def test_consigne_de_contexte_sans_l_outil() -> None:
+    # ADR-0018 : la consigne commune, sans ce qui parle de l'outil.
+    outil = (QUESTIONS / "consigne.md").read_text(encoding="utf-8")
+    contexte = (QUESTIONS / "consigne-contexte.md").read_text(encoding="utf-8")
+    for mot in ("read-cypher", "outil", "Cypher", "requête", "Interroge"):
+        assert mot in outil, mot  # le contrôle ne passe pas à vide
+        assert mot not in contexte, mot
+
+
+def test_consigne_de_contexte_meme_role_meme_fin() -> None:
+    # ADR-0018 : même rôle, même règle (la réponse ne vient pas de la mémoire), même format de
+    # fin ; « Sources » n'y désigne que les descriptions citées, avec leurs jeux.
+    role = (
+        "Tu réponds en français à des questions sur les Pokémon. Ta seule source est un graphe "
+        "Neo4j, décrit par la fiche de schéma qui suit : "
+    )
+    outil = (QUESTIONS / "consigne.md").read_text(encoding="utf-8").splitlines()
+    contexte = (QUESTIONS / "consigne-contexte.md").read_text(encoding="utf-8").splitlines()
+    reponse = next(ligne for ligne in outil if "**Réponse :**" in ligne)
+    communes = {"# Consigne", "- Termine toujours par ces deux sections :", reponse}
+    assert communes <= set(outil) & set(contexte)
+    for consigne in (outil, contexte):
+        assert any(ligne.startswith(role) for ligne in consigne)
+        assert any(ligne.endswith(", pas de ta mémoire.") for ligne in consigne)
+    assert "  - **Sources :** les descriptions citées, avec leurs jeux." in contexte
+
+
+@pytest.mark.parametrize("schema", ["fr", "en"])
+def test_empreinte_par_technique(schema: str) -> None:
+    # Chaque consigne a son empreinte (ADR-0018) : celle d'un agent ne vaut pas pour une cellule
+    # GraphRAG, ni l'inverse ; le message nomme la consigne.
+    outil, contexte = (empreinte_prompt(schema, consigne=c) for c in ("outil", "contexte"))
+    assert outil == empreinte_prompt(schema)
+    assert outil != contexte
+    assert consigne_et_fiche(schema=schema, empreinte=contexte, consigne="contexte")
+    with pytest.raises(CelluleError, match=r"^consigne-contexte\.md ou fiche-schema"):
+        consigne_et_fiche(schema=schema, empreinte=outil, consigne="contexte")
+    with pytest.raises(CelluleError, match=r"^consigne\.md ou fiche-schema"):
+        consigne_et_fiche(schema=schema, empreinte=contexte)
