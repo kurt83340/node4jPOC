@@ -1,8 +1,9 @@
-"""Consigne et fiche de schéma (T1.2, plan D5) : ajoutées telles quelles au prompt système de chaque
-technique, elles ne doivent rien souffler des 30 questions ni de leurs réponses.
+"""Consignes et fiche de schéma (T1.2, plan D5) : ajoutées telles quelles au prompt système de
+chaque technique, elles ne doivent rien souffler des 30 questions ni de leurs réponses.
 
-Trois contrôles, sur les deux fichiers entiers, puis sur la consigne et la fiche anglaise (D8 ;
-T10.0), qui ne change que les identifiants du schéma et va dans le prompt des passes anglaises :
+Trois contrôles, sur les fichiers entiers (chaque consigne qu'une cellule peut recevoir, avec ou
+sans outil, ADR-0018, et la fiche), puis sur la consigne et la fiche anglaise (D8 ; T10.0), qui ne
+change que les identifiants du schéma et va dans le prompt des passes anglaises :
 - aucun nom propre hors d'une liste blanche (types, catégories d'attaque, méthodes, schéma, outils,
   entités des exemples) ;
 - aucune valeur de questions/attendu/, aucun nom des questions, du README ni de banc.toml, hors des
@@ -19,11 +20,13 @@ from pathlib import Path
 import pytest
 
 from banc import anglais, attendu, correspondance
+from banc.cellule import CONSIGNES
 from banc.questions import charger
 
 RACINE = Path(__file__).resolve().parents[2]
 QUESTIONS = RACINE / "questions"
-FICHIERS = (QUESTIONS / "consigne.md", QUESTIONS / "fiche-schema.md")
+# Chaque consigne qu'une cellule peut recevoir (banc.cellule), puis la fiche.
+FICHIERS = (*(QUESTIONS / nom for nom in CONSIGNES.values()), QUESTIONS / "fiche-schema.md")
 TEXTE = "\n".join(fichier.read_text() for fichier in FICHIERS)
 # Le prompt des passes anglaises : la même consigne, la fiche anglaise (T6.3).
 FICHIERS_EN = (QUESTIONS / "consigne.md", QUESTIONS / "fiche-schema.en.md")
@@ -132,6 +135,12 @@ def test_fichiers_entiers() -> None:
     # Les fichiers vont entiers dans le prompt : le contrôle porte sur tout leur texte.
     for fichier in (*FICHIERS, *FICHIERS_EN):
         assert fichier.read_text().strip()
+
+
+def test_chaque_consigne_controlee() -> None:
+    # Toute consigne qu'une cellule peut recevoir, avec ou sans outil (ADR-0018), est contrôlée.
+    assert {QUESTIONS / nom for nom in CONSIGNES.values()} <= set(FICHIERS)
+    assert len(CONSIGNES) == 2
 
 
 @pytest.mark.parametrize(

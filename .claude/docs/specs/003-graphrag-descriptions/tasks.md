@@ -8,7 +8,7 @@
 > il « perd le fil » (échecs ×4 constatés en télémétrie, Morph 2026) → découper la phase.
 
 **Date :** 2026-10-12
-**Status :** [ ] 11/35 tasks → MAJ au fil de l'eau
+**Status :** [ ] 13/35 tasks → MAJ au fil de l'eau
 
 > Les tests n'appellent aucun service réel (Vertex, Anthropic, Aura) : faux outils, fausses API, HOME temporaire.
 > Une dépense passe par le feu vert de Julien, annoncée avec son estimation : phases 2, 6, 8, 13, 14 et 15.
@@ -61,9 +61,9 @@
 
 ## Phase 7 — Consigne de contexte et requête de recherche (sans dépense ; NEO-31)
 
-- [ ] **T7.1** : `questions/consigne-contexte.md`, le texte de D8 validé par Julien ; une cellule GraphRAG reçoit cette consigne et la fiche ; empreinte du prompt par technique ; contamination
+- [x] **T7.1** : `questions/consigne-contexte.md`, le texte de D8 validé par Julien ; une cellule GraphRAG reçoit cette consigne et la fiche ; empreinte du prompt par technique ; contamination — fait le 2026-10-17 : consigne recopiée du plan par script, sous le titre de la consigne commune ; registre `CONSIGNES` de `banc.cellule` (`outil`, `contexte`), consigne en paramètre de `consigne_et_fiche` et `empreinte_prompt` (défaut `outil`), message qui nomme la consigne ; contamination sur chaque consigne du registre ; 4 tests écrits d'abord (5 cas), rouges puis verts, et 1 garde-fou validé par mutation ; 13 mutations, toutes détectées ; suite complète (1 613 tests) verte ; précision au plan (D8)
   - DoD : `command_passes: uv run --directory banc pytest -q tests/test_contamination.py tests/test_cellule.py`
-- [ ] **T7.2** : `questions/recherche.cypher` (plan, D6), préfixé `CYPHER 25` : `SEARCH` de 60 descriptions, 20 espèces au plus, 2 descriptions chacune, parcours ; jamais `embedding` ni un nœud entier dans le résultat ; contamination (aucune entité ni valeur du banc)
+- [x] **T7.2** : `questions/recherche.cypher` (plan, D6), préfixé `CYPHER 25` : `SEARCH` de 60 descriptions, 20 espèces au plus, 2 descriptions chacune, parcours ; jamais `embedding` ni un nœud entier dans le résultat ; contamination (aucune entité ni valeur du banc) — fait le 2026-10-17 : requête écrite selon D6, une espèce par enregistrement (8 colonnes), syntaxe de `SEARCH` lue au Cypher Manual ; tests sur son texte écrits d'abord (12 cas, rouges puis verts, dont 6 variantes fautives que le contrôle voit) ; 18 mutations, toutes détectées ; `EXPLAIN` sondé en lecture sur Aura : planifiée (`READ_ONLY`, version 25) ; suite complète (1 625 tests) verte ; précision au plan (D6), gotcha
   - DoD : `command_passes: uv run --directory banc pytest -q tests/test_recherche_cypher.py` (`EXPLAIN` sur la base en T8.2)
 
 ## Phase 8 — Encodage des questions et essai de la recherche (environ 0,001 $, feu vert de Julien ; NEO-31)

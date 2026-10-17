@@ -1,5 +1,5 @@
 """Ce que toute cellule reçoit (plan 002, D3 et D13) : la commande d'une conversation, ses
-plafonds, la consigne et la fiche communes.
+plafonds, la consigne de sa technique (avec ou sans outil, ADR-0018) et la fiche commune.
 
 L'orchestration (T4.3) lance une cellule par conversation, dans un processus dont l'environnement
 est la liste blanche de banc.isolement, depuis un dossier vide hors du dépôt, et lui passe sa
@@ -26,6 +26,10 @@ LANCEUR = RACINE / "scripts" / "mcp-neo4j.sh"
 # La fiche de schéma de chaque langue de la base (plan, D8) : la française, ou sa traduction par la
 # table (T6.3), qui ne change que les identifiants du schéma.
 FICHES = {"fr": "fiche-schema.md", "en": "fiche-schema.en.md"}
+# La consigne de chaque genre de technique (ADR-0018) : un agent qui interroge la base par l'outil
+# read-cypher (technique 2), ou un LLM sans outil qui reçoit le résultat d'une recherche, le
+# contexte (technique 3, GraphRAG) ; la fiche reste commune.
+CONSIGNES = {"outil": "consigne.md", "contexte": "consigne-contexte.md"}
 EMPREINTE = re.compile(r"[0-9a-f]{64}")
 
 
@@ -108,34 +112,38 @@ def commande_json(commande: Commande) -> str:
     return json.dumps(champs, ensure_ascii=False)
 
 
-def empreinte_prompt(schema: str, dossier: Path = QUESTIONS) -> str:
-    """SHA-256 du prompt de cette langue : la consigne et la fiche, telles que les cellules les
-    reçoivent (D7 les gèle toutes deux)."""
-    return hashlib.sha256(_prompt(dossier, schema).encode("utf-8")).hexdigest()
+def empreinte_prompt(schema: str, dossier: Path = QUESTIONS, consigne: str = "outil") -> str:
+    """SHA-256 du prompt de cette langue et de cette consigne (CONSIGNES) : la consigne et la
+    fiche, telles que les cellules les reçoivent (D7 les gèle toutes deux)."""
+    return hashlib.sha256(_prompt(dossier, schema, consigne).encode("utf-8")).hexdigest()
 
 
 def consigne_et_fiche(
-    dossier: Path = QUESTIONS, schema: str = "fr", empreinte: str | None = None
+    dossier: Path = QUESTIONS,
+    schema: str = "fr",
+    empreinte: str | None = None,
+    consigne: str = "outil",
 ) -> str:
-    """La consigne puis la fiche de schéma de la langue de la base, telles quelles (D5, D8) : le
-    même texte pour toutes les cellules.
+    """La consigne de la technique (CONSIGNES : avec ou sans outil, ADR-0018) puis la fiche de
+    schéma de la langue de la base, telles quelles (D5, D8) : le même texte pour toutes les
+    cellules d'une technique.
 
     Raises:
         CelluleError: le prompt n'a plus l'empreinte fixée à la création de la campagne.
     """
-    prompt = _prompt(dossier, schema)
+    prompt = _prompt(dossier, schema, consigne)
     if empreinte is not None and hashlib.sha256(prompt.encode("utf-8")).hexdigest() != empreinte:
         raise CelluleError(
-            f"consigne ou {FICHES[schema]} changées depuis la création de la campagne "
-            "(protocole gelé, D7)"
+            f"{CONSIGNES[consigne]} ou {FICHES[schema]} changées depuis la création de la "
+            "campagne (protocole gelé, D7)"
         )
     return prompt
 
 
-def _prompt(dossier: Path, schema: str) -> str:
-    consigne = (dossier / "consigne.md").read_text(encoding="utf-8")
+def _prompt(dossier: Path, schema: str, consigne: str) -> str:
+    texte = (dossier / CONSIGNES[consigne]).read_text(encoding="utf-8")
     fiche = (dossier / FICHES[schema]).read_text(encoding="utf-8")
-    return f"{consigne}\n\n{fiche}"
+    return f"{texte}\n\n{fiche}"
 
 
 def _commande(brut: dict[str, Any]) -> Commande:
