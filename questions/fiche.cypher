@@ -126,9 +126,10 @@ RETURN 'Talent : nœuds ; propriétés|' + toString(nombreFiche) + ' ; '
   + reduce(s = '', x IN attendues | s + CASE s WHEN '' THEN '' ELSE ', ' END + x) + '|' + toString(noeuds) + ' ; '
   + reduce(s = '', x IN obtenues | s + CASE s WHEN '' THEN '' ELSE ', ' END + x) AS ligne;
 
-// fiche : « `Description` : un texte de description d'une espèce (5 233) ; propriétés `texte` et `jeux`, les jeux où il paraît. »
+// fiche : « `Description` : un texte de description d'une espèce (5 233) ; propriétés `texte` et `jeux`, les jeux où il paraît ; `embedding`, le vecteur de son texte (voir les règles). »
+// `embedding` ajouté le 2026-10-17 (spec 003, T6.1 ; plan D8) : le vecteur qu'écrit cypher/07-embeddings.cypher.
 CALL () {
-  UNWIND ['texte', 'jeux'] AS valeurFiche
+  UNWIND ['texte', 'jeux', 'embedding'] AS valeurFiche
   WITH valeurFiche ORDER BY valeurFiche
   RETURN 5233 AS nombreFiche, collect(valeurFiche) AS attendues
 }
