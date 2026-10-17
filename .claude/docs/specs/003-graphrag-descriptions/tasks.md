@@ -8,7 +8,7 @@
 > il « perd le fil » (échecs ×4 constatés en télémétrie, Morph 2026) → découper la phase.
 
 **Date :** 2026-10-12
-**Status :** [ ] 9/35 tasks → MAJ au fil de l'eau
+**Status :** [ ] 11/35 tasks → MAJ au fil de l'eau
 
 > Les tests n'appellent aucun service réel (Vertex, Anthropic, Aura) : faux outils, fausses API, HOME temporaire.
 > Une dépense passe par le feu vert de Julien, annoncée avec son estimation : phases 2, 6, 8, 13, 14 et 15.
@@ -54,9 +54,9 @@
 
 - [x] **T6.1** : fiche : la ligne `Description` et la puce « Vecteurs » de D8, telles que Julien les a validées, datées au plan ; requête de la ligne dans `questions/fiche.cypher` ; fiche anglaise régénérée — fait le 2026-10-17 : les deux textes recopiés du plan par script ; `fiche.cypher` attend `embedding` (commentaire daté) ; fiche anglaise régénérée (`embedding` commun) ; « Vecteurs » dans la liste blanche de `test_contamination.py` ; vérification écrite avant la fiche et 1 cas ajouté d'abord (`vecteur-retire`) : 3 tests rouges, puis verts ; 8 mutations, toutes détectées ; suite complète (1 607 tests), ruff, mypy et Prettier verts ; sur la base, une seule ligne en écart, `Description` (`5233 ; jeux, texte`, attendu `5233 ; embedding, jeux, texte`), 10 exemples conformes ; précision au plan (D8)
   - DoD : `command_passes: uv run --directory banc pytest -q tests/test_contamination.py tests/test_fiche_cypher.py tests/test_fiche_anglaise.py`, puis, avant le chargement, une seule ligne en écart, celle de `Description` : `command_passes: test "$(scripts/questions.sh --exemples | grep -c '^✗')" -eq 1 && scripts/questions.sh --exemples | grep -q '^✗ Description : nœuds ; propriétés'`
-- [ ] **T6.2** : `scripts/verifier.sh --section embeddings` rouge ; chargement complet, qui encode les 5 233 descriptions ; base conforme, fiche comprise
+- [x] **T6.2** : `scripts/verifier.sh --section embeddings` rouge ; chargement complet, qui encode les 5 233 descriptions ; base conforme, fiche comprise — fait le 2026-10-17 (feu vert de Julien) : section rouge avant (0 vecteur, aucun index) ; `--tout` : `00` crée l'index, `07` encode les 5 233 descriptions en 119 s (lots de 100 acceptés, rôle `predictionVertex` suffisant, jeton absent du journal), `01` à `06` sans création ; `verifier.sh` (37 contrôles), `questions.sh --verifier` (28 requêtes) et `--exemples` (23 valeurs, 10 exemples) conformes ; `--langue` : 12 index en ligne ; aucun circuit breaker ; réindexation mesurée (accord de Julien) : index en ligne en moins de 8 s sur 5 233 vecteurs ; précisions au plan (D2, D3, D4), RUNBOOK
   - DoD : `manual: feu vert de Julien (environ 0,03 $)`, puis `command_passes: scripts/charger.sh --tout && scripts/verifier.sh && scripts/questions.sh --verifier && scripts/questions.sh --exemples`
-- [ ] **T6.3** : preuve d'idempotence : la purge recrée les descriptions sans vecteur, le premier chargement emprunte et réencode (environ 0,03 $), le second n'encode rien ; dépense estimée notée au plan, recoupée en T16.3
+- [x] **T6.3** : preuve d'idempotence : la purge recrée les descriptions sans vecteur, le premier chargement emprunte et réencode (environ 0,03 $), le second n'encode rien ; dépense estimée notée au plan, recoupée en T16.3 — fait le 2026-10-17 (feu vert de Julien) : purge (8 859 nœuds, 113 700 relations, 5 contraintes, 7 index) ; premier chargement : tout recréé, 5 233 descriptions réencodées en 120,5 s, base conforme (37 contrôles) ; second chargement : seulement des `SET`, « 0 encodée », aucun jeton emprunté, base conforme ; empreintes identiques : IDEMPOTENT (4 contrôles) ; jeton absent des deux journaux ; dépense estimée au plan (D11) : 0,05 $ pour les deux encodages de la phase (0,19 $ si l'unité facturée est le caractère), recoupée en T16.3
   - DoD : `command_passes: scripts/charger.sh --idempotence` (IDEMPOTENT)
 
 ## Phase 7 — Consigne de contexte et requête de recherche (sans dépense ; NEO-31)

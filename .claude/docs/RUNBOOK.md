@@ -279,6 +279,9 @@ bash -c 'set -euo pipefail; source scripts/commun.sh; trouver_outils; lire_ident
 - Précision du 2026-10-16 (T5.1) : `charger.sh` compte les descriptions sans vecteur juste avant `07`. S'il n'en reste
   aucune, il saute `07` (ni jeton, ni dépense) et attend les index en ligne (10 minutes au plus) ; s'il en reste, le
   journal annonce l'emprunt du jeton. `--idempotence` refuse, sans emprunt, un second chargement qui encoderait encore.
+- Précision du 2026-10-17 (T6.2) : un chargement qui encode les 5 233 descriptions dure environ 3 minutes, dont 119 s
+  pour `07`. Réindexation mesurée : l'index se reconstruit sur les 5 233 vecteurs en moins de 8 s ; l'attente de
+  `--schema` (300 s) a de la marge.
 
 ## Recouper le coût d'une campagne (spec 002, D10)
 
