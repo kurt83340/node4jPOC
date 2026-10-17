@@ -232,6 +232,10 @@ def test_chaque_motif_verifie() -> None:
         pytest.param("(1 351)", "(1 352)", id="nombre-de-formes"),
         pytest.param("`statVitesse`.", "`statVitesse`, `generation`.", id="propriete-ajoutee"),
         pytest.param("1 ou 2.", "1, 2 ou 3.", id="rang"),
+        # Spec 003, D8 : la fiche revenue à sa ligne d'avant les vecteurs.
+        pytest.param(
+            " ; `embedding`, le vecteur de son texte (voir les règles)", "", id="vecteur-retire"
+        ),
     ],
 )
 def test_fiche_changee_sans_sa_verification(avant: str, apres: str) -> None:

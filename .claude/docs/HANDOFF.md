@@ -1,40 +1,40 @@
-# HANDOFF — 2026-10-16 21h45
+# HANDOFF — 2026-10-17 09h21
 
 > Court, narratif, versionné. Patterns techniques → auto-memory. Reprise précise → /resume.
 
-**Branche** : `feature/003-phase-5` (PR n°28 ; fusion après ce handoff, sur le feu vert de Julien)
-**Spec en cours** : [003-graphrag-descriptions](specs/003-graphrag-descriptions/spec.md) (8/35 tasks)
-**Goal session** : phases 4 et 5 du jalon 3, sans base ni dépense (NEO-30)
+**Branche** : `feature/003-phase-6` (PR n°29, CI verte ; fusion après ce handoff, accord de Julien)
+**Spec en cours** : [003-graphrag-descriptions](specs/003-graphrag-descriptions/spec.md) (11/35 tasks)
+**Goal session** : phase 6 du jalon 3 : fiche à jour, index sur la base, preuve d'idempotence (NEO-30)
 
 ## Status
 
-- ✅ Phase 4 fusionnée (PR n°27) : index `descriptions_texte` traduit dans le même commit, `07-embeddings.cypher` (`$jeton`, `$projet`) ; NEO-30 à jour
-- ✅ Phase 5 (PR n°28) : jeton emprunté seulement s'il reste à encoder, sinon `07` sauté et attente des index ; `--idempotence` à « 0 encodée » ; `embedding` commun
-- ✅ Banc 1 606 tests, ruff, mypy, shellcheck, Prettier ; 47 mutations détectées (T4.1 : 29, T5.1 : 15, T5.2 : 3)
-- ⚠️ Sur la base : `--langue` « incomplète » et `verifier.sh` rouge jusqu'au chargement de la phase 6 : voulu
+- ✅ T6.1 : textes de D8 dans la fiche (`embedding`, puce « Vecteurs »), `fiche.cypher`, fiche anglaise ; 8 mutations détectées
+- ✅ T6.2 (feu vert) : 5 233 descriptions encodées en 119 s, index en ligne ; `verifier.sh`, `questions.sh` conformes
+- ✅ Réindexation mesurée (accord de Julien) : moins de 8 s sur 5 233 vecteurs ; `--schema` attend 300 s
+- ✅ T6.3 (feu vert) : IDEMPOTENT ; dépense estimée de la phase 0,05 $ (0,19 $ au caractère), recoupée en T16.3
+- ✅ Banc 1 607 tests, ruff, mypy, Prettier ; CI verte
+- ✅ NEO-30 : clôture relue par Julien, publiée après la fusion, puis « Terminé » ; risque de la fiche réglé dans NEO-3
 
 ## Échecs tentés (à ne pas refaire)
 
-- Index ajouté à `00-contraintes.cypher` sans sa traduction → 3 tests rouges : nom anglais et `banc anglais` dans le même commit (gotcha)
-- Code en ligne coupé sur deux lignes dans une puce → Prettier dé-indente la suite : un code en ligne tient sur une ligne
+- Aucun cette session : lots de 100 et index sans quantification acceptés ; aucun repli du plan n'a servi
 
 ## Blocked on
 
-- Phase 6 : feux verts de Julien (chargement, puis preuve d'idempotence, environ 0,03 $ chacun)
 - T2.2 (NEO-29) attend la nouvelle clé de Julien (avant le pilote, phase 14 ; l'actuelle expire le 2026-11-07)
 
 ## Next (par ordre)
 
-1. **Phase 6, T6.1** : fiche (ligne `Description` et puce « Vecteurs » de D8, textes validés), `questions/fiche.cypher`, fiche anglaise ; une seule ligne en écart avant le chargement
-2. **T6.2 et T6.3** (feux verts) : `charger.sh --tout` encode les 5 233 descriptions, `verifier.sh` vert ; puis `--idempotence` (« 0 encodée »)
+1. **Phase 7, T7.1** (sans dépense ; NEO-31 à passer « En cours ») : `questions/consigne-contexte.md`, texte de D8 validé ; consigne et fiche pour une cellule GraphRAG ; empreinte du prompt ; contamination
+2. **T7.2** : `questions/recherche.cypher` (D6), `CYPHER 25` ; jamais `embedding` ni un nœud entier dans le résultat
 3. **T2.2** dès la clé de Julien : dépôt par le presse-papier (pipe, sans affichage) ; `banc.sh acces` (~0,003 $, feu vert) ; sa propre PR
 
 ## Continuation State (machine-readable — grammaire fixe `Clé: valeur`, 1 ligne chacune)
 
 Spec: 003-graphrag-descriptions
-Task: T6.1
+Task: T7.1
 Fichiers en cours: aucun
 Bloqué sur: rien
-Commande de reprise: git switch main && git pull && git switch -c feature/003-phase-6
+Commande de reprise: git switch main && git pull && git switch -c feature/003-phase-7
 
 → **Journal des sessions** (append-only) : [HANDOFF-journal.md](HANDOFF-journal.md) — non auto-chargé.

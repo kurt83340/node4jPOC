@@ -9,7 +9,7 @@ Données de PokéAPI, noms en français. Lecture seule, par l'outil `read-cypher
 - `Type` : un type (18) ; propriétés `id`, `identifiantPokeapi`, `nom`.
 - `Attaque` : une attaque (919) ; propriétés `id`, `identifiantPokeapi`, `nom`, `puissance`, `precision`, `pp`, `categorie`.
 - `Talent` : un talent (313) ; propriétés `id`, `identifiantPokeapi`, `nom`.
-- `Description` : un texte de description d'une espèce (5 233) ; propriétés `texte` et `jeux`, les jeux où il paraît.
+- `Description` : un texte de description d'une espèce (5 233) ; propriétés `texte` et `jeux`, les jeux où il paraît ; `embedding`, le vecteur de son texte (voir les règles).
 
 `identifiantPokeapi` est l'identifiant anglais de PokéAPI (`gengar` pour l'espèce Ectoplasma). La forme par défaut porte le nom de son espèce.
 
@@ -33,6 +33,7 @@ Données de PokéAPI, noms en français. Lecture seule, par l'outil `read-cypher
 - **`categorie` a deux sens** : sur un `Pokemon`, sa catégorie d'espèce (« Pokémon Ombre »), écrite sans le mot « Pokémon » pour les 120 espèces de la 9e génération (« Chat Plante ») ; sur une `Attaque`, « physique », « spéciale » ou « statut ».
 - **Noms** : 62 noms portent l'apostrophe typographique ’ (« Écras’Face ») et 2 l'apostrophe droite ' ; une égalité écrite avec l'autre apostrophe ne les trouve pas. Quelques noms désignent deux nœuds (les 18 attaques Z génériques, en variante physique et spéciale ; le talent « Osmose Équine » ; deux noms de formes) : `id` les distingue.
 - **Propriétés absentes** : une attaque sans puissance fixe (attaque de statut, puissance variable) ou sans précision n'a pas la propriété, sauf 18 attaques récentes, qui portent 0 à la place (17 puissances et 3 précisions).
+- **Vecteurs** : ne renvoie jamais un nœud `Description` entier ni sa propriété `embedding`, qui compte des milliers de nombres ; demande `texte` et `jeux`.
 
 ## Valeurs possibles
 

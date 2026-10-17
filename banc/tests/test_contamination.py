@@ -56,6 +56,7 @@ EXEMPLES = (
 # à leur forme en minuscules, ailleurs dans les textes. Une nouvelle majuscule s'ajoute ici, relue.
 FRANCAIS = (
     "Consigne", "Efficacité", "Exemples", "Interroge", "Quelques", "Recherche", "Termine",
+    "Vecteurs",
 )  # fmt: skip
 PERMIS = {*TYPES, *CATEGORIES, *METHODES, *SCHEMA, *OUTILS, *TERMES}
 ELISION = re.compile(r"\b(?:[cdjlmnst]|qu|jusqu|lorsqu|puisqu)['’]", re.IGNORECASE)
