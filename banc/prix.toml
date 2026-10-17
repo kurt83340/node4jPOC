@@ -13,6 +13,9 @@
 #   « EU Multi-Region » pour Claude, ligne « Non-global » pour Gemini)
 # - marketplace : console Google Cloud, accord Marketplace anthropic-915 (Claude Sonnet 5.5), lieu
 #   « eu », prix en euros à 0,88 € le dollar ; Sonnet 5.5 n'est pas encore sur la page de Google
+#
+# Ajout du 2026-10-17 (spec 003, D11) : `vertex-europe-west1`, la région de Vertex où banc.encodage
+# encode les messages d'une campagne GraphRAG (gemini-embedding-001), source « google ».
 
 [[tarif]]
 modele = "claude-sonnet-5-5"
@@ -112,6 +115,21 @@ cache_ecriture_5m = 2.50
 cache_ecriture_1h = 4.00
 cache_lecture = 0.20
 source = "anthropic"
+
+# Encodage des messages (spec 003, D5 et D11) : « Gemini Embedding | Input | Global | Online requests |
+# $0.00015 » par « 1,000 count » (relevé le 2026-10-12, relu le 2026-10-17), soit 0,15 $ par million ;
+# sortie gratuite, aucun cache. L'unité (jetons ou caractères) n'est pas dite : la facture la tranche
+# (T16.3). Seules les réponses 200 sont facturées : une reprise après un 429 ne coûte rien de plus.
+[[tarif]]
+modele = "gemini-embedding-001"
+acces = "vertex-europe-west1"
+du = 2026-10-12
+entree = 0.15
+sortie = 0
+cache_ecriture_5m = 0
+cache_ecriture_1h = 0
+cache_lecture = 0
+source = "google"
 
 # Petit modèle de Claude Code, sous son identifiant de l'API (« @20251001 » est la forme de Google).
 [[tarif]]

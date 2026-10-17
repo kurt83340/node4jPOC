@@ -1,5 +1,6 @@
 """Prix des modèles (plan 002, D10) : tarifs datés de banc/prix.toml, par voie d'accès, et coût
-d'un usage. Voies : l'API Anthropic (`api`, ADR-0011) et le point multirégion `eu` de Vertex.
+d'un usage. Voies : l'API Anthropic (`api`, ADR-0011), le point multirégion `eu` de Vertex, et sa
+région `europe-west1` pour l'encodage des messages (spec 003, D11).
 """
 
 import tomllib
@@ -12,7 +13,7 @@ from typing import Any
 
 FICHIER = Path(__file__).resolve().parents[2] / "prix.toml"
 MILLION = Decimal(1_000_000)
-ACCES = ("api", "vertex-eu")
+ACCES = ("api", "vertex-eu", "vertex-europe-west1")
 
 
 class PrixError(Exception):
