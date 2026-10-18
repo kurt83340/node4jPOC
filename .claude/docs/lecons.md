@@ -48,6 +48,14 @@ Archive 📦 au bout de N mois (entries promues stables)
 
 ---
 
+## 2026-10-17 — Un attendu de test tiré des constantes du module testé ne voit pas un réglage faux
+
+**scope:** feature-003 | **status:** 🆕 new
+
+Le 2026-10-17 (T8.1), `test_requete_de_vertex` bâtissait son chemin attendu avec `REGION`, `MODELE` et `DIMENSIONS` de `banc.encodage` : « eu » au lieu d'« europe-west1 » dans le module aurait changé l'attendu avec lui, et le test aurait passé. Repéré en préparant les mutations, avant tout commit.
+Solution : l'attendu porte les valeurs de la spec, écrites en clair ; un import du module ne sert qu'au couplage voulu (un tarif existe pour son modèle et sa voie), doublé des valeurs en clair.
+→ Piste : 🔧 rule (`testing.md`) si le cas se revoit ; à décider par Julien.
+
 ## 2026-10-11 — Des textes validés reformulés sans le signaler
 
 **scope:** feature-002 | **status:** 🆕 new → 🔧 → [rule](../rules/textes-valides.md) (2026-10-12, choix de Julien)
