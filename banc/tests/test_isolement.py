@@ -8,6 +8,16 @@ from banc.isolement import CleAbsente, environnement_agent
 
 CLE = "sk-ant-api03-cle-factice-du-banc"
 COMMUNES = {"HOME", "PATH", "CLOUDSDK_CONFIG", "LC_CTYPE"}
+# Les cellules ADK, et les cellules GraphRAG qui reprennent leur client et leur modèle (plan 003,
+# D7) : Claude par la seule clé Anthropic, Gemini par Vertex eu et l'ADC.
+PAR_LA_CLE = COMMUNES | {"ANTHROPIC_API_KEY"}
+PAR_VERTEX = COMMUNES | {
+    "GOOGLE_APPLICATION_CREDENTIALS",
+    "GOOGLE_CLOUD_QUOTA_PROJECT",
+    "GOOGLE_CLOUD_PROJECT",
+    "GOOGLE_CLOUD_LOCATION",
+    "GOOGLE_GENAI_USE_ENTERPRISE",
+}
 ATTENDUES = {
     "claude-code": COMMUNES
     | {
@@ -21,17 +31,14 @@ ATTENDUES = {
         "CLAUDE_CODE_MAX_RETRIES",
         "FORCE_PROMPT_CACHING_5M",
     },
-    "adk-claude": COMMUNES | {"ANTHROPIC_API_KEY"},
-    "adk-gemini": COMMUNES
-    | {
-        "GOOGLE_APPLICATION_CREDENTIALS",
-        "GOOGLE_CLOUD_QUOTA_PROJECT",
-        "GOOGLE_CLOUD_PROJECT",
-        "GOOGLE_CLOUD_LOCATION",
-        "GOOGLE_GENAI_USE_ENTERPRISE",
-    },
+    "adk-claude": PAR_LA_CLE,
+    "adk-gemini": PAR_VERTEX,
+    "graphrag-claude": PAR_LA_CLE,
+    "graphrag-gemini": PAR_VERTEX,
 }
-CLAUDE = ["claude-code", "adk-claude"]
+CLAUDE = ["claude-code", "adk-claude", "graphrag-claude"]
+GEMINI = ["adk-gemini", "graphrag-gemini"]
+ADK = ["adk-claude", "adk-gemini", "graphrag-claude", "graphrag-gemini"]
 
 
 @pytest.fixture(autouse=True)
@@ -88,11 +95,23 @@ def test_cache_a_1_heure(tmp_path: Path) -> None:
     assert env["ENABLE_PROMPT_CACHING_1H"] == "1"
 
 
-@pytest.mark.parametrize("client", ["adk-claude", "adk-gemini"])
+@pytest.mark.parametrize("client", ADK)
 def test_cache_d_adk_hors_environnement(client: str, tmp_path: Path) -> None:
     # ADK règle son cache par ContextCacheConfig (T4.2), pas par une variable.
     env = environnement_agent(client, tmp_path, tmp_path, cache_1h=True)
     assert set(env) == ATTENDUES[client]
+
+
+@pytest.mark.parametrize(
+    ("cellule", "jumelle"), [("graphrag-claude", "adk-claude"), ("graphrag-gemini", "adk-gemini")]
+)
+def test_graphrag_comme_sa_jumelle(cellule: str, jumelle: str, tmp_path: Path) -> None:
+    # Plan 003, D7 : une cellule GraphRAG a le client et le modèle de sa jumelle ADK, donc sa liste
+    # blanche, valeurs comprises.
+    outils = [Path("/outils/neo4j-mcp")]
+    assert environnement_agent(cellule, tmp_path / "home", tmp_path / "claude", outils) == (
+        environnement_agent(jumelle, tmp_path / "home", tmp_path / "claude", outils)
+    )
 
 
 @pytest.mark.parametrize("client", CLAUDE)
@@ -103,9 +122,10 @@ def test_claude_sans_vertex(client: str, tmp_path: Path) -> None:
     assert env["ANTHROPIC_API_KEY"] == CLE
 
 
-def test_gemini_sur_vertex_eu_sans_la_cle(tmp_path: Path) -> None:
+@pytest.mark.parametrize("client", GEMINI)
+def test_gemini_sur_vertex_eu_sans_la_cle(client: str, tmp_path: Path) -> None:
     # Projet de quota compris : sans lui, l'ADC compterait les appels sur jleroy-outils.
-    env = environnement_agent("adk-gemini", tmp_path, tmp_path)
+    env = environnement_agent(client, tmp_path, tmp_path)
     assert all(CLE not in valeur for valeur in env.values())
     assert env["GOOGLE_CLOUD_LOCATION"] == "eu"
     projets = ("GOOGLE_CLOUD_PROJECT", "GOOGLE_CLOUD_QUOTA_PROJECT")
@@ -125,9 +145,12 @@ def test_cle_absente(
         environnement_agent(client, tmp_path, tmp_path)
 
 
-def test_gemini_n_exige_pas_la_cle(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+@pytest.mark.parametrize("client", GEMINI)
+def test_gemini_n_exige_pas_la_cle(
+    client: str, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
     monkeypatch.delenv("ANTHROPIC_API_KEY")
-    assert set(environnement_agent("adk-gemini", tmp_path, tmp_path)) == ATTENDUES["adk-gemini"]
+    assert set(environnement_agent(client, tmp_path, tmp_path)) == ATTENDUES[client]
 
 
 def test_client_inconnu(tmp_path: Path) -> None:
@@ -150,10 +173,10 @@ def test_configuration_gcloud_du_poste(monkeypatch: pytest.MonkeyPatch, tmp_path
             environnement_agent(client, tmp_path, tmp_path)["CLOUDSDK_CONFIG"] == "/ailleurs/gcloud"
         )
     adc = "/ailleurs/gcloud/application_default_credentials.json"
-    assert (
-        environnement_agent("adk-gemini", tmp_path, tmp_path)["GOOGLE_APPLICATION_CREDENTIALS"]
-        == adc
-    )
+    for client in GEMINI:
+        assert (
+            environnement_agent(client, tmp_path, tmp_path)["GOOGLE_APPLICATION_CREDENTIALS"] == adc
+        )
     monkeypatch.delenv("CLOUDSDK_CONFIG")
     monkeypatch.setenv("HOME", str(tmp_path / "julien"))
     attendu = str(tmp_path / "julien" / ".config" / "gcloud")

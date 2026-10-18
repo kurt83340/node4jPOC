@@ -810,3 +810,90 @@ def test_source_au_tour_precedent_sans_la_reponse() -> None:
 def test_tour_precedent_refuse(ident: str, precedent: str) -> None:
     with pytest.raises(NotationError, match=f"tour précédent de {precedent}, attendu"):
         noter(Q[ident], Tour(ident, ecrire("Dracaufeu")), REF, precedent=Tour(precedent, "?"))
+
+
+# --- Descriptions citées : réunies, elles portent toute la réponse (ADR-0018, T11.2) -------------
+
+RECHERCHE = (Path(__file__).resolve().parents[2] / "questions" / "recherche.cypher").read_text(
+    encoding="utf-8"
+)
+# Des textes inventés : aucun texte de description de la base dans le dépôt.
+LAVE = "Il se prélasse dans la lave des cratères quand le soir tombe."
+FORGE = "Il somnole près des bouches fumantes, le corps brûlant comme une forge."
+LAC = "Il médite au bord des lacs gelés, loin de toute agitation."
+
+
+def espece(nom: str, texte: str, **traits: object) -> dict[str, object]:
+    """Un enregistrement de questions/recherche.cypher (plan 003, D6) : une espèce, ses traits et
+    sa description."""
+    enregistrement: dict[str, object] = {
+        "espece": nom,
+        "categorie": "Pokémon Factice",
+        "types": ["Feu"],
+        "talents": [{"nom": "Corps Ardent", "cache": False}],
+        "statistiques": {"statPv": 45},
+        "evolueDe": [],
+        "evolueEn": [],
+        "descriptions": [{"texte": texte, "jeux": ["Rouge", "Bleu"], "score": 0.81}],
+    }
+    return enregistrement | traits
+
+
+def recherche(*especes: dict[str, object]) -> Appel:
+    """La recherche d'une cellule GraphRAG, telle que sa trace la note : un appel read-cypher, une
+    espèce par enregistrement (plan 003, D9)."""
+    resultat = json.dumps(list(especes), ensure_ascii=False, indent=2)
+    return Appel("read-cypher", RECHERCHE, {"vecteur": "sha256:factice"}, resultat)
+
+
+def cite(*textes: str) -> str:
+    """La section « Sources » d'une technique sans outil : les descriptions citées, avec leurs jeux
+    (consigne de contexte)."""
+    return "\n".join(f"- « {texte} » (Rouge, Bleu)" for texte in textes)
+
+
+def test_descriptions_citees_portent_toute_la_reponse() -> None:
+    # La réponse avance Magby et Magmar ; la seule description citée vient de l'enregistrement de
+    # Magby, qui ne porte qu'une partie de la réponse : source « non », une valeur ne suffit plus.
+    # Citées toutes deux, leurs enregistrements réunis portent la réponse : « oui ».
+    lue = recherche(espece("Magby", LAVE), espece("Magmar", FORGE))
+    assert source("Q3", "Magby et Magmar", cite(LAVE), lue) == "non"
+    assert source("Q3", "Magby et Magmar", cite(LAVE, FORGE), lue) == "oui"
+
+
+def test_une_description_porte_l_enregistrement_de_son_espece() -> None:
+    # Résidu assumé (ADR-0018) : l'enregistrement d'une espèce porte tous ses traits ; une réponse
+    # sur elle seule a pour source une description quelconque de cette espèce.
+    talents = [
+        {"nom": "Attention", "cache": False},
+        {"nom": "Impassible", "cache": False},
+        {"nom": "Cœur Noble", "cache": True},
+    ]
+    lucario = espece("Lucario", LAC, types=["Combat", "Acier"], talents=talents)
+    court = "Combat, Acier ; Attention, Impassible, Cœur Noble"
+    assert source("Q4", court, cite(LAC), recherche(lucario)) == "oui"
+
+
+def test_descriptions_sans_rien_a_verifier() -> None:
+    # Ni valeur juste ni espèce dans la réponse : une description renvoyée ne prouve rien.
+    lue = recherche(espece("Magby", LAVE))
+    assert source("Q22", "Roche", cite(LAVE), lue) == "non"
+
+
+def test_description_au_tour_precedent() -> None:
+    # Second tour (ADR-0015) : Q18 cite la description de Dracaufeu, que seule la recherche de Q2 a
+    # renvoyée ; sans le tour précédent, elle est introuvable.
+    q2 = Tour("Q2", ecrire("Lokhlass, Dracaufeu"), (recherche(espece("Dracaufeu", FORGE)),))
+    q18 = Tour("Q18", ecrire("Dracaufeu", cite(FORGE)), (recherche(espece("Lokhlass", LAC)),))
+    assert noter(Q["Q18"], q18, REF, precedent=q2).source == "oui"
+    assert noter(Q["Q18"], q18, REF).source == "non"
+
+
+def test_requete_et_descriptions_jugees_chacune_a_part() -> None:
+    # Lecture de l'ADR-0018 (choix de Claude) : les requêtes citées se jugent entre elles
+    # (ADR-0009), les descriptions citées entre elles ; une requête qui porte Magmar et une
+    # description qui porte Magby ne font pas une source de « Magby et Magmar ».
+    requete = "MATCH (p:Pokemon {nom: 'Magmar'}) RETURN p.nom AS pokemon"
+    appels = (lecture(requete, [{"pokemon": "Magmar"}]), recherche(espece("Magby", LAVE)))
+    sources = bloc(requete) + "\n" + cite(LAVE)
+    assert source("Q3", "Magby et Magmar", sources, *appels) == "non"

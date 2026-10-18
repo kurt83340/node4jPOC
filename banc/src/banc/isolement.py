@@ -7,7 +7,8 @@ modèle…) : aucun ne doit atteindre l'agent mesuré.
 
 La liste dépend du client (ADR-0011) : les cellules Claude reçoivent la clé Anthropic que
 scripts/banc.sh passe au harnais, et aucune variable Vertex (CLAUDE_CODE_USE_VERTEX passerait avant
-la clé) ; la cellule Gemini reçoit Vertex `eu` par l'ADC, et jamais la clé.
+la clé) ; les cellules Gemini reçoivent Vertex `eu` par l'ADC, et jamais la clé. Une cellule
+GraphRAG reçoit la liste de sa jumelle ADK, dont elle reprend le client et le modèle (plan 003, D7).
 
 Claude Code 2.1.292 (relevé T4.1, sur le vrai binaire et une fausse API) ouvre par défaut une socket
 de messagerie entre sessions dans /tmp/cc-socks/, décrit à l'agent une mémoire persistante, reprend
@@ -72,7 +73,7 @@ def environnement_agent(
     """Liste blanche de D3 pour ce client.
 
     Args:
-        client: claude-code, adk-claude ou adk-gemini.
+        client: claude-code, adk-claude, adk-gemini, graphrag-claude ou graphrag-gemini.
         home: HOME temporaire de l'agent.
         config_claude: CLAUDE_CONFIG_DIR temporaire (aucun réglage ni historique du poste).
         chemins: dossiers d'outils placés devant ceux du système (gcloud, neo4j-mcp).
@@ -109,9 +110,9 @@ def environnement_agent(
         }
         # Durée explicite, pour toutes les requêtes : sans variable, Claude Code choisit seul.
         env |= {"ENABLE_PROMPT_CACHING_1H": "1"} if cache_1h else {"FORCE_PROMPT_CACHING_5M": "1"}
-    elif client == "adk-claude":
+    elif client in ("adk-claude", "graphrag-claude"):
         env["ANTHROPIC_API_KEY"] = cle_anthropic()
-    elif client == "adk-gemini":
+    elif client in ("adk-gemini", "graphrag-gemini"):
         env |= {
             # Chemin explicite : sous un HOME temporaire, l'ADC ne se trouve pas d'elle-même.
             "GOOGLE_APPLICATION_CREDENTIALS": str(gcloud / "application_default_credentials.json"),

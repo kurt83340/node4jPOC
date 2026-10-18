@@ -249,6 +249,10 @@
   écrirait ses fichiers : lui passer des chemins absolus (scratchpad). Une mutation passe par
   `logs/outils/mutations/mutations.py` (motif unique, copie d'abord, restauration dans un `finally`, empreinte
   revérifiée) : faite à la main, un échec laissait le fichier muté (vu le 2026-10-13).
+- ⚠️ `logs/outils/mutations/mutations.py` — Python valide un `.pyc` par la date (à la seconde) et la taille de sa
+  source : deux mutations de même taille, dans la même seconde, faisaient tourner le code de la précédente ; une
+  mutation passait pour survivante, ou pour tuée à tort. L'outil n'écrit plus de bytecode, date chaque fichier muté
+  par l'empreinte de son contenu et rend sa date au fichier restauré (vu le 2026-10-18, T11.2).
 - ⚠️ `banc/tests/test_charger_sh.py` — les faux `gcloud` et `cypher-shell` sont du code Python dans des chaînes, où un
   saut de ligne s'écrit déjà échappé : un remplacement par script qui vise ce code rate son motif. Écrire le motif en
   chaîne brute, sans barre oblique finale (vu le 2026-10-13).
