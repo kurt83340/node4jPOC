@@ -33,6 +33,7 @@ COMMANDE = Commande(
     cli=Path("/opt/faux/claude"),
     schema="en",
     empreinte_prompt="0" * 64,
+    empreinte_recherche="1" * 64,
 )
 
 
@@ -69,15 +70,25 @@ def test_budget_exact() -> None:
 
 def test_valeurs_par_defaut() -> None:
     retires = dict.fromkeys(
-        ("plafonds", "cache_1h", "serveur", "cli", "schema", "empreinte_prompt", "vecteurs")
+        (
+            "plafonds",
+            "cache_1h",
+            "serveur",
+            "cli",
+            "schema",
+            "empreinte_prompt",
+            "vecteurs",
+            "empreinte_recherche",
+        )
     )
     commande = lire_commande(brut(**retires))
     assert (commande.plafonds, commande.cache_1h) == (Plafonds(), False)
     assert (commande.serveur, commande.cli) == ((str(LANCEUR),), None)
     # Français, fiche non vérifiée : un essai hors campagne.
     assert (commande.schema, commande.empreinte_prompt) == ("fr", None)
-    # Aucun vecteur : les cellules qui interrogent la base par un outil n'en ont pas.
-    assert commande.vecteurs == ()
+    # Aucun vecteur : les cellules qui interrogent la base par un outil n'en ont pas ; ni requête
+    # de recherche à vérifier (spec 003, T12.1).
+    assert (commande.vecteurs, commande.empreinte_recherche) == ((), None)
     # ADR-0009 et choix de Julien (T4.1) : 180 s et 10 tours par question, 0,50 $ par conversation.
     assert Plafonds() == Plafonds(180.0, 10, Decimal("0.50"), 30.0)
 
@@ -105,6 +116,9 @@ def test_valeurs_par_defaut() -> None:
         ({"empreinte_prompt": "0" * 63}, "empreinte_prompt : un SHA-256"),
         ({"empreinte_prompt": "G" * 64}, "empreinte_prompt : un SHA-256"),
         ({"empreinte_prompt": "0" * 65}, "empreinte_prompt : un SHA-256"),
+        # Spec 003, T12.1 : l'empreinte de la requête de recherche, fixée à la création.
+        ({"empreinte_recherche": "1" * 63}, "empreinte_recherche : un SHA-256"),
+        ({"empreinte_recherche": 1}, "empreinte_recherche : un SHA-256"),
         # Spec 003, D5 : un vecteur par question (la commande type en pose deux), fait de nombres.
         ({"vecteurs": {"Q2": [0.5]}}, "vecteurs : une liste attendue"),
         ({"vecteurs": [[0.5]]}, "vecteurs : un par question attendu"),

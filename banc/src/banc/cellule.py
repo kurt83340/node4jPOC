@@ -91,6 +91,9 @@ class Commande:
     # Vecteurs des messages, un par question et dans leur ordre, encodés à la création de la
     # campagne (spec 003, D5) : la recherche des cellules GraphRAG ; aucun pour les autres.
     vecteurs: tuple[tuple[float, ...], ...] = ()
+    # SHA-256 de la requête de recherche, fixé à la création de la campagne (spec 003, T12.1) : une
+    # requête modifiée depuis arrête la conversation, comme le prompt (D7). None : non vérifiée.
+    empreinte_recherche: str | None = None
 
 
 def lire_commande(texte: str) -> Commande:
@@ -148,6 +151,26 @@ def consigne_et_fiche(
     return prompt
 
 
+def empreinte_recherche(fichier: Path = RECHERCHE) -> str:
+    """SHA-256 de la requête de recherche des cellules GraphRAG, telle qu'elles l'envoient (D6) :
+    D7 la gèle comme le prompt."""
+    return hashlib.sha256(fichier.read_text(encoding="utf-8").encode("utf-8")).hexdigest()
+
+
+def requete_de_recherche(empreinte: str | None = None, fichier: Path = RECHERCHE) -> str:
+    """La requête de recherche, telle quelle, commentaires compris (D6).
+
+    Raises:
+        CelluleError: la requête n'a plus l'empreinte fixée à la création de la campagne.
+    """
+    requete = fichier.read_text(encoding="utf-8")
+    if empreinte is not None and hashlib.sha256(requete.encode("utf-8")).hexdigest() != empreinte:
+        raise CelluleError(
+            f"{fichier.name} changée depuis la création de la campagne (protocole gelé, D7)"
+        )
+    return requete
+
+
 def _prompt(dossier: Path, schema: str, consigne: str) -> str:
     texte = (dossier / CONSIGNES[consigne]).read_text(encoding="utf-8")
     fiche = (dossier / FICHES[schema]).read_text(encoding="utf-8")
@@ -178,11 +201,7 @@ def _commande(brut: dict[str, Any]) -> Commande:
         raise TypeError("cache_1h : vrai ou faux attendu")
     if brut.get("schema", "fr") not in FICHES:
         raise ValueError(f"schema : {' ou '.join(FICHES)} attendu, pas {brut['schema']!r}")
-    empreinte = brut.get("empreinte_prompt")
-    if empreinte is not None and not (
-        isinstance(empreinte, str) and EMPREINTE.fullmatch(empreinte)
-    ):
-        raise ValueError(f"empreinte_prompt : un SHA-256 en hexadécimal attendu, pas {empreinte!r}")
+    empreinte = _empreinte(brut, "empreinte_prompt")
     vecteurs = _vecteurs(brut.get("vecteurs", []))
     if vecteurs and len(vecteurs) != len(questions):
         raise ValueError(
@@ -202,7 +221,18 @@ def _commande(brut: dict[str, Any]) -> Commande:
         schema=brut.get("schema", "fr"),
         empreinte_prompt=empreinte,
         vecteurs=vecteurs,
+        empreinte_recherche=_empreinte(brut, "empreinte_recherche"),
     )
+
+
+def _empreinte(brut: dict[str, Any], cle: str) -> str | None:
+    """Une empreinte de la commande : un SHA-256 en hexadécimal, ou rien."""
+    empreinte = brut.get(cle)
+    if empreinte is not None and not (
+        isinstance(empreinte, str) and EMPREINTE.fullmatch(empreinte)
+    ):
+        raise ValueError(f"{cle} : un SHA-256 en hexadécimal attendu, pas {empreinte!r}")
+    return empreinte
 
 
 def _vecteurs(brut: Any) -> tuple[tuple[float, ...], ...]:

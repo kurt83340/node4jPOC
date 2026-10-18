@@ -34,8 +34,14 @@ from mcp import ClientSession, StdioServerParameters
 
 from banc import orchestration
 from banc.cellule import LANCEUR, RECHERCHE
-from banc.encodage import DIMENSIONS, DOCUMENT, QUESTION, Encodage, EncodageError, connexion
-from banc.encodage import encoder as encoder_vertex
+from banc.encodage import (
+    DIMENSIONS,
+    DOCUMENT,
+    QUESTION,
+    Encodage,
+    EncodageError,
+    encodeur_vertex,
+)
 from banc.essai_serveur import (
     ERREURS_TECHNIQUES,
     Bilan,
@@ -139,7 +145,7 @@ async def _essai(bilan: Bilan, moyens: Moyens, session: ClientSession, requete: 
     obtenu = "; ".join(ecarts) or f"{len(json.loads(texte))} espèce(s)"
     if not bilan.juger("requête lue par read-cypher, vecteur factice", not ecarts, obtenu):
         return
-    encoder = moyens.encoder or _encodeur()
+    encoder = moyens.encoder or encodeur_vertex()
     for rang, phrase in enumerate(PHRASES, start=1):
         encodage = await asyncio.to_thread(encoder, phrase, QUESTION)
         debut = time.monotonic()
@@ -218,9 +224,3 @@ def cles(objet: Any) -> set[str]:
     if isinstance(objet, list):
         return set().union(*(cles(element) for element in objet))
     return set()
-
-
-def _encodeur() -> Callable[[str, str], Encodage]:
-    """L'encodage de banc.encodage, par une seule connexion à Vertex pour tout l'essai."""
-    client = connexion()
-    return lambda texte, tache: encoder_vertex(texte, tache, client)

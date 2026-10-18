@@ -42,7 +42,10 @@ def main(arguments: Sequence[str] | None = None) -> int:
         "--questions", type=_liste, default=(), help="Q19,Q2,Q18… (défaut : les 30, par numéro)"
     )
     lancer.add_argument(
-        "--cellules", type=_liste, default=(), help="claude-code,adk-claude,adk-gemini (défaut)"
+        "--cellules",
+        type=_liste,
+        default=(),
+        help="claude-code,adk-claude,adk-gemini (défaut), ou graphrag-claude,graphrag-gemini",
     )
     lancer.add_argument(
         "--cache-1h",
