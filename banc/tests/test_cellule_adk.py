@@ -28,8 +28,6 @@ from typing import Any
 import google.auth.exceptions
 import httpx2
 import pytest
-from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.primitives.asymmetric import rsa
 from google.adk.runners import Runner
 from google.genai import types
 
@@ -107,19 +105,6 @@ def usage_attendu(client: str, *appels: dict[str, int]) -> Usage:
 
 
 # --- Bac à sable ---------------------------------------------------------------------------------
-
-
-@pytest.fixture(scope="module")
-def cle_adc() -> str:
-    """Clé privée d'un compte de service factice : l'ADC de Vertex, signée puis échangée contre un
-    jeton auprès de la fausse API (token_uri)."""
-    cle = rsa.generate_private_key(public_exponent=65537, key_size=2048)
-    pem = cle.private_bytes(
-        serialization.Encoding.PEM,
-        serialization.PrivateFormat.PKCS8,
-        serialization.NoEncryption(),
-    )
-    return pem.decode()
 
 
 @dataclass
