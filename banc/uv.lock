@@ -284,6 +284,8 @@ dependencies = [
     { name = "anthropic", extra = ["vertex"] },
     { name = "claude-agent-sdk" },
     { name = "google-adk", extra = ["mcp"] },
+    { name = "google-auth" },
+    { name = "google-genai" },
 ]
 
 [package.dev-dependencies]
@@ -299,6 +301,8 @@ requires-dist = [
     { name = "anthropic", extras = ["vertex"], specifier = "==1.11.0" },
     { name = "claude-agent-sdk", specifier = "==0.2.164" },
     { name = "google-adk", extras = ["mcp"], specifier = "==2.11.0" },
+    { name = "google-auth", specifier = "==2.60.0" },
+    { name = "google-genai", specifier = "==2.28.0" },
 ]
 
 [package.metadata.requires-dev]
