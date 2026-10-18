@@ -11,6 +11,7 @@ sont remplacés par des faux : on compte leurs appels.
 
 import contextlib
 import functools
+import hashlib
 import inspect
 import json
 import os
@@ -32,6 +33,7 @@ from banc import anglais, orchestration, revue
 from banc import questions as banc_questions
 from banc.__main__ import main
 from banc.cellule import LANCEUR, RACINE, Plafonds, empreinte_prompt
+from banc.encodage import Encodage, EncodageError
 from banc.isolement import environnement_agent
 from banc.mesures import lire, lire_lignes, nom_de_trace
 from banc.notation import Controle, NotationError, controle_par_script, controle_simule, noter
@@ -71,7 +73,11 @@ BANC = banc_questions.charger()
 EQUIPE_VALIDE = Controle(6, (), True)
 # Une réponse à Q2 dont l'équipe s'extrait (6 espèces) : le contrôle de Q2 est appelé.
 EQUIPE = "Réponse : Magnéton, Dracolosse, Flagadoss, Noadkoko, Staross, Parasect"
-CC, AC, AG = CELLULES
+# Les cellules, en clair : la technique 2 (jalon 2), puis la technique 3, GraphRAG (spec 003, D7).
+CC, AC, AG = "claude-code", "adk-claude", "adk-gemini"
+GC, GG = "graphrag-claude", "graphrag-gemini"
+# Requête de recherche des cellules GraphRAG (D6), dont la campagne garde l'empreinte.
+RECHERCHE = RACINE / "questions" / "recherche.cypher"
 INSTANCE = "f4c7e9a2"
 SECRET = (
     f"NEO4J_URI=neo4j+s://{INSTANCE}.databases.neo4j.io\nNEO4J_USERNAME={INSTANCE}\n"
@@ -82,6 +88,21 @@ CHERE = {"tours": [{"issue": "reponse", "entree": 100_000, "sortie": 0}]}
 
 
 # --- Bac à sable ----------------------------------------------------------------------------------
+
+
+@dataclass
+class FauxEncodeur:
+    """Encode sans Vertex : le rang de l'appel fait le vecteur (1/7, puis 2/7…) ; chaque appel
+    est noté."""
+
+    erreur: Exception | None = None
+    appels: list[tuple[str, str]] = field(default_factory=list)
+
+    def __call__(self, texte: str, tache: str) -> Encodage:
+        self.appels.append((texte, tache))
+        if self.erreur is not None:
+            raise self.erreur
+        return Encodage((len(self.appels) / 7,) * 3072, 10, 0.1)
 
 
 @dataclass
@@ -98,6 +119,8 @@ class Bac:
     # Contrôles de Q2 demandés : (langue de la requête, équipe) ; ceux qui échouent encore.
     controles: list[tuple[str, str]] = field(default_factory=list)
     echecs_du_controle: int = 0
+    # Encodage des messages d'une campagne GraphRAG (D5), sans Vertex.
+    encodeur: FauxEncodeur = field(default_factory=FauxEncodeur)
 
     @property
     def nettoyages(self) -> int:
@@ -162,6 +185,7 @@ class Bac:
             "controle_en": self.controler("en"),
             "nettoyer": self.nettoyer,
             "verifier_la_base": self.verifier_la_base,
+            "encodeur": lambda: self.encodeur,
             "marge_s": 30.0,
             "ecrire": self.sortie.append,
         }
@@ -210,7 +234,7 @@ def bac(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Bac:
 def campagne(
     *conversations_: tuple[str, ...],
     passes: int = 1,
-    cellules: tuple[str, ...] = CELLULES,
+    cellules: tuple[str, ...] = (CC, AC, AG),
     cache_1h: bool = False,
     **plafonds: Any,
 ) -> Campagne:
@@ -319,6 +343,9 @@ def test_message_pose() -> None:
         {"empreinte_prompt": "a" * 63},
         {"empreinte_prompt": "a" * 65},
         {"empreinte_prompt": "A" * 64},
+        {"empreinte_recherche": "a" * 63},
+        # Une campagne de la technique 2 ne cherche pas : aucune empreinte de recherche.
+        {"empreinte_recherche": "a" * 64},
     ],
 )
 def test_campagne_invalide(reglages: dict[str, Any]) -> None:
@@ -345,6 +372,10 @@ def test_parametres_relus(tmp_path: Path) -> None:
     # Jamais réécrits.
     with pytest.raises(FileExistsError):
         ecrire_campagne(fichier, fixee)
+    # Une campagne GraphRAG (format 4) : l'empreinte de sa requête de recherche aussi.
+    graphrag = replace(campagne(cellules=(GG, GC)), empreinte_recherche="c" * 64)
+    ecrire_campagne(tmp_path / "graphrag.json", graphrag)
+    assert lire_campagne(tmp_path / "graphrag.json") == graphrag
 
 
 @pytest.mark.parametrize(
@@ -355,7 +386,8 @@ def test_parametres_relus(tmp_path: Path) -> None:
         ("cache_1h", 1, "cache_1h, faux_serveur : vrai ou faux"),
         ("faux_serveur", "oui", "cache_1h, faux_serveur : vrai ou faux"),
         ("inconnue", True, "inattendues"),
-        ("format", 4, "illisible : format 4"),
+        ("format", 5, "illisible : format 5"),
+        ("empreinte_recherche", 3, "empreinte_recherche : du texte ou null attendu"),
         ("schema", 3, "schema : du texte attendu"),
         ("empreinte_prompt", 3, "empreinte_prompt : du texte attendu"),
         # Au format 3, une empreinte nulle couperait la vérification du gel.
@@ -1367,6 +1399,8 @@ def test_programmes_des_cellules() -> None:
         CC: ("-m", "banc.cellule_sdk"),
         AC: ("-m", "banc.cellule_adk", AC),
         AG: ("-m", "banc.cellule_adk", AG),
+        GC: ("-m", "banc.cellule_graphrag", GC),
+        GG: ("-m", "banc.cellule_graphrag", GG),
     }
     assert {programme[0] for programme in PROGRAMMES.values()} == {sys.executable}
 
@@ -1505,7 +1539,7 @@ def test_format_2_relu_en_francais(tmp_path: Path) -> None:
     fichier = tmp_path / "campagne.json"
     ecrire_campagne(fichier, campagne(("Q1",)))
     ancien = json.loads(fichier.read_text())
-    del ancien["schema"], ancien["empreinte_prompt"]
+    del ancien["schema"], ancien["empreinte_prompt"], ancien["empreinte_recherche"]
     fichier.write_text(json.dumps(ancien | {"format": 2}))
     relue = lire_campagne(fichier)
     assert (relue.schema, relue.empreinte_prompt) == ("fr", None)
@@ -1587,7 +1621,7 @@ def test_fiche_changee_avant_la_reprise(
     bac: Bac, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     assert bac.commande(questions=("Q1", "Q3"), cellules=(AG,)) == 0
-    monkeypatch.setattr(orchestration, "empreinte_prompt", lambda _schema: "b" * 64)
+    monkeypatch.setattr(orchestration, "empreinte_prompt", lambda _schema, consigne: "b" * 64)
     assert bac.commande(reprendre=True) == 2
     assert "consigne ou fiche-schema.md changées depuis la création de la campagne essai" in (
         capsys.readouterr().err
@@ -1701,3 +1735,189 @@ def test_second_tour_note_avec_son_tour_precedent(
     repondre_une_equipe(bac)
     assert bac.commande(questions=("Q2", "Q18", "Q1"), cellules=(AG,)) == 0
     assert recus == [("Q2", None), ("Q18", "Q2"), ("Q1", None)]
+
+
+# --- Cellules GraphRAG (spec 003, T12.1 ; plan, « Flux de données », étapes 1 et 2) -------------
+
+
+def empreinte_de(chemin: Path) -> str:
+    return hashlib.sha256(chemin.read_bytes()).hexdigest()
+
+
+def test_cellules_par_defaut(bac: Bac) -> None:
+    # Sans --cellules : les trois cellules de la technique 2, comme au jalon 2 ; les cellules
+    # GraphRAG se demandent.
+    assert bac.commande(questions=("Q1",)) == 0
+    fixee = lire_campagne(bac.racine / "traces" / "essai" / "campagne.json")
+    assert fixee.cellules == (CC, AC, AG)
+
+
+@pytest.mark.parametrize("cellules", [(AC, GC), (GG, CC)], ids=["adk-puis-graphrag", "inverse"])
+def test_une_seule_technique_par_campagne(
+    bac: Bac, capsys: pytest.CaptureFixture[str], cellules: tuple[str, ...]
+) -> None:
+    # Une campagne mesure une technique : avec l'outil read-cypher, ou sans outil (ADR-0018) ;
+    # refusée avant de créer quoi que ce soit.
+    assert bac.commande(questions=("Q1",), cellules=cellules) == 2
+    assert "une seule technique" in capsys.readouterr().err
+    assert not (bac.racine / "traces" / "essai").exists()
+    assert bac.encodeur.appels == []
+
+
+def test_campagne_graphrag_creee(bac: Bac) -> None:
+    # À la création : le prompt de la consigne de contexte (ADR-0018), l'empreinte de la requête de
+    # recherche, puis chaque message posé encodé une fois, préambule de Q2 compris (D5).
+    assert bac.commande(questions=("Q2", "Q18", "Q1"), cellules=(GC, GG)) == 0
+    dossier = bac.racine / "traces" / "essai"
+    fixee = lire_campagne(dossier / "campagne.json")
+    assert fixee.empreinte_prompt == empreinte_prompt("fr", consigne="contexte")
+    assert fixee.empreinte_recherche == empreinte_de(RECHERCHE)
+    posees = [message(BANC.questions[ident]) for ident in ("Q2", "Q18", "Q1")]
+    assert bac.encodeur.appels == [(texte, "RETRIEVAL_QUERY") for texte in posees]
+    encodages = json.loads((dossier / "encodages.json").read_text(encoding="utf-8"))
+    assert list(encodages["messages"]) == ["Q2", "Q18", "Q1"]
+
+
+def test_commande_d_une_cellule_graphrag(bac: Bac) -> None:
+    # Chaque cellule reçoit les vecteurs de ses questions, dans leur ordre, et les empreintes du
+    # prompt et de la requête de recherche fixées à la création.
+    assert bac.commande(questions=("Q1", "Q2", "Q18"), cellules=(GG, GC)) == 0
+    vecteurs = {"Q1": [3072, 1 / 7], "Q2": [3072, 2 / 7], "Q18": [3072, 3 / 7]}
+    notes = bac.notes()
+    assert len(notes) == 4
+    for note in notes:
+        questions = note["cle"].split()[2].split("+")
+        assert note["vecteurs"] == [vecteurs[ident] for ident in questions]
+        assert note["empreinte_recherche"] == empreinte_de(RECHERCHE)
+        assert note["empreinte_prompt"] == empreinte_prompt("fr", consigne="contexte")
+
+
+def test_campagne_avec_outil_sans_encodage(bac: Bac) -> None:
+    # La technique 2 ne cherche pas : ni encodage, ni vecteur, ni empreinte de recherche.
+    assert bac.commande(questions=("Q1",), cellules=(AG,)) == 0
+    assert bac.encodeur.appels == []
+    assert not (bac.racine / "traces" / "essai" / "encodages.json").exists()
+    (note,) = bac.notes()
+    assert (note["vecteurs"], note["empreinte_recherche"]) == ([], None)
+
+
+def test_encodage_en_echec(bac: Bac, capsys: pytest.CaptureFixture[str]) -> None:
+    # Plan, « Erreurs » : la campagne ne démarre pas ; rien n'est créé, rien ne part au modèle.
+    bac.encodeur.erreur = EncodageError("Vertex refuse l'encodage (403) : refus")
+    assert bac.commande(questions=("Q1",), cellules=(GC,)) == 2
+    assert "Vertex refuse l'encodage (403)" in capsys.readouterr().err
+    assert not (bac.racine / "traces" / "essai").exists()
+    assert not (bac.racine / "mesures" / "essai.csv").exists()
+    assert bac.lancees() == []
+
+
+def test_reprise_sans_reencoder(bac: Bac) -> None:
+    # --reprendre relit encodages.json : aucun nouvel appel à Vertex, les mêmes vecteurs.
+    bac.scenario({f"{GC} p1 Q1 e1": {"tours": [tour("arret", "plafond")]}})
+    assert bac.commande(questions=("Q1",), cellules=(GC,)) == orchestration.PLAFOND
+    assert len(bac.encodeur.appels) == 1
+    assert bac.commande(reprendre=True) == 0
+    assert len(bac.encodeur.appels) == 1
+    assert bac.lancees() == [f"{GC} p1 Q1 e1", f"{GC} p1 Q1 e2"]
+    assert [note["vecteurs"] for note in bac.notes()] == [[[3072, 1 / 7]]] * 2
+
+
+def sans_encodages(dossier: Path) -> None:
+    (dossier / "encodages.json").unlink()
+
+
+def message_change(dossier: Path) -> None:
+    fichier = dossier / "encodages.json"
+    contenu = json.loads(fichier.read_text(encoding="utf-8"))
+    contenu["messages"]["Q1"]["empreinte"] = "d" * 64
+    fichier.write_text(json.dumps(contenu), encoding="utf-8")
+
+
+def recherche_changee(dossier: Path) -> None:
+    fichier = dossier / "campagne.json"
+    contenu = json.loads(fichier.read_text(encoding="utf-8"))
+    contenu["empreinte_recherche"] = "e" * 64
+    fichier.write_text(json.dumps(contenu), encoding="utf-8")
+
+
+@pytest.mark.parametrize(
+    ("changer", "motif"),
+    [
+        (sans_encodages, "encodages.json illisible"),
+        (message_change, "Q1 : message changé depuis la création de la campagne"),
+        (recherche_changee, "recherche.cypher changée depuis la création de la campagne essai"),
+    ],
+    ids=["sans-encodages", "message-change", "recherche-changee"],
+)
+def test_reprise_refusee(
+    bac: Bac, capsys: pytest.CaptureFixture[str], changer: Callable[[Path], None], motif: str
+) -> None:
+    # Le protocole est gelé à la création (D7) : la reprise ne réencode pas, et refuse des encodages
+    # ou une requête de recherche qui ne sont plus ceux de la campagne.
+    bac.scenario({f"{GC} p1 Q1 e1": {"tours": [tour("arret", "plafond")]}})
+    assert bac.commande(questions=("Q1",), cellules=(GC,)) == orchestration.PLAFOND
+    changer(bac.racine / "traces" / "essai")
+    capsys.readouterr()
+    assert bac.commande(reprendre=True) == 2
+    assert motif in capsys.readouterr().err
+    assert len(bac.encodeur.appels) == 1
+    assert bac.lancees() == [f"{GC} p1 Q1 e1"]
+
+
+def test_graphrag_sans_empreinte_de_recherche_non_ecrite(tmp_path: Path) -> None:
+    # Sans elle, rien ne vérifierait le gel de la requête (D7) : une campagne GraphRAG ne s'écrit
+    # pas, et ne se relit pas, sans l'empreinte de sa requête de recherche.
+    graphrag = campagne(cellules=(GC,))
+    with pytest.raises(OrchestrationError, match="sans empreinte de la requête de recherche"):
+        ecrire_campagne(tmp_path / "campagne.json", graphrag)
+    fichier = tmp_path / "relue.json"
+    ecrire_campagne(fichier, replace(graphrag, empreinte_recherche="c" * 64))
+    contenu = json.loads(fichier.read_text(encoding="utf-8")) | {"empreinte_recherche": None}
+    fichier.write_text(json.dumps(contenu), encoding="utf-8")
+    with pytest.raises(OrchestrationError, match="sans empreinte de la requête de recherche"):
+        lire_campagne(fichier)
+
+
+def test_format_3_relu_sans_recherche(tmp_path: Path) -> None:
+    # Les campagnes d'avant T12.1 (format 3 : fr-controle, en-1) se relisent : la technique 2, sans
+    # requête de recherche.
+    fichier = tmp_path / "campagne.json"
+    ecrire_campagne(fichier, campagne(("Q1",)))
+    ancien = json.loads(fichier.read_text(encoding="utf-8"))
+    del ancien["empreinte_recherche"]
+    fichier.write_text(json.dumps(ancien | {"format": 3}), encoding="utf-8")
+    assert lire_campagne(fichier) == campagne(("Q1",))
+    fichier.write_text(json.dumps(ancien | {"format": 3, "empreinte_recherche": None}))
+    with pytest.raises(OrchestrationError, match="inattendues"):
+        lire_campagne(fichier)
+
+
+@pytest.mark.parametrize("empreinte", ["a" * 63, "A" * 64], ids=["courte", "majuscules"])
+def test_campagne_graphrag_invalide(empreinte: str) -> None:
+    # L'empreinte de la requête de recherche : un SHA-256 en hexadécimal, comme celle du prompt.
+    valide = replace(campagne(cellules=(GC, GG)), empreinte_recherche="c" * 64)
+    with pytest.raises(OrchestrationError, match=r"campagne invalide \(empreinte_recherche\)"):
+        replace(valide, empreinte_recherche=empreinte)
+
+
+def test_vecteurs_exiges(bac: Bac) -> None:
+    # Une campagne GraphRAG mène ses conversations avec un vecteur par question, la technique 2
+    # sans aucun.
+    graphrag = replace(
+        campagne(("Q1",), ("Q2", "Q18"), cellules=(GC,)), empreinte_recherche="c" * 64
+    )
+    vecteurs = dict.fromkeys(("Q1", "Q2"), (0.5,) * 3072)
+    with pytest.raises(OrchestrationError, match="un par question"):
+        Orchestration(graphrag, Decimal(1), bac.moyens(), BANC, vecteurs)
+    with pytest.raises(OrchestrationError, match="les autres aucun"):
+        Orchestration(campagne(("Q1",)), Decimal(1), bac.moyens(), BANC, {"Q1": (0.5,) * 3072})
+
+
+def test_cle_absente_graphrag(bac: Bac, monkeypatch: pytest.MonkeyPatch) -> None:
+    # graphrag-claude paie par la clé Anthropic (ADR-0011) : exigée avant d'écrire ou d'encoder
+    # quoi que ce soit ; une campagne de graphrag-gemini seule s'en passe.
+    monkeypatch.delenv("ANTHROPIC_API_KEY")
+    assert bac.commande(questions=("Q1",), cellules=(GC,)) == 2
+    assert not (bac.racine / "traces" / "essai").exists()
+    assert bac.encodeur.appels == []
+    assert bac.commande(questions=("Q1",), cellules=(GG,)) == 0

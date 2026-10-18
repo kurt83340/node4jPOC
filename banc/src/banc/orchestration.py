@@ -6,11 +6,19 @@ un ordre qui tourne d'un cran à chaque conversation et à chaque passe (choix d
 n'est toujours la première sur un cache d'Aura froid. Les paramètres d'une campagne sont fixés à sa
 création (campagne.json, près de ses traces) ; --reprendre les relit.
 
-Une conversation : un processus de cellule (banc.cellule_sdk, banc.cellule_adk) dans sa propre
-session, la liste blanche pour seul environnement (banc.isolement), un HOME, une configuration de
-Claude Code et un dossier de travail neufs, hors du dépôt, détruits ensuite. La cellule tient
-elle-même ses plafonds et écrit sa trace ; l'orchestration la relit, note ses réponses
-(banc.notation) et en ajoute toutes les lignes d'un coup au CSV de la campagne (banc.mesures).
+Une campagne mesure une seule technique : la technique 2, des agents qui interrogent la base par
+l'outil read-cypher (claude-code, adk-claude, adk-gemini, les cellules par défaut), ou la
+technique 3, des cellules GraphRAG sans outil (graphrag-claude, graphrag-gemini ; spec 003). Une
+campagne GraphRAG encode ses messages à sa création (banc.encodage, encodages.json près de ses
+traces), avant toute écriture, et chaque cellule reçoit les vecteurs de ses questions ; la reprise
+les relit sans réencoder. L'empreinte de sa requête de recherche est gelée avec celle du prompt.
+
+Une conversation : un processus de cellule (banc.cellule_sdk, banc.cellule_adk,
+banc.cellule_graphrag) dans sa propre session, la liste blanche pour seul environnement
+(banc.isolement), un HOME, une configuration de Claude Code et un dossier de travail neufs, hors
+du dépôt, détruits ensuite. La cellule tient elle-même ses plafonds et écrit sa trace ;
+l'orchestration la relit, note ses réponses (banc.notation) et en ajoute toutes les lignes d'un
+coup au CSV de la campagne (banc.mesures).
 Puis, selon les issues (D13) :
 - panne : la conversation (la paire) est rejouée aussitôt, à l'essai suivant ; 3 de suite arrêtent
   la campagne (circuit breaker du plan) ; plus de 2 dans une série (une cellule, une passe) la
@@ -64,7 +72,7 @@ import sys
 import tempfile
 from collections import Counter
 from collections.abc import Callable, Iterator, Mapping, Sequence
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field, replace
 from decimal import Decimal, InvalidOperation
 from glob import escape
 from pathlib import Path
@@ -78,12 +86,22 @@ from banc.cellule import (
     FICHES,
     LANCEUR,
     RACINE,
+    RECHERCHE,
     Commande,
     Plafonds,
     commande_json,
     empreinte_prompt,
+    empreinte_recherche,
 )
 from banc.correspondance import CorrespondanceError
+from banc.encodage import (
+    Encodage,
+    EncodageError,
+    ecrire_les_encodages,
+    encoder_les_messages,
+    encodeur_vertex,
+    relire_les_encodages,
+)
 from banc.isolement import CleAbsente, cle_anthropic, environnement_agent
 from banc.lecture import LectureError
 from banc.mesures import (
@@ -113,15 +131,30 @@ from banc.prix import PrixError
 from banc.questions import Banc, BancError, Question
 from banc.traduction import TraductionError
 
-CELLULES = ("claude-code", "adk-claude", "adk-gemini")
+# Les cellules du banc : la technique 2 (jalon 2), puis la technique 3, GraphRAG (spec 003, D7).
+CELLULES = ("claude-code", "adk-claude", "adk-gemini", "graphrag-claude", "graphrag-gemini")
+# Une campagne sans --cellules : la technique 2, comme au jalon 2 (choix de Claude, T12.1).
+PAR_DEFAUT = ("claude-code", "adk-claude", "adk-gemini")
 # Chaque cellule lit sa commande sur stdin (banc.cellule).
 PROGRAMMES: Mapping[str, tuple[str, ...]] = {
     "claude-code": (sys.executable, "-m", "banc.cellule_sdk"),
     "adk-claude": (sys.executable, "-m", "banc.cellule_adk", "adk-claude"),
     "adk-gemini": (sys.executable, "-m", "banc.cellule_adk", "adk-gemini"),
+    "graphrag-claude": (sys.executable, "-m", "banc.cellule_graphrag", "graphrag-claude"),
+    "graphrag-gemini": (sys.executable, "-m", "banc.cellule_graphrag", "graphrag-gemini"),
+}
+# La consigne de chaque cellule (ADR-0018, banc.cellule.CONSIGNES) : un agent qui interroge la base
+# par l'outil read-cypher, ou un LLM sans outil qui reçoit le contexte d'une recherche. Une campagne
+# mesure une seule technique, donc une seule consigne.
+CONSIGNE_DE: Mapping[str, str] = {
+    "claude-code": "outil",
+    "adk-claude": "outil",
+    "adk-gemini": "outil",
+    "graphrag-claude": "contexte",
+    "graphrag-gemini": "contexte",
 }
 # Cellules qui paient par la clé Anthropic (ADR-0011).
-CLAUDE = frozenset({"claude-code", "adk-claude"})
+CLAUDE = frozenset({"claude-code", "adk-claude", "graphrag-claude"})
 # neo4j-mcp v1.6.0, seul dans son dossier (T0.3) ; gcloud, absent du PATH des shells non
 # interactifs (scripts/commun.sh).
 NEO4J_MCP = Path.home() / ".local" / "share" / "neo4j-mcp" / "v1.6.0"
@@ -130,10 +163,13 @@ TRANSACTIONS = RACINE / "scripts" / "transactions.sh"
 # Langue du schéma de la base, en lecture seule (--langue, T10.0).
 CHARGER = RACINE / "scripts" / "charger.sh"
 PARAMETRES = "campagne.json"
+# Les messages d'une campagne GraphRAG, encodés à sa création (banc.encodage, D5).
+ENCODAGES = "encodages.json"
 # 2 : le mode faux serveur (T5.1) entre dans les paramètres d'une campagne ; 3 : la langue du schéma
-# et l'empreinte du prompt (T10.0). Le format 2 se relit encore : une campagne en français.
-FORMAT = 3
-FORMATS_LUS = (2, 3)
+# et l'empreinte du prompt (T10.0) ; 4 : l'empreinte de la requête de recherche (spec 003, T12.1).
+# Les formats 2 et 3 se relisent encore : la technique 2, en français pour le format 2.
+FORMAT = 4
+FORMATS_LUS = (2, 3, 4)
 # Répétition générale (T5.1) : faux serveur MCP, lancé par chaque client comme le lanceur.
 FAUX_SERVEUR = (sys.executable, "-I", "-m", "banc.faux_serveur")
 # La conversation au faux serveur lent : sa cellule et son premier tour. adk-gemini, la moins
@@ -190,7 +226,7 @@ class Campagne:
     passes: int
     # Conversations dans l'ordre : une question, ou une paire (Q2 puis Q18).
     conversations: tuple[tuple[str, ...], ...]
-    cellules: tuple[str, ...] = CELLULES
+    cellules: tuple[str, ...] = PAR_DEFAUT
     # Cache d'une heure des cellules Claude, au lieu de 5 min (D10 : tranché au pilote).
     cache_1h: bool = False
     plafonds: Plafonds = field(default_factory=Plafonds)
@@ -198,12 +234,17 @@ class Campagne:
     faux_serveur: bool = False
     # Langue du schéma de la base (D8) : la fiche du prompt, et la requête du contrôle de Q2.
     schema: str = "fr"
-    # SHA-256 du prompt (consigne et fiche) à la création (T10.0) : un prompt modifié depuis arrête
-    # la campagne (protocole gelé, D7). None : campagne d'avant T10.0 (format 2), non vérifiée.
+    # SHA-256 du prompt (consigne de la technique et fiche) à la création (T10.0) : un prompt
+    # modifié depuis arrête la campagne (protocole gelé, D7). None : campagne d'avant T10.0
+    # (format 2), non vérifiée.
     empreinte_prompt: str | None = None
+    # SHA-256 de la requête de recherche d'une campagne GraphRAG à sa création (spec 003, T12.1),
+    # gelée comme le prompt ; aucun pour la technique 2.
+    empreinte_recherche: str | None = None
 
     def __post_init__(self) -> None:
         questions = [question for conversation in self.conversations for question in conversation]
+        consignes = {CONSIGNE_DE.get(cellule) for cellule in self.cellules}
         problemes = {
             "nom": not CODE.fullmatch(self.nom),
             "passes": self.passes < 1,
@@ -216,9 +257,21 @@ class Campagne:
             "schema": self.schema not in FICHES,
             "empreinte_prompt": self.empreinte_prompt is not None
             and not EMPREINTE.fullmatch(self.empreinte_prompt),
+            "empreinte_recherche": self.empreinte_recherche is not None
+            and (not EMPREINTE.fullmatch(self.empreinte_recherche) or "contexte" not in consignes),
         }
         if fautifs := [champ for champ, probleme in problemes.items() if probleme]:
             raise OrchestrationError(f"campagne invalide ({', '.join(fautifs)}) : {self}")
+        if len(consignes) > 1:
+            raise OrchestrationError(
+                f"cellules {', '.join(self.cellules)} : une campagne mesure une seule technique, "
+                "avec l'outil read-cypher ou sans outil (ADR-0018)"
+            )
+
+    @property
+    def consigne(self) -> str:
+        """La consigne de ses cellules : « outil » (technique 2) ou « contexte » (GraphRAG)."""
+        return CONSIGNE_DE[self.cellules[0]]
 
     def etapes(self) -> list[Etape]:
         """Le plan : passe après passe, conversation après conversation, chaque cellule une fois,
@@ -290,9 +343,14 @@ def message(question: Question) -> str:
 
 def ecrire_campagne(fichier: Path, campagne: Campagne) -> None:
     """Écrit les paramètres d'une campagne à sa création ; jamais réécrits. Une campagne créée
-    porte l'empreinte de son prompt (format 3) : sans elle, rien ne vérifierait le gel (D7)."""
+    porte l'empreinte de son prompt (format 3), et une campagne GraphRAG celle de sa requête de
+    recherche (format 4) : sans elles, rien ne vérifierait le gel (D7)."""
     if campagne.empreinte_prompt is None:
         raise OrchestrationError(f"campagne {campagne.nom} sans empreinte du prompt : non écrite")
+    if campagne.consigne == "contexte" and campagne.empreinte_recherche is None:
+        raise OrchestrationError(
+            f"campagne {campagne.nom} sans empreinte de la requête de recherche : non écrite"
+        )
     plafonds = asdict(campagne.plafonds) | {"budget_usd": str(campagne.plafonds.budget_usd)}
     contenu = {
         "format": FORMAT,
@@ -305,6 +363,7 @@ def ecrire_campagne(fichier: Path, campagne: Campagne) -> None:
         "faux_serveur": campagne.faux_serveur,
         "schema": campagne.schema,
         "empreinte_prompt": campagne.empreinte_prompt,
+        "empreinte_recherche": campagne.empreinte_recherche,
     }
     fichier.parent.mkdir(parents=True, exist_ok=True)
     with fichier.open("x", encoding="utf-8") as flux:
@@ -313,7 +372,8 @@ def ecrire_campagne(fichier: Path, campagne: Campagne) -> None:
 
 def lire_campagne(fichier: Path) -> Campagne:
     """Relit les paramètres d'une campagne ; une clé inconnue ou manquante est refusée. Une campagne
-    au format 2 (d'avant T10.0) est en français, sans empreinte de sa fiche."""
+    au format 2 (d'avant T10.0) est en français, sans empreinte de sa fiche ; aux formats 2 et 3
+    (d'avant T12.1), elle mesure la technique 2, sans requête de recherche."""
     cles = {
         "format",
         "campagne",
@@ -328,21 +388,26 @@ def lire_campagne(fichier: Path) -> Campagne:
         brut = json.loads(fichier.read_text(encoding="utf-8"))
         if not isinstance(brut, dict) or brut.get("format") not in FORMATS_LUS:
             raise ValueError(f"format {brut.get('format') if isinstance(brut, dict) else brut!r}")
-        if brut["format"] == FORMAT:
+        if brut["format"] >= 3:
             cles |= {"schema", "empreinte_prompt"}
+        if brut["format"] >= 4:
+            cles |= {"empreinte_recherche"}
         if set(brut) != cles:
             raise ValueError(f"clés {sorted(brut)} inattendues")
         if not isinstance(brut.get("schema", "fr"), str):
             raise TypeError("schema : du texte attendu")
-        if brut["format"] == FORMAT and not isinstance(brut["empreinte_prompt"], str):
+        if brut["format"] >= 3 and not isinstance(brut["empreinte_prompt"], str):
             raise TypeError("empreinte_prompt : du texte attendu")
+        recherche = brut.get("empreinte_recherche")
+        if recherche is not None and not isinstance(recherche, str):
+            raise TypeError("empreinte_recherche : du texte ou null attendu")
         plafonds = dict(brut["plafonds"])
         plafonds["budget_usd"] = Decimal(plafonds["budget_usd"])
         if not isinstance(brut["passes"], int) or not all(
             isinstance(brut[cle], bool) for cle in ("cache_1h", "faux_serveur")
         ):
             raise TypeError("passes : un entier ; cache_1h, faux_serveur : vrai ou faux")
-        return Campagne(
+        campagne = Campagne(
             nom=brut["campagne"],
             passes=brut["passes"],
             conversations=tuple(tuple(conversation) for conversation in brut["conversations"]),
@@ -352,9 +417,16 @@ def lire_campagne(fichier: Path) -> Campagne:
             faux_serveur=brut["faux_serveur"],
             schema=brut.get("schema", "fr"),
             empreinte_prompt=brut.get("empreinte_prompt"),
+            empreinte_recherche=recherche,
         )
     except (OSError, ValueError, KeyError, TypeError, InvalidOperation) as erreur:
         raise OrchestrationError(f"{fichier} illisible : {erreur}") from erreur
+    # Une empreinte nulle couperait la vérification du gel de la requête (D7).
+    if campagne.consigne == "contexte" and campagne.empreinte_recherche is None:
+        raise OrchestrationError(
+            f"{fichier} : campagne GraphRAG sans empreinte de la requête de recherche"
+        )
+    return campagne
 
 
 def dernier_essai(
@@ -647,6 +719,9 @@ class Moyens:
     # Avant de créer ou de reprendre une campagne : la base dans sa langue (T10.0) ; None : rien
     # à vérifier (répétition générale, rien ne touche Aura).
     verifier_la_base: Callable[[str], None] | None = verifier_la_base
+    # Encodage des messages d'une campagne GraphRAG à sa création (banc.encodage, D5) : une
+    # connexion à Vertex par campagne, qui encode un texte pour une tâche.
+    encodeur: Callable[[], Callable[[str, str], Encodage]] = encodeur_vertex
     marge_s: float = MARGE_S
     ecrire: Callable[[str], None] = print
 
@@ -677,13 +752,25 @@ class Orchestration:
     """Mène une campagne, étape après étape (voir le module)."""
 
     def __init__(
-        self, campagne: Campagne, plafond_usd: Decimal, moyens: Moyens, banc: Banc
+        self,
+        campagne: Campagne,
+        plafond_usd: Decimal,
+        moyens: Moyens,
+        banc: Banc,
+        vecteurs: Mapping[str, tuple[float, ...]] | None = None,
     ) -> None:
-        if inconnues := sorted(
-            {question for conversation in campagne.conversations for question in conversation}
-            - set(banc.questions)
-        ):
+        questions = {
+            question for conversation in campagne.conversations for question in conversation
+        }
+        if inconnues := sorted(questions - set(banc.questions)):
             raise OrchestrationError(f"questions inconnues du banc : {', '.join(inconnues)}")
+        # Les vecteurs des messages d'une campagne GraphRAG, par question (encodages.json, D5).
+        self.vecteurs = dict(vecteurs or {})
+        if set(self.vecteurs) != (questions if campagne.consigne == "contexte" else set()):
+            raise OrchestrationError(
+                f"vecteurs de {sorted(self.vecteurs)} : une campagne GraphRAG en a un par "
+                "question, les autres aucun"
+            )
         self.campagne = campagne
         self.plafond_usd = plafond_usd
         self.moyens = moyens
@@ -804,7 +891,15 @@ class Orchestration:
             cli=self.moyens.cli,
             schema=self.campagne.schema,
             empreinte_prompt=self.campagne.empreinte_prompt,
+            vecteurs=self._vecteurs(etape),
+            empreinte_recherche=self.campagne.empreinte_recherche,
         )
+
+    def _vecteurs(self, etape: Etape) -> tuple[tuple[float, ...], ...]:
+        """Les vecteurs des questions de l'étape, dans leur ordre ; aucun pour la technique 2."""
+        if not self.vecteurs:
+            return ()
+        return tuple(self.vecteurs[ident] for ident in etape.questions)
 
     def _serveur(self, etape: Etape) -> tuple[str, ...]:
         if self.moyens.serveur_lent is not None and (etape.cellule, etape.questions[0]) == LENTE:
@@ -1027,6 +1122,7 @@ def commande(demande: Demande, moyens: Moyens | None = None) -> int:
         BancError,
         PrixError,
         CleAbsente,
+        EncodageError,
         OSError,
     ) as erreur:
         print(f"banc lancer : {erreur}", file=sys.stderr)
@@ -1044,7 +1140,8 @@ def _interrompre(_numero: int, _cadre: FrameType | None) -> None:
 
 def _preparer(demande: Demande, moyens: Moyens) -> Orchestration:
     """Crée la campagne, ou relit celle à reprendre ; vérifie la clé avant d'écrire quoi que ce
-    soit."""
+    soit. Une campagne GraphRAG encode ses messages à sa création, avant toute écriture (D5), et
+    relit ses encodages à la reprise, sans réencoder."""
     csv = fichier_mesures(demande.nom, moyens.mesures)
     dossier = moyens.traces / demande.nom
     parametres = dossier / PARAMETRES
@@ -1054,34 +1151,72 @@ def _preparer(demande: Demande, moyens: Moyens) -> Orchestration:
             raise OrchestrationError(f"aucune campagne {demande.nom} à reprendre ({parametres})")
         campagne = lire_campagne(parametres)
         _verifier_la_reprise(campagne, demande, banc)
-        if campagne.empreinte_prompt not in {None, empreinte_prompt(campagne.schema)}:
-            raise OrchestrationError(
-                f"consigne ou {FICHES[campagne.schema]} changées depuis la création de la "
-                f"campagne {campagne.nom} (protocole gelé, D7)"
-            )
+        _verifier_le_gel(campagne)
     else:
         if csv.exists() or dossier.exists():
             raise OrchestrationError(
                 f"la campagne {demande.nom} existe déjà : --reprendre pour la continuer"
             )
-        campagne = Campagne(
+        brouillon = Campagne(
             nom=demande.nom,
             passes=1 if demande.passes is None else demande.passes,
             conversations=conversations(banc, demande.questions),
-            cellules=demande.cellules or CELLULES,
+            cellules=demande.cellules or PAR_DEFAUT,
             cache_1h=bool(demande.cache_1h),
             faux_serveur=demande.faux_serveur,
             schema=demande.schema or "fr",
-            empreinte_prompt=empreinte_prompt(demande.schema or "fr"),
+        )
+        campagne = replace(
+            brouillon,
+            empreinte_prompt=empreinte_prompt(brouillon.schema, consigne=brouillon.consigne),
+            empreinte_recherche=empreinte_recherche() if brouillon.consigne == "contexte" else None,
         )
     if CLAUDE & set(campagne.cellules):
         cle_anthropic()
     if moyens.verifier_la_base is not None:
         moyens.verifier_la_base(campagne.schema)
-    orchestration = Orchestration(campagne, demande.plafond_usd, moyens, banc)
+    # Les messages posés d'une campagne GraphRAG, préambule de Q2 compris : sa recherche part du
+    # vecteur de chacun (D5, D10).
+    messages = {
+        ident: message(banc.questions[ident])
+        for conversation in campagne.conversations
+        for ident in conversation
+        if campagne.consigne == "contexte"
+    }
+    encodages: Mapping[str, Encodage] = {}
+    if messages and demande.reprendre:
+        encodages = relire_les_encodages(dossier / ENCODAGES, messages)
+    elif messages:
+        encodages = encoder_les_messages(messages, moyens.encodeur())
+    vecteurs = {ident: encodage.vecteur for ident, encodage in encodages.items()}
+    orchestration = Orchestration(campagne, demande.plafond_usd, moyens, banc, vecteurs)
     if not demande.reprendre:
         ecrire_campagne(parametres, campagne)
+        if encodages:
+            ecrire_les_encodages(dossier / ENCODAGES, messages, encodages)
     return orchestration
+
+
+def _verifier_le_gel(campagne: Campagne) -> None:
+    """À la reprise : le prompt et la requête de recherche fixés à la création (protocole gelé,
+    D7).
+
+    Raises:
+        OrchestrationError: consigne, fiche ou requête de recherche changées depuis.
+    """
+    if campagne.empreinte_prompt not in {
+        None,
+        empreinte_prompt(campagne.schema, consigne=campagne.consigne),
+    }:
+        raise OrchestrationError(
+            f"consigne ou {FICHES[campagne.schema]} changées depuis la création de la "
+            f"campagne {campagne.nom} (protocole gelé, D7)"
+        )
+    if campagne.empreinte_recherche not in {None, empreinte_recherche()}:
+        raise OrchestrationError(
+            f"{RECHERCHE.relative_to(RACINE)} changée depuis la création de la campagne "
+            f"{campagne.nom} (protocole gelé, D7)"
+        )
 
 
 def _verifier_la_reprise(campagne: Campagne, demande: Demande, banc: Banc) -> None:

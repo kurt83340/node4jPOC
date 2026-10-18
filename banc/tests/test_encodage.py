@@ -6,11 +6,13 @@ corps {"instances": [{"content", "task_type"}], "parameters": {"outputDimensiona
 de quota part dans l'en-tête x-goog-user-project ; un 429 est repris ; token_count arrive en float.
 """
 
+import hashlib
 import json
 import subprocess
 import sys
 from collections.abc import Callable, Iterator
 from contextlib import AbstractContextManager, contextmanager
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -18,7 +20,15 @@ import google.auth
 import google.auth.credentials
 import pytest
 
-from banc.encodage import DOCUMENT, Encodage, EncodageError, encoder
+from banc.encodage import (
+    DOCUMENT,
+    Encodage,
+    EncodageError,
+    ecrire_les_encodages,
+    encoder,
+    encoder_les_messages,
+    relire_les_encodages,
+)
 
 FIXTURES = Path(__file__).parent / "fixtures"
 # Les valeurs de D5, écrites en clair : un réglage changé dans le module ne change pas l'attendu.
@@ -195,3 +205,119 @@ def test_adc_sans_projet_de_quota_refusee(monkeypatch: pytest.MonkeyPatch) -> No
     monkeypatch.setattr(google.auth, "default", lambda scopes: (identifiants, None))
     with pytest.raises(EncodageError, match="sans projet de quota"):
         encoder(PHRASE)
+
+
+# --- Encodages d'une campagne (T12.1 ; plan, « Flux de données », étape 1) ------------------------
+
+# Les messages posés d'une campagne, par question : celui de Q2 porte son préambule.
+MESSAGES = {"Q1": "Combien de nœuds ?", "Q2": "Mon équipe : Pikachu.\n\nQui remplacer ?"}
+
+
+@dataclass
+class FauxEncodeur:
+    """Encode sans Vertex : un vecteur propre à chaque appel, chaque appel noté."""
+
+    appels: list[tuple[str, str]] = field(default_factory=list)
+
+    def __call__(self, texte: str, tache: str) -> Encodage:
+        self.appels.append((texte, tache))
+        rang = len(self.appels)
+        return Encodage(vecteur=(rang / 7,) * 3072, jetons=10 + rang, latence_s=0.1 * rang)
+
+
+def empreinte(texte: str) -> str:
+    return hashlib.sha256(texte.encode("utf-8")).hexdigest()
+
+
+def encodages_ecrits(fichier: Path) -> dict[str, Encodage]:
+    encodages = encoder_les_messages(MESSAGES, FauxEncodeur())
+    ecrire_les_encodages(fichier, MESSAGES, encodages)
+    return encodages
+
+
+def test_messages_encodes_un_par_un() -> None:
+    # D5 : chaque message posé, préambule de Q2 compris, un appel chacun, en RETRIEVAL_QUERY.
+    faux = FauxEncodeur()
+    encodages = encoder_les_messages(MESSAGES, faux)
+    assert faux.appels == [(MESSAGES["Q1"], "RETRIEVAL_QUERY"), (MESSAGES["Q2"], "RETRIEVAL_QUERY")]
+    assert encodages == {
+        "Q1": Encodage((1 / 7,) * 3072, 11, 0.1),
+        "Q2": Encodage((2 / 7,) * 3072, 12, 0.2),
+    }
+
+
+def test_encodages_ecrits_puis_relus(tmp_path: Path) -> None:
+    # Par message : son empreinte, le vecteur, les jetons et la latence ; relus à l'identique, les
+    # flottants du vecteur compris, sans réencoder.
+    fichier = tmp_path / "encodages.json"
+    encodages = encodages_ecrits(fichier)
+    assert relire_les_encodages(fichier, MESSAGES) == encodages
+    contenu = json.loads(fichier.read_text(encoding="utf-8"))
+    assert (contenu["modele"], contenu["tache"], contenu["dimensions"]) == (
+        "gemini-embedding-001",
+        "RETRIEVAL_QUERY",
+        3072,
+    )
+    empreintes = {ident: lu["empreinte"] for ident, lu in contenu["messages"].items()}
+    assert empreintes == {ident: empreinte(texte) for ident, texte in MESSAGES.items()}
+
+
+def test_encodages_jamais_reecrits(tmp_path: Path) -> None:
+    fichier = tmp_path / "encodages.json"
+    encodages = encodages_ecrits(fichier)
+    with pytest.raises(FileExistsError):
+        ecrire_les_encodages(fichier, MESSAGES, encodages)
+
+
+def modifier(fichier: Path, changer: Callable[[dict[str, Any]], None]) -> None:
+    contenu = json.loads(fichier.read_text(encoding="utf-8"))
+    changer(contenu)
+    fichier.write_text(json.dumps(contenu), encoding="utf-8")
+
+
+@pytest.mark.parametrize(
+    ("changer", "motif"),
+    [
+        pytest.param(
+            lambda c: c["messages"]["Q2"].update(empreinte=empreinte("Autre message")),
+            "Q2 : message changé depuis la création",
+            id="message-change",
+        ),
+        pytest.param(
+            lambda c: c["messages"].pop("Q2"), r"questions encodées \['Q1'\]", id="question-absente"
+        ),
+        pytest.param(
+            lambda c: c.update(modele="text-embedding-005"),
+            "modèle, tâche ou dimension",
+            id="autre-modele",
+        ),
+        pytest.param(
+            lambda c: c.update(tache="RETRIEVAL_DOCUMENT"),
+            "modèle, tâche ou dimension",
+            id="autre-tache",
+        ),
+        pytest.param(
+            lambda c: c["messages"]["Q1"].update(vecteur=[0.5] * 3071),
+            "Q1 : vecteur de 3071 dimensions",
+            id="autre-dimension",
+        ),
+        pytest.param(
+            lambda c: c["messages"]["Q1"].update(jetons="onze"), "illisible", id="jetons-illisibles"
+        ),
+    ],
+)
+def test_relecture_refusee(
+    tmp_path: Path, changer: Callable[[dict[str, Any]], None], motif: str
+) -> None:
+    # À la reprise, sans réencoder : chaque question de la campagne, avec l'empreinte de son
+    # message actuel et un vecteur de l'index ; sinon la campagne ne reprend pas.
+    fichier = tmp_path / "encodages.json"
+    encodages_ecrits(fichier)
+    modifier(fichier, changer)
+    with pytest.raises(EncodageError, match=motif):
+        relire_les_encodages(fichier, MESSAGES)
+
+
+def test_relecture_sans_fichier(tmp_path: Path) -> None:
+    with pytest.raises(EncodageError, match=r"encodages\.json illisible"):
+        relire_les_encodages(tmp_path / "encodages.json", MESSAGES)

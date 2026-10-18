@@ -16,9 +16,13 @@ T11.1, les seconds tours (D10) et l'isolement : Q18 dans la session d'ADK de Q2,
 partie de son propre vecteur, son appel au modèle qui reçoit le message de Q2, son contexte et sa
 réponse ; Q18 non posée après un échec de Q2 (ADR-0012) ; la cellule lancée avec sa propre liste
 blanche (banc.isolement).
+
+T12.1 : la requête de recherche, vérifiée contre l'empreinte que la commande porte depuis la
+création de la campagne.
 """
 
 import asyncio
+import hashlib
 import io
 import json
 import signal
@@ -55,6 +59,8 @@ from banc.prix import Usage
 RECHERCHE = (Path(__file__).resolve().parents[2] / "questions" / "recherche.cypher").read_text(
     encoding="utf-8"
 )
+# Son empreinte, fixée à la création d'une campagne (T12.1) : la cellule la vérifie.
+EMPREINTE_RECHERCHE = hashlib.sha256(RECHERCHE.encode("utf-8")).hexdigest()
 CLE = "sk-ant-api03-cle-factice-du-banc"
 CLAUDE, GEMINI = "graphrag-claude", "graphrag-gemini"
 CLIENTS = (CLAUDE, GEMINI)
@@ -111,12 +117,12 @@ class BacGraphrag(Bac):
         self, *questions: tuple[str, str], mcp: dict[str, Any] | None = None, **reglages: Any
     ) -> Commande:
         """La commande d'une conversation ; vecteurs : ceux des questions, sinon VECTEUR, puis
-        VECTEUR_Q18."""
+        VECTEUR_Q18 ; l'empreinte de la requête de recherche, celle d'aujourd'hui."""
         vecteurs = reglages.pop("vecteurs", None)
         commande = super().commande(*questions, mcp=mcp, **reglages)
         if vecteurs is None:
             vecteurs = (VECTEUR, VECTEUR_Q18)[: len(commande.questions)]
-        return replace(commande, vecteurs=vecteurs)
+        return replace(commande, vecteurs=vecteurs, empreinte_recherche=EMPREINTE_RECHERCHE)
 
     @contextmanager
     def api(self, client: str, etapes: list[dict[str, Any]], **reglages: Any) -> Iterator[str]:
@@ -493,6 +499,17 @@ def test_vecteurs_refuses(
     commande = bac.commande(*questions, vecteurs=vecteurs)
     with pytest.raises(CelluleError, match=motif):
         bac.mener(CLAUDE, commande)
+    assert bac.notes_mcp("pid") == []
+    assert not list((bac.racine / "traces").rglob("*.jsonl"))
+
+
+@pytest.mark.parametrize("client", CLIENTS)
+def test_recherche_changee_depuis_la_creation(bac: BacGraphrag, client: str) -> None:
+    # T12.1 : l'empreinte de la requête de recherche, fixée à la création de la campagne ; une
+    # requête changée depuis arrête tout, avant le serveur et toute trace (protocole gelé, D7).
+    commande = replace(bac.commande(), empreinte_recherche="0" * 64)
+    with pytest.raises(CelluleError, match=r"recherche\.cypher changée depuis la création"):
+        bac.mener(client, commande)
     assert bac.notes_mcp("pid") == []
     assert not list((bac.racine / "traces").rglob("*.jsonl"))
 

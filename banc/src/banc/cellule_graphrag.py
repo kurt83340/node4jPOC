@@ -43,7 +43,13 @@ from mcp import ClientSession
 from mcp.shared.exceptions import MCPError
 
 from banc import cellule_adk, prix
-from banc.cellule import RECHERCHE, CelluleError, Commande, consigne_et_fiche, lire_commande
+from banc.cellule import (
+    CelluleError,
+    Commande,
+    consigne_et_fiche,
+    lire_commande,
+    requete_de_recherche,
+)
 from banc.cellule_adk import (
     AGENT,
     APPLI,
@@ -99,8 +105,8 @@ async def converser(
 
     Raises:
         CelluleError: client inconnu ; commande sans un vecteur par question de la dimension de
-            l'index ; consigne ou fiche changées depuis la création de la campagne ; ADC de
-            Vertex refusée.
+            l'index ; consigne, fiche ou requête de recherche changées depuis la création de la
+            campagne ; ADC de Vertex refusée.
         CleAbsente: cellule Claude sans clé Anthropic.
         IsolementError: cellule Gemini qui reçoit la clé Anthropic, ou serveur sans read-cypher.
     """
@@ -109,11 +115,12 @@ async def converser(
     jumelle = JUMELLES[client]
     verifier_acces(jumelle)
     vecteurs = _vecteurs(commande)
-    # Avant toute trace : un prompt modifié depuis la création de la campagne arrête tout (D7).
+    # Avant toute trace : un prompt ou une requête de recherche modifiés depuis la création de la
+    # campagne arrêtent tout (D7).
     prompt = consigne_et_fiche(
         schema=commande.schema, empreinte=commande.empreinte_prompt, consigne="contexte"
     )
-    requete = RECHERCHE.read_text(encoding="utf-8")
+    requete = requete_de_recherche(commande.empreinte_recherche)
     avant = asyncio.all_tasks()
     boite = boite_a_outils(commande)
     try:

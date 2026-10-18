@@ -253,6 +253,10 @@
   source : deux mutations de même taille, dans la même seconde, faisaient tourner le code de la précédente ; une
   mutation passait pour survivante, ou pour tuée à tort. L'outil n'écrit plus de bytecode, date chaque fichier muté
   par l'empreinte de son contenu et rend sa date au fichier restauré (vu le 2026-10-18, T11.2).
+- ⚠️ `logs/outils/mutations/mutations.py` — pendant un lancement, ni commit ni édition du fichier visé : le hook
+  pre-commit met de côté les changements non indexés, fichier muté compris, et les remet après, au risque de
+  rétablir la mutation après la restauration ; une édition serait écrasée par le fichier tel qu'il a été lu
+  (relevé le 2026-10-18).
 - ⚠️ `banc/tests/test_charger_sh.py` — les faux `gcloud` et `cypher-shell` sont du code Python dans des chaînes, où un
   saut de ligne s'écrit déjà échappé : un remplacement par script qui vise ce code rate son motif. Écrire le motif en
   chaîne brute, sans barre oblique finale (vu le 2026-10-13).

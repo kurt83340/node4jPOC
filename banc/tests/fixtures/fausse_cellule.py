@@ -43,6 +43,8 @@ MODELES = {
     "claude-code": ("claude-sonnet-5-5", "api"),
     "adk-claude": ("claude-sonnet-5-5", "api"),
     "adk-gemini": ("gemini-3.8-flash", "vertex-eu"),
+    "graphrag-claude": ("claude-sonnet-5-5", "api"),
+    "graphrag-gemini": ("gemini-3.8-flash", "vertex-eu"),
 }
 REPONSE = "Réponse : 42\n\nSources : MATCH (n) RETURN count(n) AS n"
 
@@ -80,6 +82,10 @@ def principal() -> int:
         "serveur": list(commande.serveur),
         "schema": commande.schema,
         "empreinte_prompt": commande.empreinte_prompt,
+        # Les vecteurs des messages (cellules GraphRAG), par leur dimension et leur première
+        # composante : le faux encodeur fait chaque vecteur d'une seule valeur.
+        "vecteurs": [[len(vecteur), vecteur[0]] for vecteur in commande.vecteurs],
+        "empreinte_recherche": commande.empreinte_recherche,
     }
     attente = [sys.executable, "-c", "import time; time.sleep(600)"]
     if conduite.get("enfant"):
