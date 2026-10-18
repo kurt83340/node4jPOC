@@ -6,7 +6,15 @@ from collections.abc import Callable, Sequence
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
 
-from banc import anglais, contre_epreuve, essai_serveur, orchestration, rapport, revue
+from banc import (
+    anglais,
+    contre_epreuve,
+    essai_recherche,
+    essai_serveur,
+    orchestration,
+    rapport,
+    revue,
+)
 from banc.acces import acces
 
 
@@ -62,6 +70,11 @@ def main(arguments: Sequence[str] | None = None) -> int:
         "essai-serveur",
         help="le lanceur sur la vraie base (T7.4) : outils, lecture, écritures refusées, lecture "
         "lente arrêtée par transactions.sh ; sans modèle (0 $), sans la clé Anthropic",
+    )
+    commandes.add_parser(
+        "essai-recherche",
+        help="la recherche de la technique 3 sur la vraie base (spec 003, T8.2) : requête lue par "
+        "read-cypher, deux phrases maison, preuve de symétrie ; sans LLM, 3 encodages Vertex",
     )
     revoir = commandes.add_parser(
         "revoir", help="revue humaine à l'aveugle des cas « à revoir » d'une campagne (T3.2)"
@@ -135,6 +148,7 @@ def main(arguments: Sequence[str] | None = None) -> int:
         ),
         "rapport": lambda: rapport.commande(lus.campagne, complet=lus.complet),
         "essai-serveur": essai_serveur.commande,
+        "essai-recherche": essai_recherche.commande,
         "anglais": anglais.commande,
         "traduire": lambda: anglais.commande_traduire(lus.vers),
         "acces": acces,

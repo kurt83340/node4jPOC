@@ -115,6 +115,8 @@ Précision du 2026-10-13 : le compte de service `aura-genai@jleroy-labo.iam.gser
 
 Précision du 2026-10-13 (spec 003, T3.2, feu vert de Julien) : le rôle personnalisé `predictionVertex` (« Prédiction Vertex », la seule permission `aiplatform.endpoints.predict`, GA) est créé sur `jleroy-labo` et donné à `aura-genai`, à la place de `roles/aiplatform.user`, retiré. Contrôle : `gcloud projects get-iam-policy jleroy-labo --flatten='bindings[].members' --filter='bindings.members:serviceAccount:aura-genai@jleroy-labo.iam.gserviceaccount.com' --format='value(bindings.role)'` ne rend que `projects/jleroy-labo/roles/predictionVertex`. Que cette permission suffise pour `gemini-embedding-001` se confirme au premier chargement qui encode (phase 6) ; un refus 403 n'est pas facturé ([ADR-0019](adr/0019-infra-jeton-vertex-du-plugin-genai.md)).
 
+Précision du 2026-10-18 (spec 003, T8.1) : le harnais encode aussi les messages d'une campagne GraphRAG par l'ADC de fr.julienleroy@gmail.com (`banc/src/banc/encodage.py`, `gemini-embedding-001` en `europe-west1`) ; il impose `jleroy-labo` en projet de quota par `with_quota_project`, sans variable d'environnement. Contrôle sans dépense : `uv run --directory banc pytest -q tests/test_encodage.py` ; sur Vertex : `banc essai-recherche`, avec le feu vert de Julien ([RUNBOOK](RUNBOOK.md)).
+
 - **API** `aiplatform.googleapis.com` activée sur `jleroy-labo` (`gcloud services enable`).
 - **Claude dans Model Garden** : Sonnet 5.5, Sonnet 5 et Haiku 4.5. Conditions de Google Cloud Marketplace et
   d'Anthropic acceptées par Julien sur la page « Agreements » (accords `anthropic-915`, `anthropic-896`,

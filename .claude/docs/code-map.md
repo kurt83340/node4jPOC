@@ -7,17 +7,17 @@
 >
 > ⚠️ Avant d'éditer un fichier, vérifie les **règles de couplage** ci-dessous.
 
-**Dernière MAJ :** 2026-10-14
+**Dernière MAJ :** 2026-10-18
 
 ## Vue d'ensemble (macro — sous-systèmes, pas fichiers)
 
 ```
 Secret Manager ─┬─► scripts/ ─► cypher-shell ─► AuraDB Free ◄─ LOAD CSV ─ CSV PokéAPI (commit figé)
-                │      ├─ cypher/     00 → 06 : chargement · 90 : vérification · anglais/
+                │      ├─ cypher/     00 → 07 : chargement (07 : vecteurs, jeton aura-genai) · 90 : vérification · anglais/
                 │      ├─ questions/  banc d'essai : requêtes et réponses de référence (jalons 1 à 4)
                 │      ├─ mcp-neo4j.sh ─► neo4j-mcp (stdio, lecture seule) ─► AuraDB Free ◄─ agents de banc/
                 │      ├─ transactions.sh ─► AuraDB Free (lectures d'agents orphelines)
-                │      └─ banc.sh ─► banc/ (clé Anthropic par l'environnement) ─► API Anthropic (Claude) · Vertex eu (Gemini)
+                │      └─ banc.sh ─► banc/ (clé Anthropic par l'environnement) ─► API Anthropic (Claude) · Vertex eu (Gemini) · Vertex europe-west1 (encodage, ADC)
                 └─► infra/reveil-aura/ ─► Query API ─► AuraDB Free (RETURN 1 quotidien, alerte e-mail)
 Budget 100 € ─► Pub/Sub ─► infra/coupure-vertex/ ─► Service Usage (coupe Vertex)
 ```
@@ -51,6 +51,8 @@ Harnais du banc d'essai → `banc/` ([plan 002](specs/002-agent-text-to-cypher/p
   `banc/` ne voit jamais l'identifiant. ❌ Aucune config MCP sur le disque : `banc/` la passe en mémoire.
 - ✅ Agents isolés par la liste blanche de `banc/src/banc/isolement.py` (plan 002, D3) : la clé Anthropic aux seules
   cellules Claude, jamais avec une variable Vertex ; la cellule Gemini ne la reçoit jamais.
+- ✅ L'encodage des messages (`banc/src/banc/encodage.py`, plan 003 D5) : dans le harnais seul, jamais dans une
+  cellule (règle d'isolement) ; l'ADC du poste, `jleroy-labo` en projet de quota.
 - ✅ Seul le chargement (purge et preuve d'idempotence comprises) écrit dans la base : go/no-go, vérification et techniques du banc
   d'essai lisent (`--access-mode read`, `scripts/verifier.sh:46`), le réveil quotidien aussi (`accessMode: Read`,
   `infra/reveil-aura/reveil.py:119`) ; exception prévue : la mémoire d'agent (jalon 5). Seul `scripts/transactions.sh`

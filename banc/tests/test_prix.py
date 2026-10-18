@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pytest
 
+from banc.encodage import ACCES, MODELE
 from banc.prix import PrixError, Usage, charger, tarif
 
 TARIFS = charger()
@@ -83,8 +84,11 @@ def test_lecture_du_cache_verifiee_sur_la_console() -> None:
 def test_multiplicateurs_du_cache() -> None:
     # Contrôle de saisie : lecture au dixième de l'entrée, sauf Sonnet 5.5 par l'API depuis sa
     # vérification sur la Console (au vingtième) ; écriture à 1,25 (5 min) et 2 fois (1 h) pour
-    # Claude, sans objet pour Gemini (cache implicite).
+    # Claude, sans objet pour Gemini (cache implicite). Les embeddings n'ont pas de cache : leurs
+    # zéros se vérifient à part (test_embeddings_de_l_encodage).
     for t in TARIFS:
+        if t.modele == MODELE:
+            continue
         verifie = (
             t.modele == "claude-sonnet-5-5" and t.acces == "api" and t.du >= date(2026, 10, 10)
         )
@@ -92,6 +96,20 @@ def test_multiplicateurs_du_cache() -> None:
         if t.modele.startswith("claude-"):
             assert t.cache_ecriture_5m == t.entree * Decimal("1.25"), t.modele
             assert t.cache_ecriture_1h == t.entree * 2, t.modele
+
+
+def test_embeddings_de_l_encodage() -> None:
+    # Spec 003, D11 : gemini-embedding-001 par Vertex europe-west1, la voie de banc.encodage ;
+    # « $0.00015 » par « 1,000 count » en entrée, sortie gratuite (page de prix, lue le 2026-10-17).
+    assert (MODELE, ACCES) == ("gemini-embedding-001", "vertex-europe-west1")
+    embeddings = tarif(TARIFS, MODELE, date(2026, 10, 17), ACCES)
+    assert embeddings.entree == Decimal("0.15")
+    zero = Decimal(0)
+    assert (embeddings.sortie, embeddings.cache_lecture) == (zero, zero)
+    assert (embeddings.cache_ecriture_5m, embeddings.cache_ecriture_1h) == (zero, zero)
+    assert embeddings.cout(Usage(entree=13)) == Decimal("0.00000195")
+    with pytest.raises(PrixError):
+        tarif(TARIFS, MODELE, date(2026, 10, 17), "vertex-eu")
 
 
 @pytest.mark.parametrize(
