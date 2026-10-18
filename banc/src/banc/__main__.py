@@ -9,6 +9,7 @@ from pathlib import Path
 from banc import (
     anglais,
     contre_epreuve,
+    controle_traces,
     essai_recherche,
     essai_serveur,
     orchestration,
@@ -108,6 +109,12 @@ def main(arguments: Sequence[str] | None = None) -> int:
         help="enregistre les décisions validées par la revue elle-même (défaut : preanalyse.json "
         "du tirage ; chemin relatif à la racine du dépôt)",
     )
+    controle = commandes.add_parser(
+        "controle-traces",
+        help="contrôle des traces d'une campagne (spec 003, T15.1) : lectures read-cypher seules, "
+        "aucune clause d'écriture, aucun jeton Google, aucun vecteur ; code 0 conforme, 1 écart",
+    )
+    controle.add_argument("--campagne", required=True, help="identifiant de la campagne")
     rapport_ = commandes.add_parser(
         "rapport",
         help="bilan d'une campagne, série par série (T9.1) ; scores une fois la revue finie",
@@ -150,6 +157,7 @@ def main(arguments: Sequence[str] | None = None) -> int:
             lus.campagne, reponses=lus.accord, decisions=lus.enregistrer
         ),
         "rapport": lambda: rapport.commande(lus.campagne, complet=lus.complet),
+        "controle-traces": lambda: controle_traces.commande(lus.campagne),
         "essai-serveur": essai_serveur.commande,
         "essai-recherche": essai_recherche.commande,
         "anglais": anglais.commande,
