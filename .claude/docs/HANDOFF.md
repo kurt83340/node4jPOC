@@ -1,16 +1,16 @@
-# HANDOFF — 2026-10-18 22h29
+# HANDOFF — 2026-10-19 00h45
 
 > Court, narratif, versionné. Patterns techniques → auto-memory. Reprise précise → /resume.
 
-**Branche** : `feature/003-phase-13` (PR n°38 ; fusion après ce handoff, feu vert de Julien)
-**Spec en cours** : [003-graphrag-descriptions](specs/003-graphrag-descriptions/spec.md) (22/35 tasks)
-**Goal session** : phases 11 à 13 du jalon 3 (NEO-32) : seconds tours, isolement, source citée, orchestration, contrôles à la création, répétition générale
+**Branche** : `feature/003-phase-15-traces` (PR n°39 ; fusion après ce handoff, feu vert de Julien)
+**Spec en cours** : [003-graphrag-descriptions](specs/003-graphrag-descriptions/spec.md) (23/35 tasks)
+**Goal session** : T15.1 (NEO-33) avant le pilote, la clé de T2.2 n'étant pas encore là (choix de Julien)
 
 ## Status
 
-- ✅ Phases 11 et 12 fusionnées (PR n°36, n°37) : seconds tours, liste blanche, source citée (descriptions réunies ; requêtes et descriptions jugées à part, choix de Julien) ; cellules enregistrées, `campagne.json` format 4, `encodages.json`
-- ✅ Phase 13 (PR n°38) : index et preuve de symétrie vérifiés à la création ; faux serveur à recherche fixe et neutre ; `repetition-3` (Q19, Q2, Q18, choix de Julien) : 0,044 $, rien n'a touché Aura, délai de `graphrag-gemini` éprouvé ; `banc rapport` corrigé ; banc 1 837 tests verts
-- ⏳ NEO-32 : clôture des phases 11 à 13 montrée à Julien, publiée, puis « Terminé » après sa relecture (`--relu`) ; NEO-3 : coût de la répétition ajouté
+- ✅ T15.1 (PR n°39) : `banc controle-traces` (outils, écritures, jetons Google, vecteurs) et `scripts/traces.sh` (identifiant de l'instance, totaux seuls) ; 58 tests, 44 mutations détectées ; banc 1 895 tests verts ; DoD : `fr-1` et `repetition-3` conformes
+- ✅ Choix de T15.1 validés par Julien (plan, D9) : seuil de 100 nombres, procédures non lues, entrée non fichier en erreur, `logs/banc/<campagne>.log` lu par `traces.sh`
+- ⏳ NEO-33 « En cours » : « Résultats du 2026-10-19 (T15.1) » relus par Julien, publiés après la fusion
 
 ## Échecs tentés (à ne pas refaire)
 
@@ -25,8 +25,8 @@
 ## Next (par ordre)
 
 1. **T2.2** dès la clé de Julien : dépôt par le presse-papier (pipe, sans affichage) ; `banc.sh acces` (~0,003 $, feu vert) ; sa propre PR (NEO-29)
-2. **Phase 14, T14.1** (NEO-33) : pilote `pilote-3`, une passe des deux cellules (≈ 1,5 $, plafond 3,5 $, feu vert de Julien) ; la règle de la source relue sur des réponses qui citent des descriptions
-3. **T14.2** : gel du protocole du jalon 3 en tête de `revues.toml`, plafond de `g-1` au plan
+2. **Phase 14, T14.1** (NEO-33) : pilote `pilote-3`, une passe des deux cellules (≈ 1,5 $, plafond 3,5 $, feu vert de Julien), PATH normal, crédits et limite de 20 $ vérifiés avant ; la règle de la source relue sur des réponses qui citent des descriptions
+3. **T14.2** : gel du protocole du jalon 3 en tête de `revues.toml`, plafond de `g-1` au plan ; puis T15.2 (`g-1`, ses traces contrôlées) et T15.3
 
 ## Continuation State (machine-readable — grammaire fixe `Clé: valeur`, 1 ligne chacune)
 

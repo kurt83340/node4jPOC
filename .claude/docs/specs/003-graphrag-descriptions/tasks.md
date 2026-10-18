@@ -8,7 +8,7 @@
 > il « perd le fil » (échecs ×4 constatés en télémétrie, Morph 2026) → découper la phase.
 
 **Date :** 2026-10-12
-**Status :** [ ] 22/35 tasks → MAJ au fil de l'eau
+**Status :** [ ] 23/35 tasks → MAJ au fil de l'eau
 
 > Les tests n'appellent aucun service réel (Vertex, Anthropic, Aura) : faux outils, fausses API, HOME temporaire.
 > Une dépense passe par le feu vert de Julien, annoncée avec son estimation : phases 2, 6, 8, 13, 14 et 15.
@@ -111,7 +111,7 @@
 
 ## Phase 15 — Campagne comptée, passe de contrôle et contrôle des traces (environ 6 $, feu vert de Julien ; NEO-33)
 
-- [ ] **T15.1** : contrôle des traces, en TDD : `banc controle-traces --campagne <id>` (seuls des appels `read-cypher`, aucune clause d'écriture, aucun jeton Google `ya29.`, aucun vecteur dans les paramètres, résultats et contextes) ; `scripts/traces.sh --campagne <id>` cherche l'identifiant de l'instance dans `logs/banc/<campagne>/` et ne rend que des comptes (US1, US4)
+- [x] **T15.1** : contrôle des traces, en TDD : `banc controle-traces --campagne <id>` (seuls des appels `read-cypher`, aucune clause d'écriture, aucun jeton Google `ya29.`, aucun vecteur dans les paramètres, résultats et contextes) ; `scripts/traces.sh --campagne <id>` cherche l'identifiant de l'instance dans `logs/banc/<campagne>/` et ne rend que des comptes (US1, US4) — fait le 2026-10-19, avant le pilote (choix de Julien, la clé de T2.2 n'étant pas encore là) : `banc.controle_traces`, quatre contrôles dans le code retour : outils (`read-cypher` seul) ; écritures (clauses du Cypher Manual, `INSERT` compris, et `DROP`, lues jeton par jeton ; une tentative refusée par le serveur compte) ; jetons Google (tous les fichiers du dossier, jamais la valeur) ; vecteurs (suite de 100 nombres ou plus sur le texte des traces, `encodages.json` n'étant pas une trace) ; `scripts/traces.sh` : identifiant passé à `grep` par un tube, sans variable `NEO4J_*`, totaux seuls, `logs/banc/<campagne>.log` lu aussi (choix de Claude, validé par Julien, comme le seuil, les procédures non lues et l'entrée qui n'est pas un fichier) ; relevé en lecture sur Aura : neo4j-mcp écrit un vecteur `{"Elems": […]}` (gotcha) ; 58 tests : 54 écrits d'abord, rouges puis verts (la borne à 99 nombres, verte d'emblée, validée par mutation), 4 ajoutés avec le code et validés par mutation ; 44 mutations, toutes détectées ; suite complète (1 895 tests), ruff, mypy et shellcheck verts ; DoD : `fr-1` et `repetition-3` conformes (819 et 5 appels ; identifiant absent des 254 et 7 fichiers), comme les autres campagnes du jalon 2 ; précision au plan (D9)
   - DoD : `command_passes: uv run --directory banc pytest -q tests/test_controle_traces.py tests/test_traces_sh.py && uv run --directory banc python -m banc controle-traces --campagne fr-1 && scripts/traces.sh --campagne fr-1`
 - [ ] **T15.2** : campagne `g-1`, 3 passes des deux cellules, puis contrôle de ses traces
   - DoD : `manual: feu vert de Julien (plafond de T14.2)`, puis `command_passes: scripts/banc.sh lancer --campagne g-1 --passes 3 --cellules graphrag-claude,graphrag-gemini --plafond-usd <plafond de T14.2> && uv run --directory banc python -m banc rapport --campagne g-1 --complet && uv run --directory banc python -m banc controle-traces --campagne g-1 && scripts/traces.sh --campagne g-1`
