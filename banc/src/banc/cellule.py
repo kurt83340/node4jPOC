@@ -1,5 +1,6 @@
 """Ce que toute cellule reçoit (plan 002, D3 et D13) : la commande d'une conversation, ses
-plafonds, la consigne de sa technique (avec ou sans outil, ADR-0018) et la fiche commune.
+plafonds, la consigne de sa technique (avec ou sans outil, ADR-0018) et la fiche commune ; une
+cellule GraphRAG, en plus, les vecteurs de ses messages et la requête de recherche (spec 003).
 
 L'orchestration (T4.3) lance une cellule par conversation, dans un processus dont l'environnement
 est la liste blanche de banc.isolement, depuis un dossier vide hors du dépôt, et lui passe sa
@@ -12,6 +13,7 @@ dernier `fin`, seul l'arrêt du client peut encore échouer.
 
 import hashlib
 import json
+import math
 import re
 from dataclasses import asdict, dataclass, field, fields
 from decimal import Decimal, InvalidOperation
@@ -30,6 +32,8 @@ FICHES = {"fr": "fiche-schema.md", "en": "fiche-schema.en.md"}
 # read-cypher (technique 2), ou un LLM sans outil qui reçoit le résultat d'une recherche, le
 # contexte (technique 3, GraphRAG) ; la fiche reste commune.
 CONSIGNES = {"outil": "consigne.md", "contexte": "consigne-contexte.md"}
+# La recherche des cellules GraphRAG (spec 003, D6), lancée telle quelle par read-cypher.
+RECHERCHE = QUESTIONS / "recherche.cypher"
 EMPREINTE = re.compile(r"[0-9a-f]{64}")
 
 
@@ -84,6 +88,9 @@ class Commande:
     # SHA-256 du prompt (consigne et fiche), fixé à la création de la campagne : un prompt modifié
     # depuis arrête la conversation (protocole gelé, D7). None : non vérifié (essais hors campagne).
     empreinte_prompt: str | None = None
+    # Vecteurs des messages, un par question et dans leur ordre, encodés à la création de la
+    # campagne (spec 003, D5) : la recherche des cellules GraphRAG ; aucun pour les autres.
+    vecteurs: tuple[tuple[float, ...], ...] = ()
 
 
 def lire_commande(texte: str) -> Commande:
@@ -109,6 +116,7 @@ def commande_json(commande: Commande) -> str:
     champs["serveur"] = list(commande.serveur)
     champs["cli"] = None if commande.cli is None else str(commande.cli)
     champs["plafonds"]["budget_usd"] = str(commande.plafonds.budget_usd)
+    champs["vecteurs"] = [list(vecteur) for vecteur in commande.vecteurs]
     return json.dumps(champs, ensure_ascii=False)
 
 
@@ -175,6 +183,11 @@ def _commande(brut: dict[str, Any]) -> Commande:
         isinstance(empreinte, str) and EMPREINTE.fullmatch(empreinte)
     ):
         raise ValueError(f"empreinte_prompt : un SHA-256 en hexadécimal attendu, pas {empreinte!r}")
+    vecteurs = _vecteurs(brut.get("vecteurs", []))
+    if vecteurs and len(vecteurs) != len(questions):
+        raise ValueError(
+            f"vecteurs : un par question attendu, {len(vecteurs)} pour {len(questions)} questions"
+        )
     cli = brut.get("cli")
     return Commande(
         campagne=brut["campagne"],
@@ -188,7 +201,27 @@ def _commande(brut: dict[str, Any]) -> Commande:
         cli=None if cli is None else Path(cli),
         schema=brut.get("schema", "fr"),
         empreinte_prompt=empreinte,
+        vecteurs=vecteurs,
     )
+
+
+def _vecteurs(brut: Any) -> tuple[tuple[float, ...], ...]:
+    """Les vecteurs d'une commande : une liste de listes de nombres finis, en flottants (JSON écrit
+    1 pour 1.0)."""
+    if not isinstance(brut, list):
+        raise TypeError(f"vecteurs : une liste attendue, pas {type(brut).__name__}")
+    vecteurs = []
+    for vecteur in brut:
+        if not isinstance(vecteur, list):
+            raise TypeError(f"vecteur : une liste attendue, pas {type(vecteur).__name__}")
+        if not vecteur:
+            raise ValueError("vecteur vide")
+        if not all(isinstance(x, int | float) and not isinstance(x, bool) for x in vecteur):
+            raise TypeError("vecteur : des nombres attendus")
+        if not all(math.isfinite(x) for x in vecteur):
+            raise ValueError("vecteur : des nombres finis attendus")
+        vecteurs.append(tuple(float(x) for x in vecteur))
+    return tuple(vecteurs)
 
 
 def _plafonds(brut: Any) -> Plafonds:

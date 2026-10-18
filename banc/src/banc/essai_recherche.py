@@ -33,7 +33,7 @@ from typing import Any
 from mcp import ClientSession, StdioServerParameters
 
 from banc import orchestration
-from banc.cellule import LANCEUR, QUESTIONS
+from banc.cellule import LANCEUR, RECHERCHE
 from banc.encodage import DIMENSIONS, DOCUMENT, QUESTION, Encodage, EncodageError, connexion
 from banc.encodage import encoder as encoder_vertex
 from banc.essai_serveur import (
@@ -48,7 +48,6 @@ from banc.essai_serveur import (
 )
 from banc.isolement import environnement_agent
 
-RECHERCHE = QUESTIONS / "recherche.cypher"
 # Deux phrases maison, hors du banc : leurs thèmes évitent ceux des questions sémantiques.
 PHRASES = (
     "Une créature qui collectionne des objets brillants et les cache dans son nid.",

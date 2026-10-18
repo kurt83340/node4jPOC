@@ -27,6 +27,7 @@ from banc.mesures import (
     couts,
     ecrire,
     empreinte,
+    empreinte_vecteur,
     fichier_mesures,
     fichier_trace,
     ligne,
@@ -412,6 +413,42 @@ def test_entete_refuse(champs: dict[str, Any]) -> None:
     valeurs = {**ENTETE.__dict__, **champs}
     with pytest.raises(MesureError):
         Entete(**valeurs)
+
+
+# --- Empreinte d'un vecteur (spec 003, plan D9) --------------------------------------------------
+
+
+def test_empreinte_d_un_vecteur() -> None:
+    # À la place du vecteur, la trace porte son empreinte : « sha256: », puis le SHA-256 de ses
+    # composantes en flottants de 64 bits petit-boutistes (valeur calculée à part).
+    attendue = "sha256:671cd3628131bc8a25bc0e209b7b9d7df7f373f9e21163f4685f20b088057e30"
+    assert empreinte_vecteur((0.5, -1.0, 2.0)) == attendue
+
+
+def test_empreinte_d_un_vecteur_de_l_index() -> None:
+    # 3 072 dimensions (gemini-embedding-001, index descriptions_texte) : 64 chiffres hexadécimaux
+    # au lieu de quelque 40 000 caractères de JSON.
+    attendue = "sha256:a32c37e9fcbe45fc3ccc97244ac67f48b10dc739c88a8e66dded152415802162"
+    assert empreinte_vecteur((0.0123456789,) * 3072) == attendue
+
+
+def test_empreinte_d_un_vecteur_d_ou_qu_il_vienne() -> None:
+    # Le même vecteur, en liste ou en tuple, en entiers ou en flottants (JSON écrit 1 ou 1.0) :
+    # l'empreinte de la trace se retrouve sur le vecteur gardé à la création de la campagne.
+    assert empreinte_vecteur([1, 0, -2]) == empreinte_vecteur((1.0, 0.0, -2.0))
+
+
+@pytest.mark.parametrize(
+    "autre",
+    [
+        # Le flottant suivant 2,0 : un vecteur arrondi (JSON abrégé, 32 bits) le confondrait.
+        pytest.param((0.5, -1.0, 2.0000000000000004), id="dernier-bit"),
+        pytest.param((-1.0, 0.5, 2.0), id="ordre"),
+        pytest.param((0.5, -1.0, 2.0, 0.0), id="dimension"),
+    ],
+)
+def test_empreinte_d_un_autre_vecteur(autre: tuple[float, ...]) -> None:
+    assert empreinte_vecteur(autre) != empreinte_vecteur((0.5, -1.0, 2.0))
 
 
 # --- Tokens par modèle, cache et réflexion -------------------------------------------------------

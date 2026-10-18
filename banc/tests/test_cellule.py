@@ -2,6 +2,7 @@
 sur stdin, et que la cellule refuse au moindre doute (T4.1)."""
 
 import json
+from dataclasses import replace
 from decimal import Decimal
 from pathlib import Path
 from typing import Any
@@ -45,6 +46,20 @@ def test_aller_retour() -> None:
     assert lire_commande(commande_json(COMMANDE)) == COMMANDE
 
 
+def test_aller_retour_avec_les_vecteurs() -> None:
+    # Spec 003, D5 : les vecteurs des messages, un par question, dans l'ordre, relus à l'identique
+    # (JSON écrit chaque flottant en entier).
+    commande = replace(COMMANDE, vecteurs=((0.1, 1 / 3, -2.5e-8), (2.0, 0.0, -3.5)))
+    assert lire_commande(commande_json(commande)) == commande
+
+
+def test_vecteurs_en_flottants() -> None:
+    # Des entiers en JSON (1 et non 1.0) deviennent des flottants.
+    vecteurs = lire_commande(brut(vecteurs=[[1, 0, -2], [0.5, 0.5, 0.5]])).vecteurs
+    assert vecteurs == ((1.0, 0.0, -2.0), (0.5, 0.5, 0.5))
+    assert all(isinstance(valeur, float) for vecteur in vecteurs for valeur in vecteur)
+
+
 def test_budget_exact() -> None:
     # Le budget passe en texte : aucun arrondi de flottant entre l'orchestration et la cellule.
     assert json.loads(commande_json(COMMANDE))["plafonds"]["budget_usd"] == "0.35"
@@ -54,13 +69,15 @@ def test_budget_exact() -> None:
 
 def test_valeurs_par_defaut() -> None:
     retires = dict.fromkeys(
-        ("plafonds", "cache_1h", "serveur", "cli", "schema", "empreinte_prompt")
+        ("plafonds", "cache_1h", "serveur", "cli", "schema", "empreinte_prompt", "vecteurs")
     )
     commande = lire_commande(brut(**retires))
     assert (commande.plafonds, commande.cache_1h) == (Plafonds(), False)
     assert (commande.serveur, commande.cli) == ((str(LANCEUR),), None)
     # Français, fiche non vérifiée : un essai hors campagne.
     assert (commande.schema, commande.empreinte_prompt) == ("fr", None)
+    # Aucun vecteur : les cellules qui interrogent la base par un outil n'en ont pas.
+    assert commande.vecteurs == ()
     # ADR-0009 et choix de Julien (T4.1) : 180 s et 10 tours par question, 0,50 $ par conversation.
     assert Plafonds() == Plafonds(180.0, 10, Decimal("0.50"), 30.0)
 
@@ -88,6 +105,16 @@ def test_valeurs_par_defaut() -> None:
         ({"empreinte_prompt": "0" * 63}, "empreinte_prompt : un SHA-256"),
         ({"empreinte_prompt": "G" * 64}, "empreinte_prompt : un SHA-256"),
         ({"empreinte_prompt": "0" * 65}, "empreinte_prompt : un SHA-256"),
+        # Spec 003, D5 : un vecteur par question (la commande type en pose deux), fait de nombres.
+        ({"vecteurs": {"Q2": [0.5]}}, "vecteurs : une liste attendue"),
+        ({"vecteurs": [[0.5]]}, "vecteurs : un par question attendu"),
+        ({"vecteurs": [[0.5], [0.5], [0.5]]}, "vecteurs : un par question attendu"),
+        ({"vecteurs": [[0.5], 0.5]}, "vecteur : une liste attendue"),
+        ({"vecteurs": [[0.5], []]}, "vecteur vide"),
+        ({"vecteurs": [[0.5], ["0.5"]]}, "vecteur : des nombres attendus"),
+        ({"vecteurs": [[0.5], [True]]}, "vecteur : des nombres attendus"),
+        ({"vecteurs": [[0.5], [float("nan")]]}, "vecteur : des nombres finis attendus"),
+        ({"vecteurs": [[0.5], [float("-inf")]]}, "vecteur : des nombres finis attendus"),
     ],
     ids=lambda valeur: valeur if isinstance(valeur, str) else None,
 )
