@@ -18,7 +18,7 @@ from decimal import Decimal
 from pathlib import Path
 
 from banc import revue
-from banc.cellule import FICHES
+from banc.cellule import CONSIGNES, FICHES
 from banc.mesures import TRACES, MesureError, fichier_mesures, lire_lignes
 from banc.orchestration import (
     PANNES_PAR_SERIE,
@@ -150,9 +150,12 @@ def commande(
     total = sum((bilan.cout_usd for bilan in bilans), Decimal(0))
     print(f"campagne {campagne} : {etat} ; {len(lignes)} lignes ; {total} $")
     if parametres.empreinte_prompt is not None:
+        # La consigne de la technique (ADR-0018) ; une campagne GraphRAG gèle aussi sa requête.
+        recherche = parametres.empreinte_recherche
         print(
-            f"schéma {parametres.schema} : consigne.md et {FICHES[parametres.schema]}, "
-            f"empreinte du prompt {parametres.empreinte_prompt[:12]}"
+            f"schéma {parametres.schema} : {CONSIGNES[parametres.consigne]} et "
+            f"{FICHES[parametres.schema]}, empreinte du prompt {parametres.empreinte_prompt[:12]}"
+            + ("" if recherche is None else f" ; requête de recherche {recherche[:12]}")
         )
     for manque in manquants:
         print(f"  manque : {manque}")
