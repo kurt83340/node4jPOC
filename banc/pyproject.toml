@@ -8,10 +8,14 @@ description = "Banc d'essai des techniques text-to-Cypher sur le graphe Pokémon
 requires-python = ">=3.14"
 # Clients mesurés figés : leur version fait partie de la mesure (D10). MCP est un extra d'ADK depuis la
 # v2 ; anthropic[vertex] sert la classe Claude d'ADK (l'extra « extensions » d'ADK tirerait bien plus).
+# google-genai et google-auth, importés directement par banc.encodage (spec 003, D5) : déclarés le 2026-10-18,
+# aux versions qu'ADK tirait déjà (uv.lock).
 dependencies = [
     "anthropic[vertex]==1.11.0",
     "claude-agent-sdk==0.2.164",
     "google-adk[mcp]==2.11.0",
+    "google-auth==2.60.0",
+    "google-genai==2.28.0",
 ]
 
 [dependency-groups]
