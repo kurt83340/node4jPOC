@@ -17,6 +17,7 @@ import hashlib
 import io
 import json
 import re
+import struct
 import time
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import asdict, dataclass, field, fields, replace
@@ -299,6 +300,15 @@ def lire(fichier: Path) -> Conversation:
     if relecture.entete is None:
         raise MesureError(f"{fichier.name} : trace vide")
     return Conversation(relecture.entete, tuple(tour.mesure() for tour in relecture.tours))
+
+
+def empreinte_vecteur(vecteur: Sequence[float]) -> str:
+    """Empreinte d'un vecteur, que la trace porte à sa place (spec 003, plan D9) : « sha256: », puis
+    le SHA-256 de ses composantes en flottants de 64 bits petit-boutistes. Le même vecteur donne la
+    même empreinte, en liste ou en tuple, en entiers ou en flottants ; un seul bit changé en donne
+    une autre."""
+    octets = struct.pack(f"<{len(vecteur)}d", *vecteur)
+    return f"sha256:{hashlib.sha256(octets).hexdigest()}"
 
 
 # --- Tokens par modèle, cache et réflexion -------------------------------------------------------

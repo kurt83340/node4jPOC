@@ -259,3 +259,9 @@
   n'est pas réécrite dans la sortie, et la première requête en erreur arrête la suite, code 1 (sondé le 2026-10-13) ;
   mais `:param` s'évalue côté serveur, le jeton arrive chez Aura en littéral (vu le 2026-10-12,
   [ADR-0019](adr/0019-infra-jeton-vertex-du-plugin-genai.md)).
+- ⚠️ `banc/src/banc/cellule_graphrag.py` — `ClientSession.call_tool` de mcp 2.3.0 relit la liste des outils au premier
+  appel d'un outil qu'il n'a pas vu sur la session (`validate_tool_result`) : la lire avant le chrono, sur la même
+  session (`_connecter` de `banc.cellule_adk`), sinon elle tombe dans le temps mesuré. Un serveur mort lève `MCPError`
+  « Connection closed », à l'appel en cours comme au suivant. Aucun test ne prouve `boite.close()` :
+  `_arreter_les_restes` arrête aussi le serveur (mutation survivante, de même dans `banc/src/banc/cellule_adk.py`)
+  (vu le 2026-10-18, T9.1).
