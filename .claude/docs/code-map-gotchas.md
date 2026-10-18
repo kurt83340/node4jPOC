@@ -277,3 +277,8 @@
   pose sa propre échéance (envoi du message, plus le délai) : sous celle du tour GraphRAG, posée avant la recherche et
   donc plus tôt, l'annulation traverse `_lire` en `CancelledError`, et c'est l'échéance du tour qui la note en
   « délai ». Ne pas rattraper `CancelledError` dans la rédaction (`test_le_delai_couvre_la_recherche`, T10.1).
+- ⚠️ `banc/src/banc/controle_traces.py`, `banc/tests/test_controle_traces.py` — neo4j-mcp v1.6.0 écrit un vecteur
+  stocké (`VECTOR`) sous la forme `{"Elems": [...]}`, en JSON indenté, un nombre par ligne ; dans la ligne de la trace,
+  ces sauts de ligne sont échappés (`\n`). Un contrôle ou un test de vecteur vise cette forme, pas une liste nue :
+  `AVEC_VECTEURS` de `banc/tests/test_cellule_graphrag.py` ne sert qu'au garde-fou du coût, qui ne lit que la
+  longueur. Relevé en lecture sur Aura le 2026-10-18 (T15.1).
