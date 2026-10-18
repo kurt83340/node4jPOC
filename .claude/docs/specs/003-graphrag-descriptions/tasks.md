@@ -8,7 +8,7 @@
 > il « perd le fil » (échecs ×4 constatés en télémétrie, Morph 2026) → découper la phase.
 
 **Date :** 2026-10-12
-**Status :** [ ] 19/35 tasks → MAJ au fil de l'eau
+**Status :** [ ] 20/35 tasks → MAJ au fil de l'eau
 
 > Les tests n'appellent aucun service réel (Vertex, Anthropic, Aura) : faux outils, fausses API, HOME temporaire.
 > Une dépense passe par le feu vert de Julien, annoncée avec son estimation : phases 2, 6, 8, 13, 14 et 15.
@@ -92,7 +92,7 @@
 
 ## Phase 12 — Orchestration : campagnes et encodages (sans dépense ; NEO-32)
 
-- [ ] **T12.1** : orchestration : les deux cellules enregistrées ; `campagne.json` format 4 (consigne de contexte, empreinte de la requête de recherche) ; `encodages.json` écrit à la création par `banc.encodage` et relu par `--reprendre`, sans réencoder ; vecteurs dans la commande
+- [x] **T12.1** : orchestration : les deux cellules enregistrées ; `campagne.json` format 4 (consigne de contexte, empreinte de la requête de recherche) ; `encodages.json` écrit à la création par `banc.encodage` et relu par `--reprendre`, sans réencoder ; vecteurs dans la commande — fait le 2026-10-18 : `graphrag-claude` et `graphrag-gemini` enregistrées (`CELLULES`, `PROGRAMMES`, clé Anthropic exigée de `graphrag-claude`), la technique 2 restant le défaut ; une technique par campagne (choix de Claude) ; `campagne.json` format 4 (prompt de la consigne de contexte, empreinte de la requête de recherche, gelés), formats 2 et 3 relus ; `encodages.json` écrit à la création par `banc.encodage`, avant toute écriture, relu par `--reprendre` sans réencoder (fichier absent, message changé : refus) ; vecteurs et empreinte de la requête dans la commande, la requête vérifiée par la cellule avant toute trace ; 30 tests écrits d'abord, rouges puis verts, et 4 après le code, validés par mutation ; 34 mutations, toutes détectées ; suite complète (1 819 tests), ruff et mypy verts ; précisions au plan (D5, D7)
   - DoD : `command_passes: uv run --directory banc pytest -q tests/test_orchestration.py`
 
 ## Phase 13 — Contrôles à la création et répétition générale (environ 0,2 $, feu vert de Julien ; NEO-32)
