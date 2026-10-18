@@ -8,7 +8,7 @@
 > il « perd le fil » (échecs ×4 constatés en télémétrie, Morph 2026) → découper la phase.
 
 **Date :** 2026-10-12
-**Status :** [ ] 20/35 tasks → MAJ au fil de l'eau
+**Status :** [ ] 21/35 tasks → MAJ au fil de l'eau
 
 > Les tests n'appellent aucun service réel (Vertex, Anthropic, Aura) : faux outils, fausses API, HOME temporaire.
 > Une dépense passe par le feu vert de Julien, annoncée avec son estimation : phases 2, 6, 8, 13, 14 et 15.
@@ -97,7 +97,7 @@
 
 ## Phase 13 — Contrôles à la création et répétition générale (environ 0,2 $, feu vert de Julien ; NEO-32)
 
-- [ ] **T13.1** : à la création d'une campagne GraphRAG : `verifier.sh --section embeddings`, lancé sans `ANTHROPIC_*`, et preuve de symétrie ; tous deux sautés en mode faux serveur, comme le contrôle de langue ; résultat de recherche fixe du faux serveur ; bout en bout avec les vraies cellules contre de fausses API
+- [x] **T13.1** : à la création d'une campagne GraphRAG : `verifier.sh --section embeddings`, lancé sans `ANTHROPIC_*`, et preuve de symétrie ; tous deux sautés en mode faux serveur, comme le contrôle de langue ; résultat de recherche fixe du faux serveur ; bout en bout avec les vraies cellules contre de fausses API — fait le 2026-10-18 : `verifier.sh --section embeddings` sans `ANTHROPIC_*` avant une campagne GraphRAG, à la création et à la reprise (choix de Claude) ; à la création, la preuve de symétrie de `banc essai-recherche` (`banc.essai_recherche.symetrie`, avec l'encodeur de la campagne) avant tout encodage, 0,9999 au moins ; tous deux sautés en mode faux serveur ; résultat de recherche fixe et neutre du faux serveur (deux espèces hors du banc, descriptions inventées) ; conversation lente aussi pour `graphrag-gemini` (choix de Claude) ; bout en bout avec les deux vraies cellules GraphRAG, le faux serveur et une fausse API ; 17 tests écrits d'abord, rouges puis verts ; 20 mutations, toutes détectées ; suite complète (1 836 tests), ruff et mypy verts ; précision au plan (D5)
   - DoD : `command_passes: uv run --directory banc pytest -q tests/test_orchestration.py && uv run --directory banc pytest -q`
 - [ ] **T13.2** : répétition générale : vrais LLM, faux serveur (contexte fixe), rien ne touche Aura ; règle de la source citée relue sur les réponses obtenues
   - DoD : `manual: feu vert de Julien (environ 0,2 $)`, puis `command_passes: scripts/banc.sh lancer --campagne repetition-3 --faux-serveur --cellules graphrag-claude,graphrag-gemini --plafond-usd 1.2 && uv run --directory banc python -m banc rapport --campagne repetition-3 --complet`
