@@ -44,6 +44,9 @@ DIMENSIONS = 3072
 # Le type de tâche d'une question ; celui d'une description, pour la preuve de symétrie (T8.2).
 QUESTION = "RETRIEVAL_QUERY"
 DOCUMENT = "RETRIEVAL_DOCUMENT"
+# Preuve de symétrie (D5) : une description réencodée contre son vecteur stocké, 0,9999 au moins,
+# sinon le modèle aurait dérivé.
+SEUIL_SYMETRIE = 0.9999
 # Portée de l'ADC de Vertex, celle que google-genai demande lui-même.
 PORTEE = "https://www.googleapis.com/auth/cloud-platform"
 # Autant de reprises que les cellules (plan 002, D13) ; délais de google-genai.

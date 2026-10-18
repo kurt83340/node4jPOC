@@ -14,6 +14,9 @@ questions/recherche.cypher par read-cypher, comme le fera la cellule GraphRAG :
    comparée sur la base à son vecteur stocké (vector.similarity.cosine, comme au test payant du
    2026-10-12) : 0,9999 au moins, sinon le modèle aurait dérivé.
 
+La preuve de symétrie seule (symetrie) sert aussi à la création d'une campagne GraphRAG (T13.1),
+avec l'encodeur de la campagne.
+
 Trois encodages (moins de 0,001 $), sur le feu vert de Julien ; aucune écriture ; aucun texte de
 description dans le compte rendu (ADR-0001). Codes retour : 0 conforme · 1 écart · 2 erreur
 technique.
@@ -25,7 +28,8 @@ import math
 import sys
 import tempfile
 import time
-from collections.abc import Callable
+from collections.abc import AsyncIterator, Callable
+from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -38,6 +42,7 @@ from banc.encodage import (
     DIMENSIONS,
     DOCUMENT,
     QUESTION,
+    SEUIL_SYMETRIE,
     Encodage,
     EncodageError,
     encodeur_vertex,
@@ -66,7 +71,6 @@ COLONNES = (
 )  # fmt: skip
 ESPECES_MAX = 20
 DESCRIPTIONS_MAX = 2
-SEUIL_SYMETRIE = 0.9999
 # Vecteur du premier contrôle : de la dimension de l'index, et non nul pour une similarité cosinus.
 FACTICE = [0.001] * DIMENSIONS
 # Jetons estimés par excès, comme le garde-fou des cellules sur un résultat d'outil.
@@ -116,6 +120,48 @@ async def essai(moyens: Moyens) -> int:
     """Mène l'essai dans un dossier temporaire hors du dépôt, détruit ensuite."""
     bilan = Bilan(moyens.ecrire)
     requete = RECHERCHE.read_text(encoding="utf-8")
+    async with _session(moyens) as session:
+        await _essai(bilan, moyens, session, requete)
+    if bilan.ecarts:
+        moyens.ecrire(f"ÉCART : {bilan.ecarts} contrôle(s) sur {bilan.controles}.")
+        return 1
+    moyens.ecrire(f"CONFORME : {bilan.controles} contrôles.")
+    return 0
+
+
+def symetrie(encoder: Callable[[str, str], Encodage], moyens: Moyens | None = None) -> float:
+    """La preuve de symétrie seule, à la création d'une campagne GraphRAG (T13.1) : la
+    description de contrôle, lue par read-cypher, réencodée par l'encodeur de la campagne et
+    comparée sur la base à son vecteur stocké ; rend la similarité, que la campagne juge.
+
+    Raises:
+        EssaiError: serveur injoignable, description ou similarité illisibles.
+    """
+    try:
+        return asyncio.run(_symetrie_seule(encoder, moyens or Moyens()))
+    except BaseExceptionGroup as groupe:
+        # Le client MCP (anyio) regroupe les erreurs de ses tâches (banc.essai_serveur).
+        if groupe.split(TECHNIQUES)[1] is not None:
+            raise
+        raise EssaiError("; ".join(map(str, _feuilles(groupe)))) from groupe
+    except TECHNIQUES as erreur:
+        if isinstance(erreur, EssaiError):
+            raise
+        raise EssaiError(str(erreur)) from erreur
+
+
+async def _symetrie_seule(encoder: Callable[[str, str], Encodage], moyens: Moyens) -> float:
+    async with _session(moyens) as session:
+        _description, _encodage, texte, similarite = await _mesurer(session, encoder)
+    if not isinstance(similarite, (int, float)) or isinstance(similarite, bool):
+        raise EssaiError(f"similarité illisible : {extrait(texte)}")
+    return float(similarite)
+
+
+@asynccontextmanager
+async def _session(moyens: Moyens) -> AsyncIterator[ClientSession]:
+    """Le serveur lancé comme une cellule le lance (liste blanche de adk-gemini, dossier vide hors
+    du dépôt, détruit ensuite), et sa session MCP."""
     with tempfile.TemporaryDirectory(prefix="banc-essai-") as dossier:
         racine = Path(dossier)
         for sous_dossier in ("home", "claude", "travail"):
@@ -131,12 +177,7 @@ async def essai(moyens: Moyens) -> int:
         )
         with (racine / "serveur.log").open("w", encoding="utf-8") as journal:
             async with serveur(parametres, journal, moyens.connexion_s) as (session, _initiale):
-                await _essai(bilan, moyens, session, requete)
-    if bilan.ecarts:
-        moyens.ecrire(f"ÉCART : {bilan.ecarts} contrôle(s) sur {bilan.controles}.")
-        return 1
-    moyens.ecrire(f"CONFORME : {bilan.controles} contrôles.")
-    return 0
+                yield session
 
 
 async def _essai(bilan: Bilan, moyens: Moyens, session: ClientSession, requete: str) -> None:
@@ -167,18 +208,11 @@ async def _essai(bilan: Bilan, moyens: Moyens, session: ClientSession, requete: 
 async def _symetrie(
     bilan: Bilan, session: ClientSession, encoder: Callable[[str, str], Encodage]
 ) -> None:
-    texte, erreur = await lire(session, DESCRIPTION)
-    identifiant, description = valeur(texte, "id"), valeur(texte, "texte")
-    if erreur or not isinstance(identifiant, str) or not isinstance(description, str):
-        raise EssaiError(f"description de contrôle illisible : {extrait(texte)}")
-    encodage = await asyncio.to_thread(encoder, description, DOCUMENT)
+    description, encodage, texte, similarite = await _mesurer(session, encoder)
     bilan.informer(
         "description de contrôle",
         f"{len(description)} caractères, encodée en {encodage.jetons} jetons",
     )
-    parametres = {"id": identifiant, "vecteur": list(encodage.vecteur)}
-    texte, erreur = await lire(session, SYMETRIE, parametres)
-    similarite = None if erreur else valeur(texte, "similarite")
     libelle = (
         f"symétrie : description réencodée contre son vecteur stocké ({SEUIL_SYMETRIE} au moins)"
     )
@@ -186,6 +220,26 @@ async def _symetrie(
         bilan.juger(libelle, similarite >= SEUIL_SYMETRIE, str(similarite))
     else:
         bilan.juger(libelle, False, extrait(texte))
+
+
+async def _mesurer(
+    session: ClientSession, encoder: Callable[[str, str], Encodage]
+) -> tuple[str, Encodage, str, Any]:
+    """La description de contrôle lue, réencodée en RETRIEVAL_DOCUMENT, puis comparée sur la base à
+    son vecteur stocké : la description, son encodage, le résultat de la comparaison et la
+    similarité qu'il porte (None si read-cypher est en erreur).
+
+    Raises:
+        EssaiError: description de contrôle illisible.
+    """
+    texte, erreur = await lire(session, DESCRIPTION)
+    identifiant, description = valeur(texte, "id"), valeur(texte, "texte")
+    if erreur or not isinstance(identifiant, str) or not isinstance(description, str):
+        raise EssaiError(f"description de contrôle illisible : {extrait(texte)}")
+    encodage = await asyncio.to_thread(encoder, description, DOCUMENT)
+    parametres = {"id": identifiant, "vecteur": list(encodage.vecteur)}
+    texte, erreur = await lire(session, SYMETRIE, parametres)
+    return description, encodage, texte, None if erreur else valeur(texte, "similarite")
 
 
 def ecarts_du_contexte(texte: str) -> list[str]:

@@ -17,7 +17,8 @@ from test_contamination import INTERDITES, contient, mots
 
 from banc import __main__, essai_recherche
 from banc.encodage import DOCUMENT, QUESTION, Encodage, EncodageError
-from banc.essai_recherche import COLONNES, PHRASES, Moyens
+from banc.essai_recherche import COLONNES, PHRASES, Moyens, symetrie
+from banc.essai_serveur import EssaiError
 from banc.questions import charger
 
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -247,6 +248,69 @@ def test_serveur_injoignable(lancer: Any) -> None:
     essai = lancer(serveur=(sys.executable, "-I", "-c", "pass"))
     assert essai.code == 2
     assert essai.erreurs.startswith("banc essai-recherche : ")
+
+
+# --- Preuve de symétrie seule, à la création d'une campagne GraphRAG (T13.1) --------------------
+
+
+def moyens_de_symetrie(
+    tmp_path: Path,
+    description: dict[str, Any] | None = None,
+    similarite: dict[str, Any] | None = None,
+    serveur: tuple[str, ...] | None = None,
+) -> Moyens:
+    """Le faux serveur MCP qui rend la description de contrôle et sa similarité."""
+    lu = {"texte": json.dumps([{"id": IDENTIFIANT, "texte": DESCRIPTION}])}
+    scenario = {
+        "par_requete": [
+            ["ORDER BY p.id, d.texte LIMIT 1", description or lu],
+            ["vector.similarity.cosine", similarite or {"texte": '[{"similarite": 0.99997}]'}],
+        ]
+    }
+    fichier = tmp_path / "scenario.json"
+    fichier.write_text(json.dumps(scenario))
+    faux = (sys.executable, "-I", str(FIXTURES / "faux_serveur_mcp.py"), str(fichier))
+    return Moyens(
+        serveur=serveur or (*faux, str(tmp_path / "journal.jsonl")),
+        chemins=lambda: (),
+        connexion_s=10.0,
+    )
+
+
+def test_symetrie_seule(tmp_path: Path) -> None:
+    # La preuve de T8.2 sans le reste de l'essai : la description de contrôle, réencodée en
+    # RETRIEVAL_DOCUMENT par l'encodeur de la campagne, comparée sur la base à son vecteur stocké ;
+    # la similarité est rendue, la campagne en juge.
+    encodeur = FauxEncodeur()
+    assert symetrie(encodeur, moyens_de_symetrie(tmp_path)) == 0.99997
+    assert encodeur.appels == [(DESCRIPTION, DOCUMENT)]
+
+
+@pytest.mark.parametrize(
+    ("description", "similarite", "motif"),
+    [
+        ({"texte": "[]"}, None, "description de contrôle illisible"),
+        (None, {"texte": "[]"}, "similarité illisible"),
+        (None, {"texte": "Neo.ClientError: refus", "erreur": True}, "similarité illisible"),
+    ],
+    ids=["description", "similarite", "erreur"],
+)
+def test_symetrie_seule_illisible(
+    tmp_path: Path,
+    description: dict[str, Any] | None,
+    similarite: dict[str, Any] | None,
+    motif: str,
+) -> None:
+    moyens = moyens_de_symetrie(tmp_path, description, similarite)
+    with pytest.raises(EssaiError, match=motif):
+        symetrie(FauxEncodeur(), moyens)
+
+
+def test_symetrie_seule_serveur_injoignable(tmp_path: Path) -> None:
+    # Une erreur du client MCP (regroupée par anyio) devient une erreur de l'essai.
+    moyens = moyens_de_symetrie(tmp_path, serveur=(sys.executable, "-I", "-c", "pass"))
+    with pytest.raises(EssaiError):
+        symetrie(FauxEncodeur(), moyens)
 
 
 # --- Phrases et commande -------------------------------------------------------------------------
