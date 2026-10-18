@@ -1,10 +1,5 @@
 # Code Map — Intention & contraintes du code
 
-> **Ce que Claude NE PEUT PAS deviner en lisant le code.** Pas un index : Claude
-> retrouve seul le rôle d'un fichier, ses imports et ses tests via `grep`/lecture
-> (agentic search). On ne documente donc QUE le non-déductible : la **vue macro**,
-> les **règles de couplage**, l'**intention** et les **gotchas**.
->
 > ⚠️ Avant d'éditer un fichier, vérifie les **règles de couplage** ci-dessous.
 
 **Dernière MAJ :** 2026-10-18
@@ -28,9 +23,6 @@ Google Cloud → `infra/` ([RUNBOOK](RUNBOOK.md)). Réponses de référence : `q
 Harnais du banc d'essai → `banc/` ([plan 002](specs/002-agent-text-to-cypher/plan.md)).
 
 ## Règles de couplage (⭐ le cœur — non déductible du code)
-
-> En explorant, Claude voit ce qui **est** importé, jamais ce qui **ne doit pas** l'être.
-> Ces règles négatives sont l'information la plus précieuse de ce fichier.
 
 - ❌ Rien en dur dans `cypher/` ni `questions/` : ni identifiant, ni nom de base, ni URL de CSV. L'URL arrive par
   `$base` (`cypher-shell -P`, plan 001 D1).
@@ -61,9 +53,6 @@ Harnais du banc d'essai → `banc/` ([plan 002](specs/002-agent-text-to-cypher/p
   lit (pour `banc lancer`).
 
 ## Intention & décisions locales
-
-> Le POURQUOI qui ne se lit pas dans le code. Pour les décisions structurantes → ADR ;
-> ici, les choix locaux et l'intention d'architecture.
 
 - Vérification d'abord (plan 001, D8) : `scripts/verifier.sh` s'écrit avant les chargements ; rouge sur base
   vide (code 1), chaque fichier `cypher/` le fait passer au vert section par section (`--section`).

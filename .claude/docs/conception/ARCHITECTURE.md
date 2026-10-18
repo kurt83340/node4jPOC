@@ -5,7 +5,7 @@
 > ❌ **Ne contient PAS** : vision, périmètre, métriques → [cadrage](../cadrage/README.md) et [PRD.md](PRD.md)
 
 **Statut :** Validée par Julien le 2026-09-29 (modèle v2, tâche T1.2 de la spec 001)
-**Dernière MAJ :** 2026-10-11
+**Dernière MAJ :** 2026-10-16
 
 ## 1. Vue d'ensemble
 

@@ -51,8 +51,6 @@ tiers (CLI, SDK, framework d'agents) tait des comportements que le code doit con
 ## Lancer
 
 ```bash
-pytest                    # tous les tests
-pytest tests/unit/        # juste unit
-pytest -m "not slow"      # skip les lents
-pytest --cov --cov-report=html
+uv run --directory banc pytest -q                 # harnais : banc/tests/, à plat
+uv run --directory infra/reveil-aura pytest -q    # de même pour infra/coupure-vertex
 ```

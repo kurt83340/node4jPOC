@@ -3,7 +3,7 @@
 > Vocabulaire du banc d'essai, une ligne par terme. Le pourquoi vit dans les ADR et dans le
 > [plan 002](specs/002-agent-text-to-cypher/plan.md) (D1 à D13).
 
-**Dernière MAJ :** 2026-10-13
+**Dernière MAJ :** 2026-10-18
 
 ## Banc d'essai
 
@@ -61,3 +61,12 @@
 - **Bruit R, effet Δ** : sur les scores d'ADK + Gemini (justes, plus la moitié des partielles, sur 30), R est l'écart entre la meilleure et la moins bonne des 3 passes françaises, et Δ la moyenne des passes anglaises moins celle des passes françaises ([plan 002, D8](specs/002-agent-text-to-cypher/plan.md)).
 - **Verdict du FR/EN** : la règle fixée au pilote, avant toute passe comptée : passe de contrôle hors de sa fourchette, non concluant ; sinon Δ ≥ max(2, R), le schéma anglais aide ; Δ ≤ −max(2, R), il nuit ; entre les deux, pas d'effet mesurable à cette taille (30 questions, 3 passes, un modèle). Au jalon 2 : pas d'effet mesurable, Δ = −1,5 pour un seuil de 2,5 ([plan 002, D8](specs/002-agent-text-to-cypher/plan.md), [rapport](../../banc/resultats/technique-2.md)).
 - **Question qui bascule** : une question juste dans 2 passes sur 3 d'un côté du FR/EN et fausse dans 2 sur 3 de l'autre ; rapportée hors verdict (au jalon 2 : Q8 et Q27) ; à ne pas confondre avec la bascule du schéma ([plan 002, D8](specs/002-agent-text-to-cypher/plan.md), [rapport](../../banc/resultats/technique-2.md)).
+
+## GraphRAG (jalon 3)
+
+- **Technique sans outil** : le harnais encode la question et cherche dans l'index vectoriel des descriptions par `read-cypher` ; un seul appel au LLM, qui n'a aucun outil, rédige la réponse à partir du résultat ([ADR-0018](adr/0018-mvp-technique-sans-outil.md)).
+- **Contexte** : ce résultat, donné au LLM avec la question : `questions/recherche.cypher`, 20 espèces au plus, classées par meilleur score, chacune avec ses 2 meilleures descriptions et son parcours du graphe ; jamais `embedding` ni nœud entier ([plan 003, D6](specs/003-graphrag-descriptions/plan.md)).
+- **Consigne de contexte** : `questions/consigne-contexte.md`, la consigne commune sans ce qui parle de l'outil (même rôle, même règle, même format de fin) ; l'empreinte du prompt se calcule avec elle, une par technique (ADR-0018 ; plan 003, D8, T7.1).
+- **Encodage** : le vecteur d'un texte par `gemini-embedding-001` (3 072 dimensions, `europe-west1`) : les descriptions au chargement, par le plugin GenAI d'Aura (`cypher/07-embeddings.cypher`, [ADR-0020](adr/0020-mvp-index-vectoriel-des-descriptions.md)) ; les messages d'une campagne à sa création, par le harnais (`banc.encodage`), hors du temps mesuré (plan 003, D5).
+- **Symétrie** : une description lue par `read-cypher`, réencodée par le harnais et comparée à son vecteur stocké ; sous 0,9999 de similarité, la campagne ne démarre pas : le modèle aurait dérivé (plan 003, D5 ; 1 à l'essai du 2026-10-18).
+- **Recherche seule** (US2) : la part des espèces obligatoires et acceptables de chaque grille ([ADR-0008](adr/0008-mvp-notation-questions-semantiques.md)) que la recherche retrouve, sur les traces de `g-1`, pour Q3, Q9, Q16, Q17 et Q26 (plan 003, D13).

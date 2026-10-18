@@ -4,7 +4,7 @@
 > les secrets vivent dans GCP Secret Manager, lus au moment de servir, jamais affichés ni écrits sur le disque
 > ([ADR-0007](adr/0007-infra-secrets-et-services-geres.md)).
 
-**Dernière MAJ :** 2026-10-13
+**Dernière MAJ :** 2026-10-18
 
 ## Checklist
 

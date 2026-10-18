@@ -246,4 +246,4 @@ Agent `reviewer` à contexte frais, teammate visible, le 2026-10-12 (environ 27 
 
 ## Liens externes
 
-- {{Lien doc / blog / RFC pertinents}}
+- Cités dans le texte, au fil des sections.

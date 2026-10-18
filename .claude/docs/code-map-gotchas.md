@@ -61,6 +61,10 @@
   élément, et un `LIMIT` ; le nom d'index ne peut pas être un paramètre (Cypher Manual, lu le 2026-10-17). Le `MATCH`
   du parcours ne garde pas l'ordre des espèces : le `RETURN` le refait. Ni `embedding` ni nœud entier dans aucun
   `RETURN`, sous-requêtes comprises, et pas de point-virgule final : `banc/tests/test_recherche_cypher.py` (T7.2).
+- ⚠️ `questions/recherche.cypher`, `banc/src/banc/essai_recherche.py` — `read-cypher` préfixe lui-même `EXPLAIN`
+  pour classer une requête (neo4j-mcp v1.6.0, `internal/database/service.go`, `GetQueryType`) : un « EXPLAIN de
+  recherche.cypher » passé par lui deviendrait « EXPLAIN EXPLAIN ». Contrôle sur un vecteur factice, avant tout
+  encodage ([plan 003, D6](specs/003-graphrag-descriptions/plan.md), précision du 2026-10-18).
 - ⚠️ `questions/banc.toml`, `questions/README.md` — `banc/tests/test_banc_toml.py` les tient cohérents entre eux et
   avec `questions/attendu/` (texte posé, catégorie, tour précédent, équipe de Q2, scores de Q8 cités par le README) :
   changer l'un, c'est mettre l'autre à jour dans le même commit.
