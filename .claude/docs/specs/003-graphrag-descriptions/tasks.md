@@ -8,7 +8,7 @@
 > il « perd le fil » (échecs ×4 constatés en télémétrie, Morph 2026) → découper la phase.
 
 **Date :** 2026-10-12
-**Status :** [ ] 15/35 tasks → MAJ au fil de l'eau
+**Status :** [ ] 16/35 tasks → MAJ au fil de l'eau
 
 > Les tests n'appellent aucun service réel (Vertex, Anthropic, Aura) : faux outils, fausses API, HOME temporaire.
 > Une dépense passe par le feu vert de Julien, annoncée avec son estimation : phases 2, 6, 8, 13, 14 et 15.
@@ -75,7 +75,7 @@
 
 ## Phase 9 — Cellule GraphRAG : recherche et trace (sans dépense ; NEO-32)
 
-- [ ] **T9.1** : `banc.cellule_graphrag` (plan, D9) : commande avec les vecteurs, connexion au serveur MCP avant le chrono, recherche par `read-cypher` avec `{vecteur}`, trace avec l'empreinte du vecteur à sa place (`banc.mesures`), garde-fou sur la taille du contexte ; faux serveur MCP qui répond à la recherche
+- [x] **T9.1** : `banc.cellule_graphrag` (plan, D9) : commande avec les vecteurs, connexion au serveur MCP avant le chrono, recherche par `read-cypher` avec `{vecteur}`, trace avec l'empreinte du vecteur à sa place (`banc.mesures`), garde-fou sur la taille du contexte ; faux serveur MCP qui répond à la recherche — fait le 2026-10-18 : `banc.cellule_graphrag.converser`, une cellule ADK sans outil qui reprend de `banc.cellule_adk` la connexion, les comptes, les issues et l'arrêt du serveur, et de `banc.essai_serveur` l'appel `lire` de T8.2 ; `read-cypher` sur la session d'avant le chrono, jamais relancée (serveur perdu ou `read-cypher` en erreur : panne « serveur ») ; `Commande.vecteurs`, la dimension contrôlée par la cellule ; `banc.mesures.empreinte_vecteur` ; l'appel au modèle par un rédacteur (T10.1), factice dans les tests ; 65 tests écrits d'abord, rouges puis verts (48 de la cellule, 11 de la commande, 6 de l'empreinte) ; 38 mutations, 37 détectées : la survivante retire `boite.close()`, que `_arreter_les_restes` supplée (de même dans `banc.cellule_adk`, vérifié) ; suite complète (1 724 tests), ruff et mypy verts ; précision au plan (D9), gotcha
   - DoD : `command_passes: uv run --directory banc pytest -q tests/test_cellule_graphrag.py tests/test_mesures.py`
 
 ## Phase 10 — Cellule GraphRAG : appel au modèle et plafonds (sans dépense ; NEO-32)
