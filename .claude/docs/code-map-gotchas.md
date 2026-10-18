@@ -265,3 +265,7 @@
   « Connection closed », à l'appel en cours comme au suivant. Aucun test ne prouve `boite.close()` :
   `_arreter_les_restes` arrête aussi le serveur (mutation survivante, de même dans `banc/src/banc/cellule_adk.py`)
   (vu le 2026-10-18, T9.1).
+- ⚠️ `banc/src/banc/cellule_graphrag.py` — l'appel au modèle passe par `_lire` de `banc/src/banc/cellule_adk.py`, qui
+  pose sa propre échéance (envoi du message, plus le délai) : sous celle du tour GraphRAG, posée avant la recherche et
+  donc plus tôt, l'annulation traverse `_lire` en `CancelledError`, et c'est l'échéance du tour qui la note en
+  « délai ». Ne pas rattraper `CancelledError` dans la rédaction (`test_le_delai_couvre_la_recherche`, T10.1).

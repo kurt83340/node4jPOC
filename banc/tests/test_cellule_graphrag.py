@@ -1,17 +1,27 @@
-"""Cellules GraphRAG, recherche et trace (spec 003, T9.1 ; plan D7, D9 ; ADR-0017) : la recherche de
-questions/recherche.cypher par read-cypher, avant l'appel au modèle, contre un faux serveur MCP qui
-lui répond (tests/fixtures/faux_serveur_mcp.py). Aucun appel réel, aucun coût.
+"""Cellules GraphRAG (spec 003 ; plan D7, D9 ; ADR-0017, ADR-0018), contre un faux serveur MCP qui
+répond à la recherche (tests/fixtures/faux_serveur_mcp.py) et une fausse API (l'API Anthropic et
+Vertex en flux, le jeton d'une ADC factice : tests/fixtures/fausse_api_adk.py). Aucun appel réel,
+aucun coût.
 
-L'appel au modèle se branche en T10.1 (ADK sans outil) : ici, un rédacteur factice le remplace et
-note ce qu'il reçoit. DoD : la commande avec les vecteurs, la connexion avant le chrono, la requête
-telle quelle et le vecteur en paramètre, l'empreinte du vecteur à sa place dans la trace, le
-garde-fou de l'ADR-0017 avant l'appel. Puis : les issues d'un tour (D13), l'isolement, l'arrêt du
-serveur.
+T9.1, la recherche et sa trace : un rédacteur factice remplace l'appel au modèle et note ce qu'il
+reçoit. DoD : la commande avec les vecteurs, la connexion avant le chrono, la requête telle quelle
+et le vecteur en paramètre, l'empreinte du vecteur à sa place dans la trace, le garde-fou de
+l'ADR-0017 avant l'appel ; puis les issues d'une recherche (D13), l'isolement, l'arrêt du serveur.
+
+T10.1, l'appel au modèle : le vrai ADK 2.11.0, sans outil. DoD : la consigne de contexte et la
+fiche, le message (le contexte, puis la question), les réglages et les comptes des cellules ADK du
+jalon 2 (D7), les plafonds et les issues comme banc.cellule_adk ; puis le point d'entrée.
 """
 
 import asyncio
+import io
 import json
+import signal
+import subprocess
+import sys
 import time
+from collections.abc import Iterator
+from contextlib import contextmanager
 from dataclasses import dataclass, field, replace
 from datetime import date
 from decimal import Decimal
@@ -19,14 +29,21 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from test_cellule_adk import Bac, vivant
+from test_cellule_adk import Bac, attendre, erreur, reponse, vivant
 from test_essai_recherche import espece
 
-from banc import prix
-from banc.cellule import CelluleError, Commande, IsolementError
+from banc import cellule_adk, cellule_graphrag, prix
+from banc.cellule import (
+    CelluleError,
+    Commande,
+    IsolementError,
+    commande_json,
+    consigne_et_fiche,
+    empreinte_prompt,
+)
 from banc.cellule_adk import _Comptes, _Tour
 from banc.cellule_graphrag import Redaction, converser
-from banc.isolement import CleAbsente
+from banc.isolement import CleAbsente, environnement_agent
 from banc.mesures import Conversation
 from banc.prix import Usage
 
@@ -36,9 +53,11 @@ RECHERCHE = (Path(__file__).resolve().parents[2] / "questions" / "recherche.cyph
 CLE = "sk-ant-api03-cle-factice-du-banc"
 CLAUDE, GEMINI = "graphrag-claude", "graphrag-gemini"
 CLIENTS = (CLAUDE, GEMINI)
-# Modèle et voie de prix des cellules ADK du jalon 2, que les cellules GraphRAG reprennent (D7).
+# Modèle, voie de prix et liste blanche des cellules ADK du jalon 2, que les cellules GraphRAG
+# reprennent (D7).
 MODELES = {CLAUDE: "claude-sonnet-5-5", GEMINI: "gemini-3.8-flash"}
 ACCES = {CLAUDE: "api", GEMINI: "vertex-eu"}
+JUMELLES = {CLAUDE: "adk-claude", GEMINI: "adk-gemini"}
 Q1 = ("Q1", "Combien de nœuds ?")
 Q2 = ("Q2", "Mon équipe : Pikachu.\n\nQui remplacer ?")
 Q18 = ("Q18", "Et si je garde Pikachu ?")
@@ -57,8 +76,8 @@ AVEC_VECTEURS = json.dumps([espece(n) | {"embedding": [0.1] * 3072} for n in ran
 
 @dataclass
 class RedacteurFactice:
-    """Remplace l'appel au modèle (T10.1) : note ce qu'il reçoit et l'instant, répond, et ajoute
-    son coût à celui de la conversation."""
+    """Remplace l'appel au modèle dans les tests de la recherche : note ce qu'il reçoit et
+    l'instant, répond, et ajoute son coût à celui de la conversation."""
 
     reponse: str = REPONSE
     cout: Decimal = Decimal(0)
@@ -91,6 +110,13 @@ class BacGraphrag(Bac):
             vecteurs = (VECTEUR, VECTEUR_Q18)[: len(commande.questions)]
         return replace(commande, vecteurs=vecteurs)
 
+    @contextmanager
+    def api(self, client: str, etapes: list[dict[str, Any]], **reglages: Any) -> Iterator[str]:
+        """La fausse API, lancée sous le nom de la cellule ADK jumelle : la clé Anthropic pour la
+        cellule Claude seule (D3)."""
+        with super().api(JUMELLES[client], etapes, **reglages) as adresse:
+            yield adresse
+
     def acces(self, client: str) -> None:
         """La clé Anthropic pour la cellule Claude seule (D3)."""
         if client == CLAUDE:
@@ -104,11 +130,47 @@ class BacGraphrag(Bac):
         commande: Commande | None = None,
         redacteur: RedacteurFactice | None = None,
     ) -> Conversation:
-        """Mène la conversation dans ce processus, avec l'accès de la cellule, et relit sa trace."""
+        """Mène la conversation dans ce processus, le modèle remplacé par un rédacteur factice, et
+        relit sa trace."""
         self.acces(client)
         commande = commande or self.commande()
         asyncio.run(converser(client, commande, prix.charger(), redacteur or RedacteurFactice()))
         return self.trace()
+
+    def converser(
+        self,
+        client: str,
+        etapes: list[dict[str, Any]],
+        commande: Commande | None = None,
+        **reglages: Any,
+    ) -> Conversation:
+        """Mène la conversation dans ce processus, avec le vrai ADK contre la fausse API et son
+        scénario, et relit sa trace."""
+        commande = commande or self.commande()
+        with self.api(client, etapes, **reglages):
+            asyncio.run(converser(client, commande, prix.charger()))
+        return self.trace()
+
+    def lancer(
+        self, client: str, etapes: list[dict[str, Any]], commande: Commande
+    ) -> subprocess.CompletedProcess[str]:
+        """La cellule dans son propre processus, comme l'orchestration la lancera : la liste blanche
+        de sa jumelle ADK pour seul environnement (celle des cellules GraphRAG : T11.1)."""
+        with self.api(client, etapes) as adresse:
+            env = environnement_agent(
+                JUMELLES[client], self.racine / "home", self.racine / "claude"
+            )
+            env |= {"ANTHROPIC_BASE_URL" if client == CLAUDE else "GOOGLE_VERTEX_BASE_URL": adresse}
+            return subprocess.run(
+                [sys.executable, "-m", "banc.cellule_graphrag", client],
+                input=commande_json(commande),
+                cwd=self.racine / "travail",
+                env=env,
+                capture_output=True,
+                text=True,
+                timeout=60,
+                check=False,
+            )
 
     def appels(self) -> list[dict[str, Any]]:
         """Les appels d'outils reçus par le faux serveur (nom, arguments), dans l'ordre."""
@@ -120,14 +182,19 @@ class BacGraphrag(Bac):
 
 
 @pytest.fixture
-def bac(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> BacGraphrag:
+def bac(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, cle_adc: str) -> BacGraphrag:
     for dossier in ("home", "claude", "gcloud", "journal", "travail", "traces"):
         (tmp_path / dossier).mkdir()
+    # Rien du poste ne doit choisir l'accès des clients à la place de la cellule.
     for nom in ("ANTHROPIC_AUTH_TOKEN", "GOOGLE_API_KEY", "GEMINI_API_KEY"):
         monkeypatch.delenv(nom, raising=False)
+    monkeypatch.setenv("CLOUDSDK_CONFIG", str(tmp_path / "gcloud"))
+    # Reprises de Gemini sans attente : seul leur nombre compte ici.
+    rapides = {"initial_delay": 0.01, "max_delay": 0.02}
+    reprises = cellule_adk.REPRISES_GEMINI.model_copy(update=rapides)
+    monkeypatch.setattr(cellule_adk, "REPRISES_GEMINI", reprises)
     monkeypatch.chdir(tmp_path / "travail")
-    # Aucune ADC : rien n'appelle le modèle avant T10.1.
-    return BacGraphrag(tmp_path, monkeypatch, cle_adc="")
+    return BacGraphrag(tmp_path, monkeypatch, cle_adc)
 
 
 def mener_puis_regarder(bac: BacGraphrag, client: str, commande: Commande) -> list[int]:
@@ -458,3 +525,282 @@ def test_entete(bac: BacGraphrag, client: str) -> None:
     assert entete.versions["neo4j-mcp"] == "v1.6.0"
     (fichier,) = (bac.racine / "traces").rglob("*.jsonl")
     assert fichier.name == f"{client}-p1-Q1-e1.jsonl"
+
+
+# --- T10.1 : l'appel au modèle, ADK sans outil, contre une fausse API ---------------------------
+
+
+def message(question: str, contexte: str = CONTEXTE) -> str:
+    """Le message d'un tour dans la forme choisie par Julien le 2026-10-18 (plan, D8) : le
+    contexte d'abord, puis la question, entre balises."""
+    return f"<contexte>\n{contexte}\n</contexte>\n\n<question>\n{question}\n</question>"
+
+
+def systeme(client: str, corps: dict[str, Any]) -> str:
+    """Le prompt système d'une requête du modèle, chez Anthropic ou chez Vertex."""
+    if client == CLAUDE:
+        (bloc,) = corps["system"]
+        return str(bloc["text"])
+    (partie,) = corps["systemInstruction"]["parts"]
+    return str(partie["text"])
+
+
+def envoye(client: str, corps: dict[str, Any]) -> list[str]:
+    """Les textes des messages de l'utilisateur d'une requête du modèle, dans l'ordre."""
+    if client == CLAUDE:
+        messages = [m for m in corps["messages"] if m["role"] == "user"]
+        return [bloc["text"] for m in messages for bloc in m["content"] if bloc["type"] == "text"]
+    contenus = [c for c in corps["contents"] if c["role"] == "user"]
+    return [partie["text"] for c in contenus for partie in c["parts"] if "text" in partie]
+
+
+def test_requete_de_claude(bac: BacGraphrag) -> None:
+    # D7 : les réglages d'adk-claude (Claude Sonnet 5.5, effort high, 128 000 tokens de sortie,
+    # réflexion adaptative, en flux, cache de 5 min) ; aucun outil ; la consigne de contexte et la
+    # fiche ; un seul message, le contexte puis la question.
+    commande = bac.commande(mcp={"appels": [{"texte": CONTEXTE}]})
+    bac.converser(CLAUDE, [reponse(REPONSE)], commande)
+    (requete,) = bac.requetes()
+    corps = requete["corps"]
+    assert requete["chemin"].startswith("/v1/messages")
+    assert corps["model"] == "claude-sonnet-5-5"
+    assert corps["max_tokens"] == 128_000
+    assert corps["output_config"] == {"effort": "high"}
+    assert corps["thinking"] == {"type": "adaptive", "display": "summarized"}
+    assert corps["stream"] is True
+    assert "tools" not in corps
+    assert systeme(CLAUDE, corps).startswith(consigne_et_fiche(consigne="contexte"))
+    assert corps["system"][0]["cache_control"] == {"type": "ephemeral"}
+    assert envoye(CLAUDE, corps) == [message(Q1[1])]
+
+
+def test_requete_de_gemini(bac: BacGraphrag) -> None:
+    # D7 : les réglages d'adk-gemini (Gemini 3.8 Flash sur Vertex eu, réflexion HIGH, aucun cache
+    # stocké) ; aucun outil ; la consigne de contexte et la fiche ; le contexte puis la question.
+    commande = bac.commande(mcp={"appels": [{"texte": CONTEXTE}]})
+    bac.converser(GEMINI, [reponse(REPONSE)], commande)
+    (requete,) = bac.requetes()
+    corps = requete["corps"]
+    modele = "/projects/jleroy-labo/locations/eu/publishers/google/models/gemini-3.8-flash"
+    assert f"{modele}:streamGenerateContent" in requete["chemin"]
+    assert corps["generationConfig"] == {"thinkingConfig": {"thinking_level": "HIGH"}}
+    assert "tools" not in corps
+    assert "cachedContent" not in json.dumps(corps)
+    assert systeme(GEMINI, corps).startswith(consigne_et_fiche(consigne="contexte"))
+    assert envoye(GEMINI, corps) == [message(Q1[1])]
+
+
+@pytest.mark.parametrize("client", CLIENTS)
+def test_tour_mesure(bac: BacGraphrag, client: str) -> None:
+    # Un tour : la recherche, puis un seul appel au modèle ; ses tokens, sa réflexion, sa réponse.
+    commande = bac.commande(mcp={"appels": [{"texte": CONTEXTE}]})
+    trace = bac.converser(client, [reponse(REPONSE)], commande)
+    (tour,) = trace.tours
+    assert (tour.issue, tour.cause, tour.reponse) == ("reponse", None, REPONSE)
+    (appel,) = tour.appels
+    assert (appel.outil, appel.parametres, appel.resultat) == (
+        "read-cypher",
+        {"vecteur": EMPREINTE},
+        CONTEXTE,
+    )
+    # La réponse type de la fausse API : 100 tokens d'entrée, 3 000 lus en cache, 30 de sortie
+    # dont 5 de réflexion.
+    assert tour.usages == {MODELES[client]: Usage(entree=100, sortie=30, cache_lecture=3000)}
+    assert tour.reflexion == {MODELES[client]: 5}
+    (llm,) = bac.events("llm")
+    assert llm["brut"]["model_version"] == MODELES[client]
+
+
+@pytest.mark.parametrize("client", CLIENTS)
+def test_prompt_change_depuis_la_creation(bac: BacGraphrag, client: str) -> None:
+    # L'empreinte du prompt d'une autre technique (la consigne de l'outil) : erreur technique avant
+    # tout serveur, toute trace et tout appel (protocole gelé, D7).
+    commande = replace(bac.commande(), empreinte_prompt=empreinte_prompt("fr"))
+    with pytest.raises(CelluleError, match="changées depuis la création de la campagne"):
+        bac.converser(client, [reponse()], commande)
+    assert bac.notes_mcp("pid") == []
+    assert not list((bac.racine / "traces").rglob("*.jsonl"))
+    assert bac.requetes() == []
+
+
+@pytest.mark.parametrize("client", CLIENTS)
+def test_prompt_de_la_campagne_anglaise(bac: BacGraphrag, client: str) -> None:
+    # Schéma anglais : la fiche anglaise, sous l'empreinte de la consigne de contexte fixée à la
+    # création de la campagne.
+    empreinte = empreinte_prompt("en", consigne="contexte")
+    commande = replace(bac.commande(), schema="en", empreinte_prompt=empreinte)
+    bac.converser(client, [reponse()], commande)
+    (requete,) = bac.requetes()
+    attendu = consigne_et_fiche(schema="en", consigne="contexte")
+    assert systeme(client, requete["corps"]).startswith(attendu)
+
+
+def test_cache_d_une_heure(bac: BacGraphrag) -> None:
+    # D10 du jalon 2 : le cache d'une heure des cellules Claude, quand la campagne le fixe.
+    commande = bac.commande(cache_1h=True)
+    (tour,) = bac.converser(CLAUDE, [reponse(entree=100, sortie=30, ecrit=3000)], commande).tours
+    (requete,) = bac.requetes()
+    assert requete["corps"]["system"][0]["cache_control"] == {"type": "ephemeral", "ttl": "1h"}
+    usage = tour.usages[MODELES[CLAUDE]]
+    assert (usage.cache_ecriture_1h, usage.cache_ecriture_5m) == (3000, 0)
+
+
+@pytest.mark.parametrize("client", CLIENTS)
+def test_delai_pendant_l_appel(bac: BacGraphrag, client: str) -> None:
+    # Le flux du modèle s'ouvre puis se tait : à l'échéance, échec « délai ». Un appel de Claude
+    # coupé ne rend aucun usage (borne basse, choix de Julien) ; celui de Gemini, son premier
+    # morceau (l'entrée, 100 tokens et 3 000 en cache, sans détail).
+    commande = bac.commande(delai_s=2.0)
+    (tour,) = bac.converser(client, [reponse() | {"lent_s": 30}], commande).tours
+    assert (tour.issue, tour.cause) == ("echec", "delai")
+    assert tour.duree_s is not None and 2.0 <= tour.duree_s < 4.0
+    attendu = {MODELES[GEMINI]: Usage(entree=3100)} if client == GEMINI else {}
+    assert tour.usages == attendu
+    partiels = [appel for appel in bac.events("llm") if appel["brut"].get("partiel")]
+    assert len(partiels) == (client == GEMINI)
+
+
+@pytest.mark.parametrize("client", CLIENTS)
+def test_le_delai_couvre_la_recherche(bac: BacGraphrag, client: str) -> None:
+    # Le temps d'une question court de l'envoi du message à la réponse finale, recherche comprise
+    # (plan, « Performance ») : 1,5 s de recherche, puis 1 s d'appel, dépassent un délai de 2 s.
+    commande = bac.commande(mcp={"appels": [{"texte": CONTEXTE, "lent_s": 1.5}]}, delai_s=2.0)
+    (tour,) = bac.converser(client, [reponse() | {"lent_s": 1.0}], commande).tours
+    assert (tour.issue, tour.cause) == ("echec", "delai")
+    assert tour.duree_s is not None and 2.0 <= tour.duree_s < 3.0
+
+
+@pytest.mark.parametrize("client", CLIENTS)
+def test_budget_depasse_par_l_appel(bac: BacGraphrag, client: str) -> None:
+    # Le garde-fou laisse passer le contexte ; l'appel coûte plus que le budget qui reste : échec
+    # « budget », comme dans les cellules ADK (un appel se compte à sa fin).
+    budget = estimation(client, len(CONTEXTE)) + Decimal("0.001")
+    commande = bac.commande(mcp={"appels": [{"texte": CONTEXTE}]}, budget_usd=budget)
+    (tour,) = bac.converser(client, [reponse(entree=100_000, sortie=30)], commande).tours
+    assert (tour.issue, tour.cause) == ("echec", "budget")
+    assert len(bac.requetes()) == 1
+
+
+@pytest.mark.parametrize("client", CLIENTS)
+def test_reprise_puis_reponse(bac: BacGraphrag, client: str) -> None:
+    (tour,) = bac.converser(client, [erreur(429, "rate_limit_error"), reponse()]).tours
+    assert (tour.issue, tour.reprises) == ("reponse", 1)
+    (reprise,) = bac.events("reprise")
+    assert reprise["statut"] == 429
+
+
+@pytest.mark.parametrize("client", CLIENTS)
+def test_panne_de_l_api(bac: BacGraphrag, client: str) -> None:
+    # 429 puis 5xx sans fin : 2 reprises, puis une panne, relancée (D13).
+    etapes = [erreur(429), erreur(503), erreur(500)]
+    (tour,) = bac.converser(client, etapes).tours
+    assert (tour.issue, tour.cause, tour.reprises) == ("panne", "api", 2)
+    assert len(bac.requetes()) == 3
+
+
+def test_credits_epuises(bac: BacGraphrag) -> None:
+    # Plafond de dépense atteint : ni panne ni échec, la campagne s'arrête (D13).
+    solde = "Your credit balance is too low to access the API."
+    (tour,) = bac.converser(CLAUDE, [erreur(400, "invalid_request_error", solde)]).tours
+    assert (tour.issue, tour.cause) == ("arret", "plafond")
+
+
+@pytest.mark.parametrize(
+    ("client", "genre"), [(CLAUDE, "invalid_request_error"), (GEMINI, "invalid_argument")]
+)
+def test_refus_de_l_api(bac: BacGraphrag, client: str, genre: str) -> None:
+    # Tout autre refus : erreur technique, qui arrête la campagne.
+    with pytest.raises(CelluleError, match="refus de l'API"):
+        bac.converser(client, [erreur(400, genre, "refusé")])
+
+
+def test_jeton_refuse(bac: BacGraphrag) -> None:
+    # L'ADC refusée (invalid_grant) : erreur technique, avant la première question.
+    with pytest.raises(CelluleError, match="ADC de Vertex refusée"):
+        bac.converser(GEMINI, [reponse()], jeton_refuse=True)
+    assert bac.methodes_mcp().count("tools/call") == 0
+
+
+def test_jeton_indisponible(bac: BacGraphrag) -> None:
+    # Le point de jeton répond 503 : une panne avant la première question, ni recherche ni appel.
+    (tour,) = bac.converser(GEMINI, [reponse()], jeton_statut=503).tours
+    assert (tour.issue, tour.cause, tour.appels) == ("panne", "api", ())
+    assert not bac.requetes()
+
+
+def test_jeton_hors_du_chrono(bac: BacGraphrag) -> None:
+    # Le jeton de Vertex se prend avant la première question : son délai ne compte pas.
+    (tour,) = bac.converser(GEMINI, [reponse()], jeton_s=1.5).tours
+    assert tour.issue == "reponse"
+    assert tour.duree_s is not None and tour.duree_s < 1.0
+
+
+# --- Point d'entrée (T10.1) ----------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("client", CLIENTS)
+def test_aucune_variable_hors_liste_blanche(bac: BacGraphrag, client: str) -> None:
+    # La cellule lancée comme l'orchestration la lancera : le serveur MCP reçoit sa liste blanche
+    # telle quelle, rien du processus des tests ; la conversation va au bout, sans trace d'erreur.
+    commande = bac.commande(mcp={"noter_env": True, "appels": [{"texte": CONTEXTE}]})
+    fini = bac.lancer(client, [reponse(REPONSE)], commande)
+    assert fini.returncode == 0, fini.stderr
+    (demarrage,) = bac.notes_mcp("env")
+    attendu = environnement_agent(JUMELLES[client], bac.racine / "home", bac.racine / "claude")
+    assert {
+        nom: v for nom, v in demarrage["env"].items() if not nom.endswith("BASE_URL")
+    } == attendu
+    (tour,) = bac.trace().tours
+    assert (tour.issue, tour.reponse) == ("reponse", REPONSE)
+    assert "Traceback" not in fini.stderr, fini.stderr
+
+
+@pytest.mark.parametrize("arguments", [[], ["adk-claude"], [CLAUDE, GEMINI]])
+def test_client_refuse(arguments: list[str], capsys: pytest.CaptureFixture[str]) -> None:
+    assert cellule_graphrag.main(arguments) == 2
+    assert "usage" in capsys.readouterr().err
+
+
+def test_commande_illisible(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(sys, "stdin", io.StringIO('{"campagne": "essai"}'))
+    assert cellule_graphrag.main([CLAUDE]) == 2
+
+
+def test_point_d_entree(bac: BacGraphrag, monkeypatch: pytest.MonkeyPatch) -> None:
+    # main lit la commande sur stdin, vecteurs compris, et la passe à la conversation.
+    recues: list[tuple[str, Commande]] = []
+
+    async def noter(client: str, commande: Commande, _tarifs: Any) -> None:
+        recues.append((client, commande))
+
+    commande = bac.commande()
+    monkeypatch.setattr(cellule_graphrag, "converser", noter)
+    monkeypatch.setattr(sys, "stdin", io.StringIO(commande_json(commande)))
+    assert cellule_graphrag.main([GEMINI]) == 0
+    assert recues == [(GEMINI, commande)]
+
+
+def test_sigterm_arrete_le_serveur(bac: BacGraphrag) -> None:
+    # Arrêtée par l'orchestration en pleine recherche, la cellule arrête son serveur avant de
+    # sortir, en 143.
+    commande = bac.commande(mcp={"appels": [{"lent_s": 60}]})
+    with bac.api(CLAUDE, [reponse()]) as adresse:
+        env = environnement_agent(JUMELLES[CLAUDE], bac.racine / "home", bac.racine / "claude")
+        cellule = subprocess.Popen(
+            [sys.executable, "-m", "banc.cellule_graphrag", CLAUDE],
+            stdin=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            cwd=bac.racine / "travail",
+            env=env | {"ANTHROPIC_BASE_URL": adresse},
+            text=True,
+        )
+        assert cellule.stdin is not None
+        cellule.stdin.write(commande_json(commande))
+        cellule.stdin.close()
+        attendre(lambda: "tools/call" in bac.methodes_mcp())
+        cellule.send_signal(signal.SIGTERM)
+        code = cellule.wait(timeout=20)
+    assert code == 128 + signal.SIGTERM
+    (demarrage,) = bac.notes_mcp("pid")
+    attendre(lambda: not vivant(demarrage["pid"]), 5.0)
+    assert bac.requetes() == []

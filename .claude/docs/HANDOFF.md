@@ -1,18 +1,17 @@
-# HANDOFF — 2026-10-18 03h23
+# HANDOFF — 2026-10-18 17h30
 
 > Court, narratif, versionné. Patterns techniques → auto-memory. Reprise précise → /resume.
 
-**Branche** : `feature/003-phase-8` (PR n°31, CI verte ; fusion après ce handoff, accord de Julien)
-**Spec en cours** : [003-graphrag-descriptions](specs/003-graphrag-descriptions/spec.md) (15/35 tasks)
-**Goal session** : phases 6 à 8 du jalon 3 : index sur la base, consigne et recherche, encodage et essai (NEO-30, NEO-31)
+**Branche** : `feature/003-phase-10` (PR n°35, CI verte ; fusion après ce handoff, accord de Julien)
+**Spec en cours** : [003-graphrag-descriptions](specs/003-graphrag-descriptions/spec.md) (17/35 tasks)
+**Goal session** : phases 9 et 10 du jalon 3, sans dépense : la cellule GraphRAG, recherche et trace, puis l'appel au modèle (NEO-32)
 
 ## Status
 
-- ✅ Phase 6 fusionnée (PR n°29) : 5 233 descriptions encodées, index en ligne, idempotence prouvée ; NEO-30 clos
-- ✅ Phase 7 fusionnée (PR n°30) : `consigne-contexte.md`, empreinte par technique ; `recherche.cypher` (D6)
-- ✅ Phase 8 (PR n°31) : `banc.encodage` ; `banc essai-recherche` conforme (≈ 6 300 jetons, symétrie 1) ; banc 1 659 tests
-- ✅ NEO-31 : clôture relue par Julien, publiée après la fusion, puis « Terminé » ; dépenses de la session ≈ 0,05 $
-- ⚠️ code-map à ≈ 3 100 jetons, au-dessus de son budget de 3k (ajouts validés du 2026-10-18) : `/codemap` à la livraison
+- ✅ Phase 9 fusionnée (PR n°34) : `banc.cellule_graphrag`, `read-cypher` sur la session d'avant le chrono, empreinte du vecteur dans la trace, garde-fou du contexte
+- ✅ Phase 10 (PR n°35) : ADK sans outil ; message « contexte puis question » entre balises (choix de Julien, D8) ; point d'entrée ; banc 1 757 tests, ruff, mypy verts
+- ✅ 58 mutations, 57 détectées : la survivante (`boite.close()` retiré) survit aussi dans `banc.cellule_adk`
+- ✅ NEO-32 « En cours » ; son format de clôture (phases 9 et 10) montré à Julien après la fusion ; il ne se clôt qu'à la phase 13
 
 ## Échecs tentés (à ne pas refaire)
 
@@ -25,16 +24,17 @@
 
 ## Next (par ordre)
 
-1. **Phase 9, T9.1** (sans dépense ; NEO-32 à passer « En cours ») : `banc.cellule_graphrag`, vecteurs dans la commande, recherche par `read-cypher`, trace avec l'empreinte du vecteur, garde-fou de taille
-2. **Phase 10, T10.1** : ADK sans outil, `consigne="contexte"` et la fiche, vrai ADK contre de fausses API
-3. **T2.2** dès la clé de Julien : dépôt par le presse-papier (pipe, sans affichage) ; `banc.sh acces` (~0,003 $, feu vert) ; sa propre PR
+1. **Phase 11, T11.1** (sans dépense) : seconds tours dans la même session ADK, la recherche partant du texte du tour (D10) ; les cellules GraphRAG dans `banc.isolement` (le test du point d'entrée prend encore la liste blanche de la jumelle ADK)
+2. **T11.2** : source citée (ADR-0018), pour toutes les techniques, en TDD
+3. **Phase 12, T12.1** : orchestration ; l'empreinte de la requête de recherche va aussi dans la commande, vérifiée par la cellule comme celle du prompt
+4. **T2.2** dès la clé de Julien : dépôt par le presse-papier (pipe, sans affichage) ; `banc.sh acces` (~0,003 $, feu vert) ; sa propre PR
 
 ## Continuation State (machine-readable — grammaire fixe `Clé: valeur`, 1 ligne chacune)
 
 Spec: 003-graphrag-descriptions
-Task: T9.1
+Task: T11.1
 Fichiers en cours: aucun
 Bloqué sur: rien
-Commande de reprise: git switch main && git pull && git switch -c feature/003-phase-9
+Commande de reprise: git switch main && git pull && git switch -c feature/003-phase-11
 
 → **Journal des sessions** (append-only) : [HANDOFF-journal.md](HANDOFF-journal.md) — non auto-chargé.

@@ -166,6 +166,16 @@ banc lancer ─ création : verifier.sh --section embeddings (index complet) ; c
 **Pourquoi :** même client et même modèle que `adk-claude` et `adk-gemini` : l'écart avec la technique 2 tient à la technique ; deux modèles donnent l'effet du modèle.
 **Alternatives écartées :** une seule cellule (moins cher, sans comparaison à modèle égal ou sans effet du modèle) ; le SDK du modèle sans ADK (un client de plus à comparer).
 
+**Précision du 2026-10-18 (T10.1)** : l'appel au modèle des cellules GraphRAG se fait dans ADK sans outil (`tools=[]`). Il reprend le modèle, les réglages et le cache de la cellule ADK jumelle (`banc.cellule_adk.modele`), avec la consigne de contexte et la fiche (`consigne_et_fiche(consigne="contexte")`, vérifiées contre l'empreinte de la commande avant toute trace). Choix de Claude :
+
+- **Lecture du flux** : celle des cellules ADK (`banc.cellule_adk._Conversation._lire` : usage de chaque appel, reprises, coupures, erreurs), sur une session d'ADK par conversation ; sans outil, ADK fait un seul appel par question, et le plafond d'appels n'y joue pas.
+- **Échéance** : celle du tour, posée à l'envoi du message, couvre la recherche et l'appel. `_lire` garde la sienne, plus tardive : à l'échéance du tour, l'annulation la traverse, et le tour finit en échec « délai » (test : 1,5 s de recherche et 1 s d'appel dépassent un délai de 2 s). L'usage du dernier morceau d'un appel coupé se compte comme dans les cellules ADK.
+- **ADC de Vertex** : prise après la connexion du serveur, avant la première question, comme dans les cellules ADK ; indisponible, c'est une panne « api » sur la première question ; refusée, une erreur technique.
+- **Point d'entrée** : `python -m banc.cellule_graphrag graphrag-claude|graphrag-gemini`, avec les codes retour des cellules ADK (0 ; 2 ; 143 sur SIGTERM, serveur arrêté avant la sortie). Le rédacteur de T9.1 reste un paramètre de `converser` : ADK s'il est absent, factice dans les tests de la recherche.
+- **Tests** : le vrai ADK 2.11.0 contre la fausse API des cellules ADK (`banc/tests/fixtures/fausse_api_adk.py`). La clé de l'ADC factice passe dans `banc/tests/conftest.py`, partagée avec les tests des cellules ADK et de l'encodage, qui en avaient chacun une copie.
+
+Écarté : une lecture du flux propre aux cellules GraphRAG. Elle réécrirait le code prouvé au jalon 2 sans rien changer à la mesure.
+
 ### D8 — Consigne et fiche
 
 **Choix :** la fiche reste commune ; la consigne d'une technique sans outil est `questions/consigne-contexte.md`, précision de l'[ADR-0009](../../adr/0009-mvp-protocole-mesure-techniques.md) (« même entrée ») par l'[ADR-0018](../../adr/0018-mvp-technique-sans-outil.md), comme l'avait fait l'ADR-0017. Textes validés par Julien le 2026-10-13, sur la proposition de Claude (ajouts datés au plan à leur entrée dans la fiche) :
@@ -193,6 +203,20 @@ banc lancer ─ création : verifier.sh --section embeddings (index complet) ; c
 **Précision du 2026-10-17 (T6.1)** : les deux textes entrent dans la fiche ce jour, tels quels (recopiés du plan par script) : la ligne `Description` complétée, la puce « Vecteurs » à la fin de « Règles ». `fiche.cypher` cite la ligne complétée et attend `texte`, `jeux` et `embedding` (`keys(n)`), sous un commentaire daté ; la fiche anglaise est régénérée par `banc anglais` (`Description` et `embedding` y restent, communs aux deux schémas). « Vecteurs », titre de règle comme « Efficacité », rejoint la liste blanche des majuscules de `test_contamination.py`. Sur la base, avant le chargement, `questions.sh --exemples` n'a qu'un écart, la ligne `Description` (« Ordre » ci-dessus).
 
 **Précision du 2026-10-17 (T7.1)** : la consigne de contexte entre dans `questions/consigne-contexte.md` ce jour, telle quelle (recopiée du plan par script), sous le titre `# Consigne` de la consigne commune : les deux fichiers ne diffèrent que par les phrases sur l'outil. Choix de Claude : `banc.cellule` tient le registre `CONSIGNES` (`outil` : `consigne.md` ; `contexte` : `consigne-contexte.md`) ; `consigne_et_fiche` et `empreinte_prompt` prennent la consigne en paramètre (défaut `outil` : les cellules du jalon 2 ne changent pas), d'où une empreinte par technique ; le message d'un prompt changé nomme la consigne. La cellule GraphRAG passera `consigne="contexte"` (T10.1) ; la campagne suivra en T12.1 (`campagne.json` format 4). Les contrôles de contamination portent sur chaque consigne du registre ; deux tests tiennent la consigne de contexte alignée sur la commune : aucun mot de l'outil, même rôle, même règle, même format de fin (ADR-0018). Écartés : un champ de plus dans la commande (contrat JSON, T12.1) ; un registre par nom de cellule (les cellules GraphRAG ne s'enregistrent qu'en T12.1).
+
+**Précision du 2026-10-18 (T10.1, choix de Julien sur la préférence de Claude)** : le message d'un tour est le même pour les deux cellules. Il met le contexte d'abord, entre balises `<contexte>`, puis le message posé (préambule de Q2 compris), entre balises `<question>` :
+
+```text
+<contexte>
+le résultat de read-cypher, tel quel
+</contexte>
+
+<question>
+le message posé
+</question>
+```
+
+Les deux fournisseurs conseillent les données d'abord, la question à la fin, et des balises pour séparer les parties : Claude, « Long context prompting » dans ses [bonnes pratiques](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices) ; Gemini, ses pages [long context](https://ai.google.dev/gemini-api/docs/long-context) et [prompting strategies](https://ai.google.dev/gemini-api/docs/prompting-strategies) (lues par context7 le 2026-10-18 : `/websites/platform_claude_en`, `/websites/ai_google_dev_gemini-api`). La balise reprend le mot de la consigne, « le contexte ». Écartés : la question d'abord, l'ordre de la phrase de la consigne, contre le conseil des deux docs ; des titres en clair (« Contexte : », « Question : »), moins nets qu'une balise fermée autour d'un JSON de 19 000 caractères. Aucune phrase de transition (« D'après ce qui précède… », que suggère la doc de Gemini) : ce serait un texte de plus à valider, et la consigne dit déjà d'où vient la réponse.
 
 ### D9 — Trace et source citée
 

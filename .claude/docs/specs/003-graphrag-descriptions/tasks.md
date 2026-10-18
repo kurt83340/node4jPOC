@@ -8,7 +8,7 @@
 > il « perd le fil » (échecs ×4 constatés en télémétrie, Morph 2026) → découper la phase.
 
 **Date :** 2026-10-12
-**Status :** [ ] 16/35 tasks → MAJ au fil de l'eau
+**Status :** [ ] 17/35 tasks → MAJ au fil de l'eau
 
 > Les tests n'appellent aucun service réel (Vertex, Anthropic, Aura) : faux outils, fausses API, HOME temporaire.
 > Une dépense passe par le feu vert de Julien, annoncée avec son estimation : phases 2, 6, 8, 13, 14 et 15.
@@ -80,7 +80,7 @@
 
 ## Phase 10 — Cellule GraphRAG : appel au modèle et plafonds (sans dépense ; NEO-32)
 
-- [ ] **T10.1** : ADK sans outil, consigne de contexte et fiche, message = question + contexte, réglages et comptes des cellules ADK du jalon 2 (plan, D7), plafonds et issues comme `banc.cellule_adk` ; vrai ADK contre de fausses API Anthropic et Vertex
+- [x] **T10.1** : ADK sans outil, consigne de contexte et fiche, message = question + contexte, réglages et comptes des cellules ADK du jalon 2 (plan, D7), plafonds et issues comme `banc.cellule_adk` ; vrai ADK contre de fausses API Anthropic et Vertex — fait le 2026-10-18 : l'appel au modèle par ADK sans outil, avec le modèle, les réglages et le cache de la cellule ADK jumelle ; la consigne de contexte et la fiche, l'empreinte vérifiée avant toute trace ; le message, le contexte puis la question entre balises (forme choisie par Julien, D8) ; la lecture du flux des cellules ADK (`_lire`) sous l'échéance du tour, recherche comprise ; l'ADC de Vertex avant la première question ; point d'entrée `python -m banc.cellule_graphrag` ; 33 tests écrits d'abord, rouges puis verts (vrai ADK contre la fausse API) ; 20 mutations, toutes détectées ; clé de l'ADC factice dans `banc/tests/conftest.py` ; suite complète (1 757 tests), ruff et mypy verts ; précisions au plan (D7, D8), gotcha
   - DoD : `command_passes: uv run --directory banc pytest -q tests/test_cellule_graphrag.py && uv run --directory banc pytest -q && uv run --directory banc ruff check && uv run --directory banc mypy .`
 
 ## Phase 11 — Seconds tours, isolement et source citée (sans dépense ; NEO-32)
