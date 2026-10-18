@@ -1,5 +1,6 @@
 """Faux serveur MCP de la répétition générale (T5.1) : le protocole vu du client, le résultat
-neutre, la lenteur qui fait dépasser le délai d'une question."""
+neutre, la lenteur qui fait dépasser le délai d'une question ; le résultat fixe de la recherche
+des cellules GraphRAG (spec 003, T13.1)."""
 
 import io
 import json
@@ -9,9 +10,12 @@ import time
 from typing import Any
 
 import pytest
+from test_contamination import INTERDITES, contient, mots
 
 from banc import faux_serveur
-from banc.faux_serveur import RESULTAT, VERSION, reponse, servir
+from banc.essai_recherche import ecarts_du_contexte
+from banc.faux_serveur import RECHERCHE_FIXE, RESULTAT, VERSION, reponse, servir
+from banc.questions import charger
 
 INITIALISER = {
     "jsonrpc": "2.0",
@@ -24,6 +28,17 @@ APPEL = {
     "id": 3,
     "method": "tools/call",
     "params": {"name": "read-cypher", "arguments": {"query": "MATCH (n) RETURN count(n)"}},
+}
+# La recherche d'une cellule GraphRAG : la requête de recherche, le vecteur du message en paramètre.
+RECHERCHER = APPEL | {
+    "id": 7,
+    "params": {
+        "name": "read-cypher",
+        "arguments": {
+            "query": "CYPHER 25 MATCH (d) RETURN d.texte",
+            "params": {"vecteur": [0.1] * 3},
+        },
+    },
 }
 
 
@@ -108,3 +123,34 @@ def test_main_sans_option(
     monkeypatch.setattr(sys, "stdin", io.StringIO(json.dumps(INITIALISER) + "\n"))
     assert faux_serveur.main([]) == 0
     assert json.loads(capsys.readouterr().out)["id"] == 1
+
+
+# --- Recherche des cellules GraphRAG (spec 003, T13.1) --------------------------------------------
+
+
+def test_recherche_fixe_des_cellules_graphrag() -> None:
+    # La lecture qui porte un vecteur, la recherche d'une cellule GraphRAG, reçoit un résultat fixe
+    # dans la forme de questions/recherche.cypher (contrôle de banc essai-recherche, T8.2) ; toute
+    # autre lecture, le résultat neutre.
+    recherche, autre = echanger(RECHERCHER, APPEL)
+    assert recherche["result"] == {
+        "content": [{"type": "text", "text": RECHERCHE_FIXE}],
+        "isError": False,
+    }
+    assert ecarts_du_contexte(RECHERCHE_FIXE) == []
+    assert autre["result"]["content"] == [{"type": "text", "text": "[]"}]
+
+
+def test_recherche_fixe_neutre() -> None:
+    # Comme les phrases maison de T8.2 : ni espèce ni valeur du banc dans ses espèces et ses
+    # descriptions (inventées : aucun texte de la base dans le dépôt), aucun thème des questions
+    # sémantiques ; la répétition éprouve la chaîne, pas les réponses.
+    enregistrements = json.loads(RECHERCHE_FIXE)
+    especes = [enregistrement["espece"] for enregistrement in enregistrements]
+    textes = [d["texte"] for e in enregistrements for d in e["descriptions"]]
+    questions = {question.texte for question in charger().questions.values()}
+    for valeur in (*especes, *textes):
+        assert valeur not in questions
+        assert not [v for v in INTERDITES if contient(mots(valeur), mots(v))], valeur
+    for theme in ("volcan", "ocean", "planete", "humain", "dort", "dormir", "sommeil"):
+        assert not [t for t in textes if theme in " ".join(mots(t))], theme

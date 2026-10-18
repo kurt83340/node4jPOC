@@ -44,10 +44,16 @@ n'en compte rien. Chaque lancement commence aussi par là : une campagne interro
 laisser. Une seule campagne à la fois sur le poste (verrou) : elles partagent l'instance Aura.
 
 Répétition générale (--faux-serveur, T5.1) : les vrais LLM, mais un faux serveur MCP
-(banc.faux_serveur) qui rend un résultat neutre à chaque appel ; contrôle de Q2 simulé, aucun
-nettoyage, ni gcloud ni neo4j-mcp dans le PATH des agents : rien ne touche Aura. La paire Q2 → Q18
-de la cellule adk-gemini a un serveur lent, au-delà du délai d'une question : Q2 échoue (délai),
-Q18 compte faux d'office (ADR-0012).
+(banc.faux_serveur) qui rend un résultat neutre à chaque appel, et un résultat fixe à la recherche
+d'une cellule GraphRAG ; contrôle de Q2 simulé, aucun nettoyage, ni gcloud ni neo4j-mcp dans le
+PATH des agents : rien ne touche Aura. La paire Q2 → Q18 de adk-gemini, ou de graphrag-gemini, a
+un serveur lent, au-delà du délai d'une question : Q2 échoue (délai), Q18 compte faux d'office
+(ADR-0012).
+
+Avant une campagne GraphRAG (spec 003, T13.1), hors répétition : l'index vectoriel des
+descriptions, complet et en ligne (scripts/verifier.sh --section embeddings), à la création et à
+la reprise ; à la création, la preuve de symétrie de banc essai-recherche (0,9999 au moins), avant
+tout encodage des messages.
 
 Codes retour : 0 campagne finie · 1 finie, avec une passe invalide · 2 erreur technique · 3 arrêt
 sur un plafond de dépense, à reprendre après décision · 130 interrompue (Ctrl-C, SIGTERM, SIGHUP ;
@@ -95,6 +101,7 @@ from banc.cellule import (
 )
 from banc.correspondance import CorrespondanceError
 from banc.encodage import (
+    SEUIL_SYMETRIE,
     Encodage,
     EncodageError,
     ecrire_les_encodages,
@@ -160,6 +167,8 @@ CLAUDE = frozenset({"claude-code", "adk-claude", "graphrag-claude"})
 NEO4J_MCP = Path.home() / ".local" / "share" / "neo4j-mcp" / "v1.6.0"
 GCLOUD = Path.home() / "google-cloud-sdk" / "bin" / "gcloud"
 TRANSACTIONS = RACINE / "scripts" / "transactions.sh"
+# L'index vectoriel des descriptions, vérifié en lecture avant une campagne GraphRAG (T13.1).
+VERIFIER = RACINE / "scripts" / "verifier.sh"
 # Langue du schéma de la base, en lecture seule (--langue, T10.0).
 CHARGER = RACINE / "scripts" / "charger.sh"
 PARAMETRES = "campagne.json"
@@ -172,9 +181,10 @@ FORMAT = 4
 FORMATS_LUS = (2, 3, 4)
 # Répétition générale (T5.1) : faux serveur MCP, lancé par chaque client comme le lanceur.
 FAUX_SERVEUR = (sys.executable, "-I", "-m", "banc.faux_serveur")
-# La conversation au faux serveur lent : sa cellule et son premier tour. adk-gemini, la moins
-# chère ; chaque appel d'outil y attend le délai d'une question et LENTEUR_S de plus.
-LENTE = ("adk-gemini", "Q2")
+# Les conversations au faux serveur lent : leur cellule et leur premier tour. adk-gemini et
+# graphrag-gemini, les moins chères de leur technique ; chaque appel d'outil y attend le délai
+# d'une question et LENTEUR_S de plus.
+LENTES = frozenset({("adk-gemini", "Q2"), ("graphrag-gemini", "Q2")})
 LENTEUR_S = 60.0
 # Cause du second tour d'une paire dont le premier a échoué (ADR-0012, banc.mesures.CAUSES).
 PRECEDENT = "precedent"
@@ -648,6 +658,56 @@ def langue_par_script(script: Path = CHARGER, delai_s: float = 120.0) -> str:
     return trouvee.group(1)
 
 
+def verifier_l_index(script: Path = VERIFIER, delai_s: float = 180.0) -> None:
+    """Avant une campagne GraphRAG (T13.1) : l'index vectoriel des descriptions, complet et en
+    ligne, par scripts/verifier.sh --section embeddings, en lecture ; incomplet, il amputerait la
+    recherche sans bruit (plan, « Flux de données »). Lancé sans la clé Anthropic de
+    l'environnement : elle ne sert qu'aux cellules Claude (code-map).
+
+    Raises:
+        OrchestrationError: un écart (code 1), une erreur technique, aucune réponse dans le délai.
+    """
+    environnement = {cle: v for cle, v in os.environ.items() if not cle.startswith("ANTHROPIC_")}
+    try:
+        fini = subprocess.run(
+            [str(script), "--section", "embeddings"],
+            capture_output=True,
+            text=True,
+            timeout=delai_s,
+            env=environnement,
+            check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired) as erreur:
+        raise OrchestrationError(f"verifier.sh --section embeddings : {erreur}") from erreur
+    if fini.returncode == 1:
+        raise OrchestrationError(
+            "verifier.sh --section embeddings : écart, index des descriptions incomplet ou mal "
+            "réglé (campagne GraphRAG refusée) ; voir scripts/verifier.sh --section embeddings"
+        )
+    if fini.returncode != 0:
+        message_ = (fini.stderr.strip().splitlines() or [""])[-1]
+        raise OrchestrationError(
+            f"verifier.sh --section embeddings : code {fini.returncode} {message_}".strip()
+        )
+
+
+def preuve_de_symetrie(encodeur: Callable[[str, str], Encodage]) -> float:
+    """À la création d'une campagne GraphRAG (T13.1) : la preuve de symétrie de banc
+    essai-recherche (D5), avec l'encodeur de la campagne ; rend la similarité.
+
+    Raises:
+        OrchestrationError: la preuve n'a pas pu se faire (serveur, description, similarité).
+    """
+    # Import tardif : banc.essai_recherche et banc.essai_serveur importent ce module.
+    from banc import essai_recherche  # noqa: PLC0415
+    from banc.essai_serveur import EssaiError  # noqa: PLC0415
+
+    try:
+        return essai_recherche.symetrie(encodeur)
+    except EssaiError as erreur:
+        raise OrchestrationError(f"preuve de symétrie : {erreur}") from erreur
+
+
 def verifier_la_base(
     schema: str,
     langue: Callable[[], str] = langue_par_script,
@@ -707,7 +767,7 @@ class Moyens:
     chemins: tuple[Path, ...] = ()
     # Serveur MCP lancé par chaque client : le lanceur, ou un faux serveur.
     serveur: tuple[str, ...] = (str(LANCEUR),)
-    # Répétition générale : le serveur de la conversation LENTE, au-delà du délai d'une question.
+    # Répétition générale : le serveur des conversations LENTES, au-delà du délai d'une question.
     serveur_lent: tuple[str, ...] | None = None
     # Binaire de Claude Code : None pour celui du SDK.
     cli: Path | None = None
@@ -722,6 +782,12 @@ class Moyens:
     # Encodage des messages d'une campagne GraphRAG à sa création (banc.encodage, D5) : une
     # connexion à Vertex par campagne, qui encode un texte pour une tâche.
     encodeur: Callable[[], Callable[[str, str], Encodage]] = encodeur_vertex
+    # Avant une campagne GraphRAG (T13.1) : l'index vectoriel, à la création et à la reprise ; la
+    # preuve de symétrie, à la création, qui rend la similarité ; None : rien ne touche Aura.
+    verifier_l_index: Callable[[], None] | None = verifier_l_index
+    prouver_la_symetrie: Callable[[Callable[[str, str], Encodage]], float] | None = (
+        preuve_de_symetrie
+    )
     marge_s: float = MARGE_S
     ecrire: Callable[[str], None] = print
 
@@ -737,6 +803,8 @@ def moyens_faux_serveur() -> Moyens:
         controle_en=controle_simule,
         nettoyer=_sans_nettoyage,
         verifier_la_base=None,
+        verifier_l_index=None,
+        prouver_la_symetrie=None,
     )
 
 
@@ -902,7 +970,7 @@ class Orchestration:
         return tuple(self.vecteurs[ident] for ident in etape.questions)
 
     def _serveur(self, etape: Etape) -> tuple[str, ...]:
-        if self.moyens.serveur_lent is not None and (etape.cellule, etape.questions[0]) == LENTE:
+        if self.moyens.serveur_lent is not None and (etape.cellule, etape.questions[0]) in LENTES:
             return self.moyens.serveur_lent
         return self.moyens.serveur
 
@@ -1140,8 +1208,9 @@ def _interrompre(_numero: int, _cadre: FrameType | None) -> None:
 
 def _preparer(demande: Demande, moyens: Moyens) -> Orchestration:
     """Crée la campagne, ou relit celle à reprendre ; vérifie la clé avant d'écrire quoi que ce
-    soit. Une campagne GraphRAG encode ses messages à sa création, avant toute écriture (D5), et
-    relit ses encodages à la reprise, sans réencoder."""
+    soit. Une campagne GraphRAG vérifie l'index vectoriel (création et reprise) ; à sa création,
+    la preuve de symétrie, puis l'encodage de ses messages, avant toute écriture (D5) ; à la
+    reprise, elle relit ses encodages, sans réencoder."""
     csv = fichier_mesures(demande.nom, moyens.mesures)
     dossier = moyens.traces / demande.nom
     parametres = dossier / PARAMETRES
@@ -1175,19 +1244,7 @@ def _preparer(demande: Demande, moyens: Moyens) -> Orchestration:
         cle_anthropic()
     if moyens.verifier_la_base is not None:
         moyens.verifier_la_base(campagne.schema)
-    # Les messages posés d'une campagne GraphRAG, préambule de Q2 compris : sa recherche part du
-    # vecteur de chacun (D5, D10).
-    messages = {
-        ident: message(banc.questions[ident])
-        for conversation in campagne.conversations
-        for ident in conversation
-        if campagne.consigne == "contexte"
-    }
-    encodages: Mapping[str, Encodage] = {}
-    if messages and demande.reprendre:
-        encodages = relire_les_encodages(dossier / ENCODAGES, messages)
-    elif messages:
-        encodages = encoder_les_messages(messages, moyens.encodeur())
+    messages, encodages = _encodages(campagne, demande.reprendre, moyens, banc, dossier)
     vecteurs = {ident: encodage.vecteur for ident, encodage in encodages.items()}
     orchestration = Orchestration(campagne, demande.plafond_usd, moyens, banc, vecteurs)
     if not demande.reprendre:
@@ -1195,6 +1252,41 @@ def _preparer(demande: Demande, moyens: Moyens) -> Orchestration:
         if encodages:
             ecrire_les_encodages(dossier / ENCODAGES, messages, encodages)
     return orchestration
+
+
+def _encodages(
+    campagne: Campagne, reprendre: bool, moyens: Moyens, banc: Banc, dossier: Path
+) -> tuple[dict[str, str], Mapping[str, Encodage]]:
+    """Les messages posés d'une campagne GraphRAG, préambule de Q2 compris, et leurs encodages : sa
+    recherche part du vecteur de chacun (D5, D10) ; rien pour la technique 2. L'index vectoriel est
+    vérifié d'abord, à la création comme à la reprise : incomplet, il amputerait la recherche sans
+    bruit (T13.1). À la reprise, les encodages se relisent, sans réencoder ; à la création, la
+    preuve de symétrie passe avant tout encodage des messages.
+
+    Raises:
+        OrchestrationError: index en écart, symétrie sous le seuil ou impossible à prouver.
+        EncodageError: encodages illisibles ou changés, encodage en échec.
+    """
+    if campagne.consigne != "contexte":
+        return {}, {}
+    if moyens.verifier_l_index is not None:
+        moyens.verifier_l_index()
+    messages = {
+        ident: message(banc.questions[ident])
+        for conversation in campagne.conversations
+        for ident in conversation
+    }
+    if reprendre:
+        return messages, relire_les_encodages(dossier / ENCODAGES, messages)
+    encodeur = moyens.encodeur()
+    if moyens.prouver_la_symetrie is not None:
+        similarite = moyens.prouver_la_symetrie(encodeur)
+        if similarite < SEUIL_SYMETRIE:
+            raise OrchestrationError(
+                f"preuve de symétrie : similarité {similarite}, sous {SEUIL_SYMETRIE} : le modèle "
+                "d'encodage a dérivé, l'architecture A′ ne tient plus (circuit breaker du plan)"
+            )
+    return messages, encoder_les_messages(messages, encodeur)
 
 
 def _verifier_le_gel(campagne: Campagne) -> None:

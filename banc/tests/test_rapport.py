@@ -193,6 +193,33 @@ def test_commande_complete(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -
     assert "schéma fr : consigne.md et fiche-schema.md, empreinte du prompt cccccccccccc" in sortie
 
 
+def test_commande_d_une_campagne_graphrag(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    # Une campagne GraphRAG (spec 003) : la consigne de contexte (ADR-0018), et l'empreinte de sa
+    # requête de recherche, gelée avec celle du prompt (T12.1). Relevé à la répétition générale
+    # (T13.2) : le rapport nommait consigne.md.
+    graphrag = Campagne(
+        "c1",
+        passes=1,
+        conversations=(("Q1",),),
+        cellules=("graphrag-claude",),
+        empreinte_prompt="c" * 64,
+        empreinte_recherche="d" * 64,
+    )
+    traces, mesures = tmp_path / "logs", tmp_path / "mesures"
+    (traces / "c1").mkdir(parents=True)
+    ecrire_campagne(traces / "c1" / "campagne.json", graphrag)
+    lignes = [ligne("graphrag-claude", 1, "Q1")]
+    tracer(traces / "c1", lignes)
+    ecrire(fichier_mesures("c1", mesures), lignes)
+    assert rapport.commande("c1", complet=True, traces=traces, mesures=mesures) == 0
+    assert (
+        "schéma fr : consigne-contexte.md et fiche-schema.md, empreinte du prompt cccccccccccc ; "
+        "requête de recherche dddddddddddd"
+    ) in capsys.readouterr().out
+
+
 def test_commande_incomplete(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     traces, mesures = campagne_sur_disque(tmp_path, completes()[1:])
     assert rapport.commande("c1", complet=True, traces=traces, mesures=mesures) == 1

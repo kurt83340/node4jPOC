@@ -29,13 +29,15 @@ from typing import Any
 
 import pytest
 
-from banc import anglais, orchestration, revue
+from banc import anglais, essai_recherche, orchestration, revue
 from banc import questions as banc_questions
 from banc.__main__ import main
 from banc.cellule import LANCEUR, RACINE, Plafonds, empreinte_prompt
 from banc.encodage import Encodage, EncodageError
+from banc.essai_serveur import EssaiError
+from banc.faux_serveur import RECHERCHE_FIXE
 from banc.isolement import environnement_agent
-from banc.mesures import lire, lire_lignes, nom_de_trace
+from banc.mesures import empreinte_vecteur, lire, lire_lignes, nom_de_trace
 from banc.notation import Controle, NotationError, controle_par_script, controle_simule, noter
 from banc.orchestration import (
     CELLULES,
@@ -62,6 +64,7 @@ from banc.orchestration import (
     outils_des_agents,
     pannes_de_suite,
     transactions,
+    verifier_l_index,
     verifier_la_base,
     verrou,
 )
@@ -121,6 +124,12 @@ class Bac:
     echecs_du_controle: int = 0
     # Encodage des messages d'une campagne GraphRAG (D5), sans Vertex.
     encodeur: FauxEncodeur = field(default_factory=FauxEncodeur)
+    # Contrôles à la création d'une campagne GraphRAG (T13.1) : l'index, compté, et son écart
+    # éventuel ; la preuve de symétrie, sa similarité, et l'encodeur qu'elle reçoit.
+    index_controles: int = 0
+    ecart_d_index: OrchestrationError | None = None
+    similarite: float = 0.99997
+    symetries: list[object] = field(default_factory=list)
 
     @property
     def nettoyages(self) -> int:
@@ -154,6 +163,15 @@ class Bac:
 
         return controle
 
+    def verifier_l_index(self) -> None:
+        self.index_controles += 1
+        if self.ecart_d_index is not None:
+            raise self.ecart_d_index
+
+    def prouver_la_symetrie(self, encodeur: Callable[[str, str], Encodage]) -> float:
+        self.symetries.append(encodeur)
+        return self.similarite
+
     def verifier_la_base(self, schema: str) -> None:
         """La vraie règle (orchestration.verifier_la_base), avec une base factice à jour."""
         self.verifications.append(schema)
@@ -186,6 +204,8 @@ class Bac:
             "nettoyer": self.nettoyer,
             "verifier_la_base": self.verifier_la_base,
             "encodeur": lambda: self.encodeur,
+            "verifier_l_index": self.verifier_l_index,
+            "prouver_la_symetrie": self.prouver_la_symetrie,
             "marge_s": 30.0,
             "ecrire": self.sortie.append,
         }
@@ -1024,6 +1044,8 @@ def test_moyens_du_faux_serveur() -> None:
     assert moyens.chemins == ()
     assert moyens.nettoyer() == ""
     assert moyens.verifier_la_base is None
+    # Ni index ni preuve de symétrie à contrôler (T13.1) : l'encodage des messages, lui, a lieu.
+    assert (moyens.verifier_l_index, moyens.prouver_la_symetrie) == (None, None)
 
 
 def test_serveur_lent_pour_la_seule_conversation_lente(bac: Bac) -> None:
@@ -1531,6 +1553,85 @@ def test_vraie_cellule_adk_arretee_avec_son_serveur(
     assert bac.nettoyages == 2
 
 
+def texte_envoye(corps: dict[str, Any]) -> str:
+    """Le message de l'utilisateur d'une requête du modèle, chez Anthropic ou chez Vertex."""
+    if "messages" in corps:
+        return str(corps["messages"][0]["content"][0]["text"])
+    return str(corps["contents"][0]["parts"][0]["text"])
+
+
+def test_vraies_cellules_graphrag_en_repetition(
+    bac: Bac, monkeypatch: pytest.MonkeyPatch, cle_adc: str
+) -> None:
+    # T13.1, bout en bout, comme la répétition générale la mènera : les deux vraies cellules
+    # GraphRAG, le faux serveur de la répétition et son résultat de recherche fixe, une fausse API
+    # (Anthropic, Vertex, le jeton d'une ADC factice) ; rien ne touche Aura, Vertex ni Anthropic.
+    (kecleon,) = [e for e in json.loads(RECHERCHE_FIXE) if e["espece"] == "Kecleon"]
+    citee = kecleon["descriptions"][0]["texte"]
+    blocs = [["reflexion", "Je lis."], ["texte", f"Réponse : Kecleon\n\nSources : « {citee} »"]]
+    etape = {"blocs": blocs, "usage": {"entree": 1000, "sortie": 50, "lu": 2000}}
+    journal = bac.racine / "journal"
+    (journal / "api-adk.json").write_text(json.dumps({"etapes": [etape, etape]}))
+    lancement = [
+        sys.executable,
+        "-I",
+        str(FIXTURES / "fausse_api_adk.py"),
+        str(journal / "api-adk.json"),
+        str(journal / "api-adk.jsonl"),
+    ]
+    api = subprocess.Popen(lancement, stdout=subprocess.PIPE, text=True)
+    assert api.stdout is not None
+    try:
+        adresse = f"http://127.0.0.1:{api.stdout.readline().strip()}"
+        adc = {
+            "type": "service_account",
+            "project_id": "jleroy-labo",
+            "private_key_id": "cle-factice",
+            "private_key": cle_adc,
+            "client_email": "banc@jleroy-labo.iam.gserviceaccount.com",
+            "client_id": "1",
+            "token_uri": f"{adresse}/token",
+        }
+        (bac.racine / "gcloud" / "application_default_credentials.json").write_text(json.dumps(adc))
+        bases = {"ANTHROPIC_BASE_URL": adresse, "GOOGLE_VERTEX_BASE_URL": adresse}
+
+        def avec_l_api(*arguments: Any, **options: Any) -> dict[str, str]:
+            return environnement_agent(*arguments, **options) | bases
+
+        monkeypatch.setattr(orchestration, "environnement_agent", avec_l_api)
+        moyens = bac.moyens(
+            programmes=dict(PROGRAMMES),
+            serveur=FAUX_SERVEUR,
+            verifier_l_index=None,
+            prouver_la_symetrie=None,
+        )
+        demande = Demande(
+            "essai", Decimal(5), questions=("Q1",), cellules=(GC, GG), faux_serveur=True
+        )
+        code = commande(demande, moyens)
+    finally:
+        api.terminate()
+        api.wait()
+        api.stdout.close()
+    assert code == 0, bac.sortie
+    lignes = bac.lignes()
+    assert sorted(valeurs["cellule"] for valeurs in lignes) == [GC, GG]
+    assert {(valeurs["issue"], valeurs["question"]) for valeurs in lignes} == {("reponse", "Q1")}
+    assert all(valeurs["note"] and valeurs["source"] for valeurs in lignes)
+    # Chaque cellule a cherché avec le vecteur de Q1, encodé à la création, et reçu le résultat
+    # fixe, qui est le contexte de son seul appel au modèle.
+    for fichier in (bac.racine / "traces" / "essai").glob("*.jsonl"):
+        (tour,) = lire(fichier).tours
+        (appel,) = tour.appels
+        assert appel.parametres == {"vecteur": empreinte_vecteur((1 / 7,) * 3072)}
+        assert appel.resultat == RECHERCHE_FIXE
+    requetes = [
+        n for n in notes_de(journal / "api-adk.jsonl") if not n["chemin"].startswith("/token")
+    ]
+    assert len(requetes) == 2
+    assert all(RECHERCHE_FIXE in texte_envoye(note["corps"]) for note in requetes)
+
+
 # --- Schéma anglais (T10.0, plan D8) ------------------------------------------------------------
 
 
@@ -1921,3 +2022,116 @@ def test_cle_absente_graphrag(bac: Bac, monkeypatch: pytest.MonkeyPatch) -> None
     assert not (bac.racine / "traces" / "essai").exists()
     assert bac.encodeur.appels == []
     assert bac.commande(questions=("Q1",), cellules=(GG,)) == 0
+
+
+# --- Contrôles à la création d'une campagne GraphRAG (T13.1 ; plan, « Flux de données ») ---------
+
+
+def test_index_controle_avant_une_campagne_graphrag(bac: Bac) -> None:
+    # L'index vectoriel, à la création et à la reprise : incomplet, il amputerait la recherche
+    # sans bruit ; la preuve de symétrie, à la création seule, avec l'encodeur de la campagne.
+    bac.scenario({f"{GC} p1 Q1 e1": {"tours": [tour("arret", "plafond")]}})
+    assert bac.commande(questions=("Q1",), cellules=(GC,)) == orchestration.PLAFOND
+    assert (bac.index_controles, bac.symetries) == (1, [bac.encodeur])
+    assert bac.commande(reprendre=True) == 0
+    assert (bac.index_controles, bac.symetries) == (2, [bac.encodeur])
+
+
+def test_aucun_controle_pour_la_technique_2(bac: Bac) -> None:
+    assert bac.commande(questions=("Q1",), cellules=(AG,)) == 0
+    assert (bac.index_controles, bac.symetries) == (0, [])
+
+
+def test_index_en_ecart(bac: Bac, capsys: pytest.CaptureFixture[str]) -> None:
+    # Plan, « Erreurs » : index incomplet, campagne GraphRAG refusée ; rien n'est créé ni encodé.
+    bac.ecart_d_index = OrchestrationError("verifier.sh --section embeddings : écart (code 1)")
+    assert bac.commande(questions=("Q1",), cellules=(GC,)) == 2
+    assert "verifier.sh --section embeddings : écart" in capsys.readouterr().err
+    assert not (bac.racine / "traces" / "essai").exists()
+    assert (bac.symetries, bac.encodeur.appels, bac.lancees()) == ([], [], [])
+
+
+@pytest.mark.parametrize(("similarite", "code"), [(0.9999, 0), (0.99989, 2)], ids=["pile", "sous"])
+def test_symetrie_a_la_borne(
+    bac: Bac, capsys: pytest.CaptureFixture[str], similarite: float, code: int
+) -> None:
+    # D5 : 0,9999 au moins, sinon le modèle d'encodage a dérivé : la campagne ne démarre pas, et
+    # aucun message n'est encodé (circuit breaker du plan).
+    bac.similarite = similarite
+    assert bac.commande(questions=("Q1",), cellules=(GG,)) == code
+    if code:
+        assert "symétrie : similarité 0.99989, sous 0.9999" in capsys.readouterr().err
+        assert not (bac.racine / "traces" / "essai").exists()
+        assert bac.encodeur.appels == []
+    else:
+        assert len(bac.encodeur.appels) == 1
+
+
+def test_serveur_lent_d_une_campagne_graphrag(bac: Bac) -> None:
+    # La répétition d'une campagne GraphRAG éprouve aussi le délai : Q2 de graphrag-gemini, la
+    # moins chère des deux, au serveur lent ; sa recherche y dépasse le délai d'une question.
+    lent = (*FAUX_SERVEUR, "--lent-s", "240")
+    fixee = replace(
+        campagne(("Q19",), ("Q2", "Q18"), cellules=(GC, GG)), empreinte_recherche="c" * 64
+    )
+    vecteurs = dict.fromkeys(("Q19", "Q2", "Q18"), (0.5,) * 3072)
+    moyens = bac.moyens(serveur=FAUX_SERVEUR, serveur_lent=lent)
+    assert Orchestration(fixee, Decimal(100), moyens, BANC, vecteurs).lancer() == 0
+    serveurs = {note["cle"]: tuple(note["serveur"]) for note in bac.notes()}
+    assert serveurs.pop(f"{GG} p1 Q2+Q18 e1") == lent
+    assert set(serveurs.values()) == {FAUX_SERVEUR}
+
+
+def test_verifier_l_index_par_script(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    # scripts/verifier.sh --section embeddings, en lecture, sans la clé Anthropic (code-map) :
+    # conforme (0) passe ; un écart (1) ou une erreur (2) arrête la création de la campagne.
+    code = (
+        "import json, os, sys\n"
+        "print(json.dumps({'arguments': sys.argv[1:], 'env': sorted(os.environ)}))\n"
+        "sys.exit(int(os.environ.get('CODE_DU_FAUX', '0')))\n"
+    )
+    script = installer(tmp_path, "verifier.sh", code)
+    monkeypatch.setenv("ANTHROPIC_API_KEY", CLE)
+    verifier_l_index(script)
+    for statut, motif in ((1, "écart"), (2, "code 2")):
+        monkeypatch.setenv("CODE_DU_FAUX", str(statut))
+        with pytest.raises(OrchestrationError, match=f"verifier.sh --section embeddings : {motif}"):
+            verifier_l_index(script)
+
+
+def test_verifier_l_index_sans_la_cle(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    notes = tmp_path / "notes.json"
+    code = (
+        "import json, os, sys\n"
+        f"open({str(notes)!r}, 'w').write(json.dumps([sys.argv[1:], sorted(os.environ)]))\n"
+    )
+    script = installer(tmp_path, "verifier.sh", code)
+    monkeypatch.setenv("ANTHROPIC_API_KEY", CLE)
+    monkeypatch.setenv("CLOUDSDK_CONFIG", str(tmp_path))
+    verifier_l_index(script)
+    arguments, noms = json.loads(notes.read_text())
+    assert arguments == ["--section", "embeddings"]
+    assert [nom for nom in noms if nom.startswith("ANTHROPIC_")] == []
+    assert "CLOUDSDK_CONFIG" in noms
+
+
+def test_preuve_de_symetrie_par_l_essai(monkeypatch: pytest.MonkeyPatch) -> None:
+    # La preuve de banc essai-recherche (T8.2), avec l'encodeur de la campagne ; son erreur
+    # devient celle de la campagne.
+    recus: list[object] = []
+
+    def symetrie(encodeur: object) -> float:
+        recus.append(encodeur)
+        return 0.99996
+
+    encodeur = FauxEncodeur()
+    monkeypatch.setattr(essai_recherche, "symetrie", symetrie)
+    assert orchestration.preuve_de_symetrie(encodeur) == 0.99996
+    assert recus == [encodeur]
+
+    def illisible(_encodeur: object) -> float:
+        raise EssaiError("description de contrôle illisible : []")
+
+    monkeypatch.setattr(essai_recherche, "symetrie", illisible)
+    with pytest.raises(OrchestrationError, match="preuve de symétrie : description de contrôle"):
+        orchestration.preuve_de_symetrie(encodeur)
