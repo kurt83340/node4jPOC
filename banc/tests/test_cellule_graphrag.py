@@ -11,6 +11,11 @@ l'ADR-0017 avant l'appel ; puis les issues d'une recherche (D13), l'isolement, l
 T10.1, l'appel au modèle : le vrai ADK 2.11.0, sans outil. DoD : la consigne de contexte et la
 fiche, le message (le contexte, puis la question), les réglages et les comptes des cellules ADK du
 jalon 2 (D7), les plafonds et les issues comme banc.cellule_adk ; puis le point d'entrée.
+
+T11.1, les seconds tours (D10) et l'isolement : Q18 dans la session d'ADK de Q2, sa recherche
+partie de son propre vecteur, son appel au modèle qui reçoit le message de Q2, son contexte et sa
+réponse ; Q18 non posée après un échec de Q2 (ADR-0012) ; la cellule lancée avec sa propre liste
+blanche (banc.isolement).
 """
 
 import asyncio
@@ -53,8 +58,8 @@ RECHERCHE = (Path(__file__).resolve().parents[2] / "questions" / "recherche.cyph
 CLE = "sk-ant-api03-cle-factice-du-banc"
 CLAUDE, GEMINI = "graphrag-claude", "graphrag-gemini"
 CLIENTS = (CLAUDE, GEMINI)
-# Modèle, voie de prix et liste blanche des cellules ADK du jalon 2, que les cellules GraphRAG
-# reprennent (D7).
+# Modèle et voie de prix des cellules ADK du jalon 2, que les cellules GraphRAG reprennent (D7) ; la
+# fausse API se lance sous le nom de la jumelle.
 MODELES = {CLAUDE: "claude-sonnet-5-5", GEMINI: "gemini-3.8-flash"}
 ACCES = {CLAUDE: "api", GEMINI: "vertex-eu"}
 JUMELLES = {CLAUDE: "adk-claude", GEMINI: "adk-gemini"}
@@ -70,6 +75,9 @@ EMPREINTE_Q18 = "sha256:d71b7a020749564b887342e25d117b3f6bfd75f948b830cd29668f4c
 # Le contexte que rend le faux serveur : des enregistrements de recherche.cypher, une espèce chacun.
 CONTEXTE = json.dumps([espece(1), espece(2, descriptions=1)], ensure_ascii=False, indent=2)
 REPONSE = "Réponse : Espèce 1\n\nSources : Texte 1.0 (Jeu)"
+# Le contexte de la recherche de Q18, et sa réponse : ceux d'un second tour.
+CONTEXTE_Q18 = json.dumps([espece(3)], ensure_ascii=False, indent=2)
+REPONSE_Q18 = "Réponse : Espèce 3\n\nSources : Texte 3.0 (Jeu)"
 # Le contexte d'une recherche qui renverrait les vecteurs (US4) : 20 espèces, chacune avec le sien.
 AVEC_VECTEURS = json.dumps([espece(n) | {"embedding": [0.1] * 3072} for n in range(20)])
 
@@ -154,12 +162,10 @@ class BacGraphrag(Bac):
     def lancer(
         self, client: str, etapes: list[dict[str, Any]], commande: Commande
     ) -> subprocess.CompletedProcess[str]:
-        """La cellule dans son propre processus, comme l'orchestration la lancera : la liste blanche
-        de sa jumelle ADK pour seul environnement (celle des cellules GraphRAG : T11.1)."""
+        """La cellule dans son propre processus, comme l'orchestration la lancera : sa liste
+        blanche pour seul environnement (banc.isolement)."""
         with self.api(client, etapes) as adresse:
-            env = environnement_agent(
-                JUMELLES[client], self.racine / "home", self.racine / "claude"
-            )
+            env = environnement_agent(client, self.racine / "home", self.racine / "claude")
             env |= {"ANTHROPIC_BASE_URL" if client == CLAUDE else "GOOGLE_VERTEX_BASE_URL": adresse}
             return subprocess.run(
                 [sys.executable, "-m", "banc.cellule_graphrag", client],
@@ -735,6 +741,121 @@ def test_jeton_hors_du_chrono(bac: BacGraphrag) -> None:
     assert tour.duree_s is not None and tour.duree_s < 1.0
 
 
+# --- T11.1 : seconds tours, dans la même session d'ADK (D10) -------------------------------------
+
+
+def historique(client: str, corps: dict[str, Any]) -> list[tuple[str, str]]:
+    """Les textes d'une requête du modèle, réflexion exclue, dans l'ordre de la conversation, avec
+    leur rôle : « user », ou « model » (« assistant » chez Anthropic)."""
+    if client == CLAUDE:
+        return [
+            ("model" if m["role"] == "assistant" else m["role"], bloc["text"])
+            for m in corps["messages"]
+            for bloc in m["content"]
+            if bloc["type"] == "text"
+        ]
+    return [
+        (c["role"], partie["text"])
+        for c in corps["contents"]
+        for partie in c["parts"]
+        if "text" in partie and not partie.get("thought")
+    ]
+
+
+def paire(bac: BacGraphrag, client: str) -> Conversation:
+    """Q2 puis Q18 avec le vrai ADK : chaque recherche rend son contexte, chaque appel au modèle sa
+    réponse."""
+    mcp = {"appels": [{"texte": CONTEXTE}, {"texte": CONTEXTE_Q18}]}
+    etapes = [reponse(REPONSE), reponse(REPONSE_Q18)]
+    return bac.converser(client, etapes, bac.commande(Q2, Q18, mcp=mcp))
+
+
+@pytest.mark.parametrize("client", CLIENTS)
+def test_second_tour_dans_la_meme_session(bac: BacGraphrag, client: str) -> None:
+    # D10 : Q18 se pose dans la session d'ADK de Q2. Son appel au modèle reçoit l'historique (le
+    # message de Q2, son contexte compris, puis sa réponse), et enfin son propre message, avec le
+    # contexte de sa propre recherche.
+    trace = paire(bac, client)
+    assert [(tour.question, tour.issue, tour.reponse) for tour in trace.tours] == [
+        ("Q2", "reponse", REPONSE),
+        ("Q18", "reponse", REPONSE_Q18),
+    ]
+    premiere, seconde = (requete["corps"] for requete in bac.requetes())
+    assert historique(client, premiere) == [("user", message(Q2[1]))]
+    assert historique(client, seconde) == [
+        ("user", message(Q2[1])),
+        ("model", REPONSE),
+        ("user", message(Q18[1], CONTEXTE_Q18)),
+    ]
+
+
+@pytest.mark.parametrize("client", CLIENTS)
+def test_second_tour_avec_la_reflexion_du_premier(bac: BacGraphrag, client: str) -> None:
+    # Relevé sur ADK 2.11.0 : l'historique du second appel garde aussi la réflexion du premier,
+    # avant sa réponse (Claude : le bloc thinking, signé ; Gemini : la partie thought).
+    paire(bac, client)
+    seconde = bac.requetes()[1]["corps"]
+    if client == CLAUDE:
+        (precedente,) = [m for m in seconde["messages"] if m["role"] == "assistant"]
+        reflexion, texte = precedente["content"]
+        assert (reflexion["type"], reflexion["thinking"], texte["text"]) == (
+            "thinking",
+            "Je conclus.",
+            REPONSE,
+        )
+        assert reflexion["signature"]
+    else:
+        (precedente,) = [c for c in seconde["contents"] if c["role"] == "model"]
+        parties = [(partie.get("thought", False), partie["text"]) for partie in precedente["parts"]]
+        assert parties == [(True, "Je conclus."), (False, REPONSE)]
+
+
+@pytest.mark.parametrize("client", CLIENTS)
+def test_second_tour_cherche_avec_son_vecteur(bac: BacGraphrag, client: str) -> None:
+    # D10 : la recherche de Q18 part de son propre texte, sans réécriture par l'historique : la
+    # même requête, avec le vecteur de Q18 (encodé à la création de la campagne, D5), noté par son
+    # empreinte dans son tour.
+    trace = paire(bac, client)
+    assert [appel["arguments"] for appel in bac.appels()] == [
+        {"query": RECHERCHE, "params": {"vecteur": list(VECTEUR)}},
+        {"query": RECHERCHE, "params": {"vecteur": list(VECTEUR_Q18)}},
+    ]
+    parametres = [[appel.parametres for appel in tour.appels] for tour in trace.tours]
+    assert parametres == [[{"vecteur": EMPREINTE}], [{"vecteur": EMPREINTE_Q18}]]
+
+
+@pytest.mark.parametrize("client", CLIENTS)
+def test_second_tour_mesure_a_part(bac: BacGraphrag, client: str) -> None:
+    # Chaque tour compte son seul appel au modèle : Q18 ne reprend pas les tokens de Q2.
+    trace = paire(bac, client)
+    un_appel = {MODELES[client]: Usage(entree=100, sortie=30, cache_lecture=3000)}
+    assert [tour.usages for tour in trace.tours] == [un_appel, un_appel]
+
+
+@pytest.mark.parametrize("client", CLIENTS)
+@pytest.mark.parametrize(
+    ("etapes", "issue"),
+    [
+        pytest.param([reponse(entree=100_000, sortie=30)], ("echec", "budget"), id="echec"),
+        pytest.param([erreur(429), erreur(503), erreur(500)], ("panne", "api"), id="panne"),
+    ],
+)
+def test_second_tour_non_pose_sans_reponse_au_premier(
+    bac: BacGraphrag, client: str, etapes: list[dict[str, Any]], issue: tuple[str, str]
+) -> None:
+    # ADR-0012 : Q2 sans réponse (son appel au modèle dépasse le budget ; ou l'API en panne, après
+    # 2 reprises), Q18 n'est pas posée : ni recherche ni appel au modèle ; sa ligne relève de
+    # l'orchestration (faux d'office après un échec, la paire rejouée après une panne).
+    budget = estimation(client, len(CONTEXTE)) + Decimal("0.001")
+    mcp = {"appels": [{"texte": CONTEXTE}, {"texte": CONTEXTE_Q18}]}
+    commande = bac.commande(Q2, Q18, mcp=mcp, budget_usd=budget)
+    trace = bac.converser(client, [*etapes, reponse(REPONSE_Q18)], commande)
+    (tour,) = trace.tours
+    assert (tour.question, tour.issue, tour.cause) == ("Q2", *issue)
+    assert len(bac.requetes()) == len(etapes)
+    assert bac.methodes_mcp().count("tools/call") == 1
+
+
 # --- Point d'entrée (T10.1) ----------------------------------------------------------------------
 
 
@@ -746,7 +867,7 @@ def test_aucune_variable_hors_liste_blanche(bac: BacGraphrag, client: str) -> No
     fini = bac.lancer(client, [reponse(REPONSE)], commande)
     assert fini.returncode == 0, fini.stderr
     (demarrage,) = bac.notes_mcp("env")
-    attendu = environnement_agent(JUMELLES[client], bac.racine / "home", bac.racine / "claude")
+    attendu = environnement_agent(client, bac.racine / "home", bac.racine / "claude")
     assert {
         nom: v for nom, v in demarrage["env"].items() if not nom.endswith("BASE_URL")
     } == attendu
@@ -785,7 +906,7 @@ def test_sigterm_arrete_le_serveur(bac: BacGraphrag) -> None:
     # sortir, en 143.
     commande = bac.commande(mcp={"appels": [{"lent_s": 60}]})
     with bac.api(CLAUDE, [reponse()]) as adresse:
-        env = environnement_agent(JUMELLES[CLAUDE], bac.racine / "home", bac.racine / "claude")
+        env = environnement_agent(CLAUDE, bac.racine / "home", bac.racine / "claude")
         cellule = subprocess.Popen(
             [sys.executable, "-m", "banc.cellule_graphrag", CLAUDE],
             stdin=subprocess.PIPE,
