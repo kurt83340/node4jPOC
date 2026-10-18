@@ -3,7 +3,7 @@
 > Procédures d'exploitation des services déployés : redéployer, lancer, lire les journaux, réagir à une
 > alerte, couper. Accès et identifiants : [ACCESS.md](ACCESS.md). Aucun secret ici.
 
-**Dernière MAJ :** 2026-10-14
+**Dernière MAJ :** 2026-10-18
 
 ## Job `reveil-aura` (NEO-13)
 

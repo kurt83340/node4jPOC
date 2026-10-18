@@ -138,6 +138,7 @@
   - DoD : `command_passes: uv run --directory banc python -m banc rapport --campagne g-1 --complet`, `file_exists: banc/resultats/technique-3.md`, puis `manual: Julien relit le rapport`
 - [ ] **T18.2** : doc : code-map (règles de couplage du jeton, de l'encodage, de la recherche, de `scripts/traces.sh`), stack, ARCHITECTURE § 8, ACCESS (`aura-genai`, `predictionVertex`), RUNBOOK, README
   - DoD : `command_passes: python3 .claude/skills/doc-health/scripts/context-budget.py`
+  - Précision du 2026-10-18 (audit doc-health) : sans `--max`, `context-budget.py` sort toujours 0 et ne signale un fichier qu'à 4 000 jetons ; budget de la code-map : `command_passes: python3 -c "import sys; sys.exit(len(open('.claude/docs/code-map.md', encoding='utf-8').read()) // 2 >= 3000)"`
 - [ ] **T18.3** : `/feature-done` : critères de la [spec](spec.md) cochés, ROADMAP, CHANGELOG, dernière PR, tag `jalon-3`
   - DoD : `command_passes: git describe --tags --exact-match origin/main` (rend `jalon-3`, après la fusion)
 
