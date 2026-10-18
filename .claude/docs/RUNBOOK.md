@@ -282,6 +282,10 @@ bash -c 'set -euo pipefail; source scripts/commun.sh; trouver_outils; lire_ident
 - Précision du 2026-10-17 (T6.2) : un chargement qui encode les 5 233 descriptions dure environ 3 minutes, dont 119 s
   pour `07`. Réindexation mesurée : l'index se reconstruit sur les 5 233 vecteurs en moins de 8 s ; l'attente de
   `--schema` (300 s) a de la marge.
+- Précision du 2026-10-18 (T8.2) : après une réindexation ou un changement de modèle, contrôler la recherche de la
+  technique 3 sur la base par `uv run --directory banc python -m banc essai-recherche`, avec le feu vert de Julien
+  (3 encodages, de l'ordre de 0,00001 $) : requête lue par `read-cypher`, deux phrases maison, preuve de symétrie
+  (0,9999 au moins). Code 0 conforme, 1 écart, 2 erreur technique.
 
 ## Recouper le coût d'une campagne (spec 002, D10)
 
