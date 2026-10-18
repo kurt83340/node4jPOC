@@ -5,8 +5,9 @@ partiel ou faux. Un distracteur cité, une espèce hors ensemble ou hors table, 
 introuvable la font passer « à revoir », comme Q10, Q29 et Q30, toujours revues (plan, D4).
 La source citée se vérifie sur la trace du tour (banc.trace) : une requête de « Sources » exécutée
 pendant le tour, aux espaces près, dont le résultat contient les valeurs justes de la réponse ; ou
-une description renvoyée par une requête du tour. Les introspections du schéma sont comptées. Aucun
-juge LLM : tout est rejouable (ADR-0008).
+des descriptions renvoyées par les lectures du tour, dont les enregistrements, réunis, les
+contiennent toutes (ADR-0018). Les introspections du schéma sont comptées. Aucun juge LLM : tout est
+rejouable (ADR-0008).
 """
 
 import json
@@ -460,21 +461,25 @@ def _noms(citations: Sequence[Citation]) -> list[str]:
 
 
 def _source(lues: Sections, tours: Sequence[Tour], valeurs: Sequence[Valeur]) -> Source:
-    """Source citée (plan, D4), vérifiée sur les lectures sans erreur du tour, et du tour précédent
-    pour un second tour (ADR-0015).
+    """Source citée (plan, D4 ; ADR-0018), vérifiée sur les lectures sans erreur du tour, et du tour
+    précédent pour un second tour (ADR-0015).
 
     Les valeurs à retrouver : les valeurs justes de la réponse ; à défaut, les espèces qu'elle
-    avance (une réponse fausse se juge sur ce qu'elle affirme). Une requête citée porte la réponse
-    si elle a été exécutée pendant le tour, aux espaces près, et que ses résultats contiennent ces
-    valeurs ; une description citée, si l'enregistrement qui l'a renvoyée contient aussi l'une
-    d'elles. Une citation introuvable à côté d'une source valable : « à revoir » (inventée, ou
-    simple citation de la question ?). Rien à vérifier : « à revoir ».
+    avance (une réponse fausse se juge sur ce qu'elle affirme). Des requêtes citées portent la
+    réponse si elles ont été exécutées pendant le tour, aux espaces près, et que leurs résultats
+    contiennent toutes ces valeurs ; des descriptions citées, si les enregistrements qui les ont
+    renvoyées, réunis, les contiennent toutes (ADR-0018 : la rigueur d'une requête citée, pas une
+    seule valeur). Requêtes et descriptions se jugent chacune à part. Une citation introuvable à
+    côté d'une source valable : « à revoir » (inventée, ou simple citation de la question ?). Rien
+    à vérifier : « à revoir » si une requête citée a été exécutée (la revue en juge), « non »
+    sinon.
     """
     if lues.sources is None:
         return "non"
     lectures = [a for t in tours for a in t.appels if a.outil == LECTURE and not a.erreur]
     enregistrements = [e for a in lectures for e in _enregistrements(a.resultat)]
-    inventee = pertinente = False
+    inventee = False
+    decrites: list[object] = []
     for description in descriptions_citees(lues.sources):
         cible = mots(description)
         porteurs = [
@@ -483,7 +488,8 @@ def _source(lues: Sections, tours: Sequence[Tour], valeurs: Sequence[Valeur]) ->
             if any(isinstance(f, str) and contient(mots(f), cible) for f in e)
         ]
         inventee = inventee or not porteurs
-        pertinente = pertinente or any(_renvoyee(v, e) for e in porteurs for v in valeurs)
+        decrites += [f for e in porteurs for f in e]
+    pertinente = bool(decrites and valeurs) and all(_renvoyee(v, decrites) for v in valeurs)
     requetes = requetes_citees(lues.sources)
     executees = [a for a in lectures if any(meme_requete(r, a.requete) for r in requetes)]
     portees = [f for a in executees for f in _feuilles(a.resultat)]
