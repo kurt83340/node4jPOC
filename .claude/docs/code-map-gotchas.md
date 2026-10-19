@@ -292,3 +292,6 @@
   des lectures Jira), l'a fait échouer une fois (`adk-claude`) ; seul, il passe (5 fois sur 5), et la suite relancée
   sans charge aussi. Rien d'autre pendant la suite ; un échec isolé de ce test se relance seul avant de chercher une
   régression (vu le 2026-10-19, T17.1).
+- ⚠️ `banc/src/banc/contre_epreuve.py` — `--enregistrer` écrit en tête des décisions une note de revue assistée
+  (contre-épreuve, accord, désaccords) : pour un pilote revu sans contre-épreuve, la corriger à la main dans
+  `banc/mesures/revues.toml` (fait pour `pilote-3` le 2026-10-19, T14.1).
