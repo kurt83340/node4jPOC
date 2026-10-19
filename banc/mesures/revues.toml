@@ -1,6 +1,11 @@
 gel = 2026-10-10T21:22:40
 pilote = "pilote"
 
+# Gel du protocole du jalon 3 et son pilote (spec 003, T14.2 ; plan 003, D12 et D15).
+[[jalon]]
+gel = 2026-10-19T23:24:40
+pilote = "pilote-3"
+
 # Décisions de la revue humaine à l'aveugle (plan 002, T3.2) : une table [[revue]] par cas, ajoutée
 # par `banc revoir`, jamais réécrite ; une correction se fait ici, à la main (diff versionné).
 # Le gel du protocole (T8.1) s'inscrit tout en haut, avant toute table : gel = AAAA-MM-JJTHH:MM:SS,

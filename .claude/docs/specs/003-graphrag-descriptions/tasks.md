@@ -8,7 +8,7 @@
 > il « perd le fil » (échecs ×4 constatés en télémétrie, Morph 2026) → découper la phase.
 
 **Date :** 2026-10-12
-**Status :** [ ] 24/35 tasks → MAJ au fil de l'eau
+**Status :** [ ] 25/35 tasks → MAJ au fil de l'eau
 
 > Les tests n'appellent aucun service réel (Vertex, Anthropic, Aura) : faux outils, fausses API, HOME temporaire.
 > Une dépense passe par le feu vert de Julien, annoncée avec son estimation : phases 2, 6, 8, 13, 14 et 15.
@@ -106,7 +106,7 @@
 
 - [x] **T14.1** : pilote `pilote-3`, une passe des deux cellules, non comptée ; revue du pilote (décisions jamais réutilisées) ; réglages limités à l'extraction, la notation et le coût, notés datés au plan ; estimation de la campagne — fait le 2026-10-19 (feu vert de Julien ; clé actuelle, son choix) : pilote complet, 60 réponses, 1,697 $ pour environ 1,5 $ estimés ; contrôles de création passés ; `banc controle-traces` et `scripts/traces.sh` conformes ; revue de 21 cas, décisions de Claude validées par Julien, jamais réutilisées ; scores non comptés, 13,5 et 18,5 sur 30 ; règle de la source relue sur de vraies citations ; Akwakwak ajouté à la table de Q17 (acceptable, hors filet ; choix de Julien) ; aucun réglage ; `g-1` estimée à environ 5,1 $ ; précisions au plan (D12, D14, D15)
   - DoD : `manual: feu vert de Julien`, puis `command_passes: scripts/banc.sh lancer --campagne pilote-3 --cellules graphrag-claude,graphrag-gemini --plafond-usd 3.5 && uv run --directory banc python -m banc rapport --campagne pilote-3 --complet && uv run --directory banc python -m banc revoir --campagne pilote-3 --verifier`
-- [ ] **T14.2** : gel du protocole du jalon 3 en tête de `revues.toml` (format de T2.1), son commit noté au plan ; seuils de D12 rappelés ; plafond de la campagne fixé (1,5 × l'estimation + 1 $), au plan
+- [x] **T14.2** : gel du protocole du jalon 3 en tête de `revues.toml` (format de T2.1), son commit noté au plan ; seuils de D12 rappelés ; plafond de la campagne fixé (1,5 × l'estimation + 1 $), au plan — fait le 2026-10-19 : table `[[jalon]]` avant les décisions (`gel = 2026-10-19T23:24:40`, `pilote = "pilote-3"`), commit `27614ab`, retrouvé par `banc.recherche_seule.gel_de` ; décisions de `pilote-3` hors de la réutilisation (9 l'étaient avant le gel, aucune après), les 47 du jalon 2 gardées ; 118 tests de `test_revue.py` verts ; `banc revoir --verifier` : 0 cas à revoir pour `pilote-3`, `fr-1`, `en-1` et `fr-controle` ; empreintes du prompt et de la recherche égales à celles de `pilote-3` ; seuils de D12 rappelés avec les passes de `fr-1` ; plafond de `g-1` : 8,64 $ ; celui de `t2-controle` inchangé (3 $) ; relus par Julien ; précision au plan (D12)
   - DoD : `command_passes: uv run --directory banc pytest -q tests/test_revue.py`, puis `manual: gel du jalon 3 dans revues.toml et plafond au plan, relus par Julien`
 
 ## Phase 15 — Campagne comptée, passe de contrôle et contrôle des traces (environ 6 $, feu vert de Julien ; NEO-33)
