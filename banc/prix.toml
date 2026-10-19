@@ -120,6 +120,8 @@ source = "anthropic"
 # $0.00015 » par « 1,000 count » (relevé le 2026-10-12, relu le 2026-10-17), soit 0,15 $ par million ;
 # sortie gratuite, aucun cache. L'unité (jetons ou caractères) n'est pas dite : la facture la tranche
 # (T16.3). Seules les réponses 200 sont facturées : une reprise après un 429 ne coûte rien de plus.
+# Précision du 2026-10-19 (T16.3) : le jeton, celui que Vertex rend (export de facturation ;
+# plan 003, D11).
 [[tarif]]
 modele = "gemini-embedding-001"
 acces = "vertex-europe-west1"

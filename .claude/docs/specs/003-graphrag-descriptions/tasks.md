@@ -124,7 +124,7 @@
   - DoD : `command_passes: uv run --directory banc python -m banc revoir --campagne g-1 --verifier && uv run --directory banc python -m banc revoir --campagne t2-controle --verifier`
 - [ ] **T16.2** : tables des questions sémantiques (plan, D14) : espèces nouvelles citées dans une réponse, classées avec la grille, accord de Julien, ajoutées datées ; réponses de `fr-1`, `g-1` et `t2-controle` aux questions touchées renotées ; écarts de score au plan, et pour `fr-1` en ajout daté au rapport de la technique 2
   - DoD : `command_passes: scripts/questions.sh --verifier && uv run --directory banc pytest -q tests/test_banc_toml.py tests/test_attendu.py && uv run --directory banc python -m banc revoir --campagne fr-1 --verifier && uv run --directory banc python -m banc revoir --campagne g-1 --verifier && uv run --directory banc python -m banc revoir --campagne t2-controle --verifier`, puis `manual: écarts de renotation relus par Julien`
-- [ ] **T16.3** : recoupement des coûts : Console Anthropic (jours UTC) ; export de facturation BigQuery heure par heure (Gemini, encodages, chargements de la phase 6 : unité de facturation de l'embedding tranchée) ; écarts au plan
+- [ ] **T16.3** : recoupement des coûts : Console Anthropic (jours UTC) ; export de facturation BigQuery heure par heure (Gemini, encodages, chargements de la phase 6 : unité de facturation de l'embedding tranchée) ; écarts au plan — précision du 2026-10-19 : unité de l'embedding tranchée et chargements de la phase 6 recoupés, avant le pilote (plan, D11) ; restent la Console Anthropic et les campagnes
   - DoD : `manual: écarts sous 1 centime, ou expliqués au plan`
 
 ## Phase 17 — Recherche seule (US2 ; NEO-35)
@@ -159,5 +159,5 @@ La feature est livrée quand :
 
 - Clé Anthropic du banc : elle expire le 2026-11-07 ; T2.2 avant le pilote.
 - Budget Vertex de 100 € jusqu'au 2026-12-31 (NEO-27, début décembre) : les campagnes du jalon 3 s'y tiennent.
-- Unité de facturation de `gemini-embedding-001` (« per 1,000 count » : jetons ou caractères) : tranchée par l'export de facturation (T16.3) ; moins de 0,30 $ par indexation dans tous les cas.
+- Unité de facturation de `gemini-embedding-001` (« per 1,000 count » : jetons ou caractères) : tranchée par l'export de facturation (T16.3) ; moins de 0,30 $ par indexation dans tous les cas. Tranché le 2026-10-19 (export de facturation) : le jeton compté par Vertex ; phase 6 : 319 300 jetons, 0,0479 $ pour 0,0498 $ estimés (plan, D11).
 - Dimension des questions d'Aura Agent (jalon 4), inconnue : l'index en 3 072 vise son défaut ; à vérifier au jalon 4.

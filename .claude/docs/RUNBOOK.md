@@ -305,3 +305,9 @@ Précision du 2026-10-14 (vécu du 2026-10-12, phase 10 de la spec 002) :
 - Console Anthropic lue par Claude dans le Chrome de débogage, connecté par « Continue with Google » : page `/cost`,
   « Last 30 days », vue « Table » (coût par jour UTC, au centime) ; crédits : `/settings/billing` ; toute cellule de
   clé masquée ; Chrome fermé ensuite.
+
+Précision du 2026-10-19 (spec 003, T16.3) : l'encodage (`gemini-embedding-001`) se lit au SKU `E4FB-7AE2-9CAE`
+« Large Text Embedding Model - Predictions » (`europe-west1`, sans crédit), compté en jetons malgré l'unité écrite
+`requests` ; pour une campagne GraphRAG, il égale la somme des `jetons` de son `encodages.json`, plus la description
+de contrôle de la preuve de symétrie, que le banc ne garde pas. L'export tronque le coût de chaque ligne au millionième
+d'euro (52 jetons : 6,864e-6 €, écrits 6e-6).
