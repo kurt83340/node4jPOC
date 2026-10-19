@@ -1681,3 +1681,247 @@ empreinte = "220c004d4fdd9641"
 date = 2026-10-11T21:59:07
 note = "juste"
 motif = "liste-complete"
+
+# Campagne pilote-3 (2026-10-19) : pilote du jalon 3. Décisions proposées par Claude à l'aveugle, sur les cas que banc
+# contre-epreuve écrit (tous.txt), puis validées par Julien, sans contre-épreuve ; enregistrées depuis preanalyse.json
+# par banc contre-epreuve --enregistrer. Décisions d'un pilote : jamais réutilisées, une fois pilote-3 déclaré au gel
+# du jalon 3 (T14.2 ; plan 003, D15).
+
+[[revue]]
+campagne = "pilote-3"
+cellule = "graphrag-gemini"
+passe = 1
+question = "Q21"
+essai = 1
+empreinte = "51d464964af0b790"
+date = 2026-10-19T22:01:40
+note = "juste"
+motif = "comparaison-juste"
+
+[[revue]]
+campagne = "pilote-3"
+cellule = "graphrag-claude"
+passe = 1
+question = "Q29"
+essai = 1
+empreinte = "ff45aaccbe4e7ce1"
+date = 2026-10-19T22:01:40
+note = "juste"
+source = "oui"
+motif = "premisse-corrigee"
+
+[[revue]]
+campagne = "pilote-3"
+cellule = "graphrag-claude"
+passe = 1
+question = "Q30"
+essai = 1
+empreinte = "f4a0ce4bb9cde932"
+date = 2026-10-19T22:01:40
+note = "juste"
+source = "exempte"
+motif = "critere-demande"
+
+[[revue]]
+campagne = "pilote-3"
+cellule = "graphrag-gemini"
+passe = 1
+question = "Q10"
+essai = 1
+empreinte = "280f76973a1bc1ff"
+date = 2026-10-19T22:01:40
+note = "juste"
+motif = "hors-donnees-signale"
+
+[[revue]]
+campagne = "pilote-3"
+cellule = "graphrag-claude"
+passe = 1
+question = "Q9"
+essai = 1
+empreinte = "455785aee93f9786"
+date = 2026-10-19T22:01:40
+note = "juste"
+motif = "rappel-50-precision-100"
+
+[[revue]]
+campagne = "pilote-3"
+cellule = "graphrag-gemini"
+passe = 1
+question = "Q2"
+essai = 1
+empreinte = "734668644110108d"
+date = 2026-10-19T22:01:40
+note = "faux"
+motif = "sans-equipe"
+
+[[revue]]
+campagne = "pilote-3"
+cellule = "graphrag-claude"
+passe = 1
+question = "Q27"
+essai = 1
+empreinte = "afae7aafc31a6e9c"
+date = 2026-10-19T22:01:40
+note = "faux"
+source = "oui"
+motif = "sans-attaque"
+
+[[revue]]
+campagne = "pilote-3"
+cellule = "graphrag-claude"
+passe = 1
+question = "Q17"
+essai = 1
+empreinte = "ebfb03dd9a362128"
+date = 2026-10-19T22:01:40
+note = "partiel"
+motif = "rappel-sous-50"
+
+[[revue]]
+campagne = "pilote-3"
+cellule = "graphrag-claude"
+passe = 1
+question = "Q28"
+essai = 1
+empreinte = "be27db930c8a5f37"
+date = 2026-10-19T22:01:40
+note = "faux"
+source = "non"
+motif = "electrik-nul-non-signale"
+
+[[revue]]
+campagne = "pilote-3"
+cellule = "graphrag-gemini"
+passe = 1
+question = "Q28"
+essai = 1
+empreinte = "722a03410a747cf9"
+date = 2026-10-19T22:01:40
+note = "partiel"
+source = "non"
+motif = "electrik-nul-sans-attaque"
+
+[[revue]]
+campagne = "pilote-3"
+cellule = "graphrag-claude"
+passe = 1
+question = "Q8"
+essai = 1
+empreinte = "389d07c7bdfd83de"
+date = 2026-10-19T22:01:40
+note = "faux"
+motif = "sans-reponse"
+
+[[revue]]
+campagne = "pilote-3"
+cellule = "graphrag-gemini"
+passe = 1
+question = "Q29"
+essai = 1
+empreinte = "803516023ae1f32e"
+date = 2026-10-19T22:01:40
+note = "juste"
+source = "oui"
+motif = "premisse-corrigee"
+
+[[revue]]
+campagne = "pilote-3"
+cellule = "graphrag-gemini"
+passe = 1
+question = "Q30"
+essai = 1
+empreinte = "be16d992d9f7253f"
+date = 2026-10-19T22:01:40
+note = "juste"
+source = "non"
+motif = "critere-annonce"
+
+[[revue]]
+campagne = "pilote-3"
+cellule = "graphrag-gemini"
+passe = 1
+question = "Q18"
+essai = 1
+empreinte = "5d9c0de432384d84"
+date = 2026-10-19T22:01:40
+note = "faux"
+motif = "sans-reponse"
+
+[[revue]]
+campagne = "pilote-3"
+cellule = "graphrag-claude"
+passe = 1
+question = "Q2"
+essai = 1
+empreinte = "9d356144ce5ea691"
+date = 2026-10-19T22:01:40
+note = "faux"
+motif = "sans-equipe"
+
+[[revue]]
+campagne = "pilote-3"
+cellule = "graphrag-gemini"
+passe = 1
+question = "Q7"
+essai = 1
+empreinte = "ed5402bb36015d71"
+date = 2026-10-19T22:01:40
+note = "partiel"
+motif = "extrait-juste"
+
+[[revue]]
+campagne = "pilote-3"
+cellule = "graphrag-claude"
+passe = 1
+question = "Q10"
+essai = 1
+empreinte = "86913899e7296b27"
+date = 2026-10-19T22:01:40
+note = "juste"
+motif = "hors-donnees-signale"
+
+[[revue]]
+campagne = "pilote-3"
+cellule = "graphrag-gemini"
+passe = 1
+question = "Q17"
+essai = 1
+empreinte = "7efdb65bf31f7bd1"
+date = 2026-10-19T22:01:40
+note = "partiel"
+motif = "rappel-sous-50"
+
+[[revue]]
+campagne = "pilote-3"
+cellule = "graphrag-claude"
+passe = 1
+question = "Q18"
+essai = 1
+empreinte = "61ad40f8e11dd766"
+date = 2026-10-19T22:01:40
+note = "faux"
+motif = "sans-reponse"
+
+[[revue]]
+campagne = "pilote-3"
+cellule = "graphrag-gemini"
+passe = 1
+question = "Q27"
+essai = 1
+empreinte = "f2dcb30fb9de1b13"
+date = 2026-10-19T22:01:40
+note = "juste"
+source = "non"
+motif = "electrik-avantage-eau"
+
+[[revue]]
+campagne = "pilote-3"
+cellule = "graphrag-claude"
+passe = 1
+question = "Q14"
+essai = 1
+empreinte = "985e0cf619a7d724"
+date = 2026-10-19T22:01:40
+note = "faux"
+motif = "sans-reponse"

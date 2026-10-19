@@ -6,6 +6,7 @@ pokemon, ensemble, raison
 "Léviator", "obligatoire", "brutal et dangereux, il rase des villes"
 "Moyade", "obligatoire", "aspire l’énergie vitale des marins"
 "Tentacool", "obligatoire", "arrose d’acide les pêcheurs"
+"Akwakwak", "acceptable", "noyait, selon des légendes, ceux qui souillaient sa rivière"
 "Gamblast", "acceptable", "peut couler un navire-citerne"
 "Sharpedo", "acceptable", "attaque tous les navires sur son territoire"
 "Amphinobi", "écarté", "shuriken redoutables contre ses adversaires"
