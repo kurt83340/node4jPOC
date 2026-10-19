@@ -546,6 +546,18 @@ def _renvoyee(valeur: Valeur, feuilles: Sequence[object]) -> bool:
 # --- Lecture des réponses de référence -----------------------------------------------------------
 
 
+def table_semantique(question: Question, texte: str) -> Table:
+    """La table d'une question sémantique (ADR-0008), lue dans le texte de sa réponse de référence
+    (questions/attendu/qNN.txt) : banc.recherche_seule la lit au commit d'un gel (spec 003, D13).
+
+    Raises:
+        AttenduError: texte illisible.
+        NotationError: ensemble inconnu.
+        ValueError: plus d'un tableau, ou aucun.
+    """
+    return _table(question, attendu.analyser(texte))
+
+
 def _fichier(question: Question) -> str:
     return f"q{int(question.id[1:]):02d}"
 

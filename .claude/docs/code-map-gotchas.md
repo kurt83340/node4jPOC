@@ -282,3 +282,13 @@
   ces sauts de ligne sont échappés (`\n`). Un contrôle ou un test de vecteur vise cette forme, pas une liste nue :
   `AVEC_VECTEURS` de `banc/tests/test_cellule_graphrag.py` ne sert qu'au garde-fou du coût, qui ne lit que la
   longueur. Relevé en lecture sur Aura le 2026-10-18 (T15.1).
+- ⚠️ `banc/src/banc/recherche_seule.py` — `banc recherche-seule` lit l'historique git (`git log -S` sur
+  `banc/mesures/revues.toml`, puis `git show <commit du gel>:questions/…`) : il lui faut un clone complet, pas un
+  clone superficiel comme celui de la CI (`fetch-depth: 1`). Le commit du gel est le plus ancien qui touche la ligne
+  `gel = …` (`--reverse`) : un commit plus récent qui la recite (un commentaire) n'est pas le sien. Ses tests montent
+  leur propre dépôt git, hors de la configuration de l'utilisateur (`GIT_CONFIG_GLOBAL`) (vu le 2026-10-19, T17.1).
+- ⚠️ `banc/tests/test_cellule_adk.py` — `test_serveur_perdu_en_fin_de_tour` dépend du temps (serveur sorti 1 s après sa
+  réponse, réponse du modèle à 2 s) : la suite complète, lancée pendant d'autres commandes (la vraie commande du banc,
+  des lectures Jira), l'a fait échouer une fois (`adk-claude`) ; seul, il passe (5 fois sur 5), et la suite relancée
+  sans charge aussi. Rien d'autre pendant la suite ; un échec isolé de ce test se relance seul avant de chercher une
+  régression (vu le 2026-10-19, T17.1).

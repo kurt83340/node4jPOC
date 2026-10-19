@@ -14,6 +14,7 @@ from banc import (
     essai_serveur,
     orchestration,
     rapport,
+    recherche_seule,
     revue,
 )
 from banc.acces import acces
@@ -115,6 +116,13 @@ def main(arguments: Sequence[str] | None = None) -> int:
         "aucune clause d'écriture, aucun jeton Google, aucun vecteur ; code 0 conforme, 1 écart",
     )
     controle.add_argument("--campagne", required=True, help="identifiant de la campagne")
+    recherche = commandes.add_parser(
+        "recherche-seule",
+        help="recherche seule d'une campagne GraphRAG (spec 003, US2 ; T17.1) : Q3, Q9, Q16, Q17, "
+        "Q26 sur ses traces, grilles du gel de son jalon, plafond de 20 espèces, espèces hors "
+        "filet ; code 0 conforme, 1 écart (recherche différente d'une trace à l'autre)",
+    )
+    recherche.add_argument("--campagne", required=True, help="identifiant de la campagne")
     rapport_ = commandes.add_parser(
         "rapport",
         help="bilan d'une campagne, série par série (T9.1) ; scores une fois la revue finie",
@@ -158,6 +166,7 @@ def main(arguments: Sequence[str] | None = None) -> int:
         ),
         "rapport": lambda: rapport.commande(lus.campagne, complet=lus.complet),
         "controle-traces": lambda: controle_traces.commande(lus.campagne),
+        "recherche-seule": lambda: recherche_seule.commande(lus.campagne),
         "essai-serveur": essai_serveur.commande,
         "essai-recherche": essai_recherche.commande,
         "anglais": anglais.commande,
