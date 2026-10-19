@@ -8,7 +8,7 @@
 > il « perd le fil » (échecs ×4 constatés en télémétrie, Morph 2026) → découper la phase.
 
 **Date :** 2026-10-12
-**Status :** [ ] 23/35 tasks → MAJ au fil de l'eau
+**Status :** [ ] 24/35 tasks → MAJ au fil de l'eau
 
 > Les tests n'appellent aucun service réel (Vertex, Anthropic, Aura) : faux outils, fausses API, HOME temporaire.
 > Une dépense passe par le feu vert de Julien, annoncée avec son estimation : phases 2, 6, 8, 13, 14 et 15.
@@ -26,7 +26,7 @@
 
 - [x] **T2.1** : `revues.toml` accepte un gel et un pilote par jalon ; l'en-tête actuel (`gel`, `pilote`) se lit tel quel ; une décision d'un pilote ne se réutilise jamais ; une décision prise après le gel de son jalon se réutilise d'un jalon à l'autre (note seule, même question, même réponse courte) (plan, D15), en TDD — fait le 2026-10-13 : une table `[[jalon]]` (gel, pilote) par jalon après le premier, dont l'en-tête se lit tel quel ; pilotes de tous les jalons jamais réutilisés ; réutilisation dès le premier gel, d'un jalon à l'autre ; 14 tests ajoutés, rouges puis verts ; 11 mutations, toutes détectées ; `banc revoir --campagne fr-1 --verifier` : 0 cas à revoir ; notes reprises des campagnes du jalon 2 inchangées ; format au plan (D15, précision du 2026-10-13)
   - DoD : `command_passes: uv run --directory banc pytest -q tests/test_revue.py && uv run --directory banc python -m banc revoir --campagne fr-1 --verifier`
-- [ ] **T2.2** : clé Anthropic du banc renouvelée avant le pilote (elle expire le 2026-11-07) : nouvelle clé dans le workspace « Default », nouvelle version du secret `anthropic-api-banc` (skill `secret-manager`, rappel d'expiration), ancienne clé révoquée, [ACCESS](../../ACCESS.md) à jour ; action de Julien — précision du 2026-10-13 : reportée par Julien, qui change la clé dans la semaine ; elle aura sa propre PR (NEO-29), la phase 2 ne livrant que T2.1
+- [ ] **T2.2** : clé Anthropic du banc renouvelée avant le pilote (elle expire le 2026-11-07) : nouvelle clé dans le workspace « Default », nouvelle version du secret `anthropic-api-banc` (skill `secret-manager`, rappel d'expiration), ancienne clé révoquée, [ACCESS](../../ACCESS.md) à jour ; action de Julien — précision du 2026-10-13 : reportée par Julien, qui change la clé dans la semaine ; elle aura sa propre PR (NEO-29), la phase 2 ne livrant que T2.1 — précision du 2026-10-19 (choix de Julien) : la clé actuelle, valable jusqu'au 2026-11-07, sert au pilote et à la campagne ; la nouvelle est à poser avant cette date, et avant `g-1` si la campagne risque de déborder (plan, D15)
   - DoD : `manual: Julien crée la clé dans la Console et la range dans Secret Manager`, puis `command_passes: scripts/banc.sh acces` (sondes, environ 0,003 $, annoncées)
 
 ## Phase 3 — Garde-fous du chargement (sans dépense ; NEO-30)
@@ -104,7 +104,7 @@
 
 ## Phase 14 — Pilote et gel (environ 1,5 $, plafond 3,5 $, feu vert de Julien ; NEO-33)
 
-- [ ] **T14.1** : pilote `pilote-3`, une passe des deux cellules, non comptée ; revue du pilote (décisions jamais réutilisées) ; réglages limités à l'extraction, la notation et le coût, notés datés au plan ; estimation de la campagne
+- [x] **T14.1** : pilote `pilote-3`, une passe des deux cellules, non comptée ; revue du pilote (décisions jamais réutilisées) ; réglages limités à l'extraction, la notation et le coût, notés datés au plan ; estimation de la campagne — fait le 2026-10-19 (feu vert de Julien ; clé actuelle, son choix) : pilote complet, 60 réponses, 1,697 $ pour environ 1,5 $ estimés ; contrôles de création passés ; `banc controle-traces` et `scripts/traces.sh` conformes ; revue de 21 cas, décisions de Claude validées par Julien, jamais réutilisées ; scores non comptés, 13,5 et 18,5 sur 30 ; règle de la source relue sur de vraies citations ; Akwakwak ajouté à la table de Q17 (acceptable, hors filet ; choix de Julien) ; aucun réglage ; `g-1` estimée à environ 5,1 $ ; précisions au plan (D12, D14, D15)
   - DoD : `manual: feu vert de Julien`, puis `command_passes: scripts/banc.sh lancer --campagne pilote-3 --cellules graphrag-claude,graphrag-gemini --plafond-usd 3.5 && uv run --directory banc python -m banc rapport --campagne pilote-3 --complet && uv run --directory banc python -m banc revoir --campagne pilote-3 --verifier`
 - [ ] **T14.2** : gel du protocole du jalon 3 en tête de `revues.toml` (format de T2.1), son commit noté au plan ; seuils de D12 rappelés ; plafond de la campagne fixé (1,5 × l'estimation + 1 $), au plan
   - DoD : `command_passes: uv run --directory banc pytest -q tests/test_revue.py`, puis `manual: gel du jalon 3 dans revues.toml et plafond au plan, relus par Julien`

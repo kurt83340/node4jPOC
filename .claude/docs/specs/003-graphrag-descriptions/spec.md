@@ -1,6 +1,6 @@
 ---
 status: in-progress # draft | validated | in-progress | done | parked
-progress: 23/35 # X/Y tasks (compté depuis tasks.md) — MAJ par /feature-done ou à la main
+progress: 24/35 # X/Y tasks (compté depuis tasks.md) — MAJ par /feature-done ou à la main
 ---
 
 # Spec — GraphRAG sur les descriptions
@@ -94,7 +94,7 @@ Mesurer la technique 3 du banc d'essai : un GraphRAG qui retrouve par le sens le
 ## Dépendances
 
 - spec [002-agent-text-to-cypher](../002-agent-text-to-cypher/spec.md) livrée (banc, protocole, fiche, résultats de la technique 2) : fait le 2026-10-12
-- clé Anthropic du banc renouvelée avant la première campagne : elle expire le 2026-11-07 (workspace « Default », limite de l'organisation à 20 $ par mois, [ADR-0016](../../adr/0016-infra-limite-anthropic-organisation.md))
+- clé Anthropic du banc renouvelée avant la première campagne : elle expire le 2026-11-07 (workspace « Default », limite de l'organisation à 20 $ par mois, [ADR-0016](../../adr/0016-infra-limite-anthropic-organisation.md)) — précision du 2026-10-19 (choix de Julien) : la clé actuelle, valable jusqu'au 2026-11-07, sert au pilote et à la campagne ; la nouvelle est à poser avant cette date, et avant `g-1` si la campagne risque de déborder (plan, D15)
 - Vertex AI sur `jleroy-labo`, sous la coupure de l'[ADR-0010](../../adr/0010-infra-plafond-de-depense.md) et le plafond natif de l'[ADR-0013](../../adr/0013-infra-plafond-natif-de-vertex.md) ; le budget de 100 € expire le 2026-12-31 (NEO-27)
 
 ## Liens
