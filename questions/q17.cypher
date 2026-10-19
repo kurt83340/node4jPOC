@@ -9,6 +9,9 @@
 // attaque « redoutable » contre ses adversaires n'y touche pas (Amphinobi, Crustabri, Poissirène et
 // Tentacruel, d'abord acceptables, passent en écarté et restent dans la table comme pièges).
 // Les raisons résument, sans recopier les descriptions (ADR-0001).
+// Hors filet (horsFilet) : une espèce que le filet ne trouve pas, classée sur preuve, datée ; la requête la rend avec
+// son ensemble, sans la chercher. Akwakwak (2026-10-19, pilote du jalon 3, choix de Julien) : acceptable, d'après des
+// légendes, ceux qu'il noyait ne sont pas dits humains.
 WITH [
     {pokemon: 'Carvanha', ensemble: 'obligatoire', raison: 'coule des navires ; les marins fuient ses eaux'},
     {pokemon: 'Hypocéan', ensemble: 'obligatoire', raison: 'pique les pêcheurs de coraux'},
@@ -16,6 +19,8 @@ WITH [
     {pokemon: 'Léviator', ensemble: 'obligatoire', raison: 'brutal et dangereux, il rase des villes'},
     {pokemon: 'Moyade', ensemble: 'obligatoire', raison: 'aspire l’énergie vitale des marins'},
     {pokemon: 'Tentacool', ensemble: 'obligatoire', raison: 'arrose d’acide les pêcheurs'},
+    {pokemon: 'Akwakwak', ensemble: 'acceptable', raison: 'noyait, selon des légendes, ceux qui souillaient sa rivière',
+      horsFilet: true},
     {pokemon: 'Gamblast', ensemble: 'acceptable', raison: 'peut couler un navire-citerne'},
     {pokemon: 'Sharpedo', ensemble: 'acceptable', raison: 'attaque tous les navires sur son territoire'},
     {pokemon: 'Amphinobi', ensemble: 'écarté', raison: 'shuriken redoutables contre ses adversaires'},
@@ -41,7 +46,8 @@ CALL () {
 UNWIND trouves + [c IN classement WHERE NOT c.pokemon IN trouves | c.pokemon] AS nom
 WITH nom, nom IN trouves AS trouve, [c IN classement WHERE c.pokemon = nom][0] AS c
 RETURN nom AS pokemon,
-  CASE WHEN NOT trouve THEN 'plus trouvée' WHEN c IS NULL THEN 'à classer' ELSE c.ensemble END AS ensemble,
+  CASE WHEN NOT trouve AND NOT coalesce(c.horsFilet, false) THEN 'plus trouvée' WHEN c IS NULL THEN 'à classer'
+    ELSE c.ensemble END AS ensemble,
   coalesce(c.raison, '') AS raison
 ORDER BY CASE ensemble
     WHEN 'obligatoire' THEN 1 WHEN 'acceptable' THEN 2 WHEN 'écarté' THEN 3 WHEN 'à classer' THEN 4 ELSE 5
