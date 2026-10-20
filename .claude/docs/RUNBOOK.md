@@ -223,6 +223,11 @@ uv run --directory banc python -m banc contre-epreuve --campagne <id> --accord "
 uv run --directory banc python -m banc contre-epreuve --campagne <id> --enregistrer [<fichier>]  # 0 : plus rien à revoir
 ```
 
+Précision du 2026-10-20 (spec 003, T15.2) : avant de lancer, la Console Anthropic se relit sur la seule page
+`/settings/billing` (Chrome de débogage, fermé ensuite) : solde des crédits et, sous « Spend limits », dépense du mois
+sur la limite de l'organisation (30,63 $ ; 7,43 $ sur 20 $ avant `g-1`). Une campagne GraphRAG nomme ses cellules
+(`--cellules graphrag-claude,graphrag-gemini`) : sans `--cellules`, c'est la technique 2.
+
 ## Basculer le schéma en anglais, puis revenir (spec 002, D8)
 
 ```bash
