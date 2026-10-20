@@ -1,40 +1,40 @@
-# HANDOFF — 2026-10-19 22h30
+# HANDOFF — 2026-10-20 08h30
 
 > Court, narratif, versionné. Patterns techniques → auto-memory. Reprise précise → /resume.
 
-**Branche** : `feature/003-phase-14-pilote` (PR n°42 ; fusion après ce handoff, feu vert de Julien)
-**Spec en cours** : [003-graphrag-descriptions](specs/003-graphrag-descriptions/spec.md) (24/35 tasks)
-**Goal session** : sans la clé de T2.2, T16.3 en partie et T17.1 ; puis le pilote T14.1, avec la clé actuelle (choix de Julien)
+**Branche** : `feature/003-phase-15-campagnes` (PR n°44, avec ce handoff ; fusion juste après, feu vert de Julien)
+**Spec en cours** : [003-graphrag-descriptions](specs/003-graphrag-descriptions/spec.md) (27/35 tasks)
+**Goal session** : le gel (T14.2), puis `g-1` (T15.2), `t2-controle` (T15.3) et la mesure de T17.1, avec la clé actuelle
 
 ## Status
 
-- ✅ T16.3 en partie (PR n°40) et T17.1 en partie (PR n°41), fusionnées ; sections publiées dans NEO-33 et NEO-35
-- ✅ T14.1 (PR n°42) : `pilote-3` complet, 60 réponses, 1,697 $, clé actuelle (plan, D15) ; traces conformes ; 21 décisions de Claude validées par Julien ; scores non comptés 13,5 et 18,5 sur 30 ; Akwakwak acceptable pour Q17, hors filet ; aucun réglage (plan, D12, D14)
-- ⏳ NEO-33 : « Résultats du 2026-10-19 (T14.1) » montrés à Julien, publiés après la fusion
+- ✅ T14.2 (PR n°43, fusionnée ; NEO-33 publié, critère 1 coché) : `gel = 2026-10-19T23:24:40`, `pilote = "pilote-3"`, commit `27614ab` au plan (D12) ; seuils rappelés ; plafond de `g-1` 8,64 $
+- ✅ T15.2 et T15.3 (PR n°44) : `g-1` le 2026-10-20 de 0 h 18 à 1 h 17, 180 réponses sans panne, 5,061 $ ; `t2-controle` juste après, 1,617 $ (`adk-gemini` : 9 échecs « tours ») ; traces conformes ; scores masqués jusqu'à la revue
+- ⏳ T17.1 : `banc recherche-seule --campagne g-1` conforme (gel `27614abd1aad`) ; pré-classement des 55 espèces hors filet (Wailord acceptable pour Q9, 54 écartées dont 3 cas limites) dans `logs/recherche-seule/g-1-pre-classement.md` (hors git), en attente de Julien
+- Dépense : Console avant `g-1`, 30,63 $ de crédits et 7,43 $ sur 20 $ en octobre ; après, ≈ 10,99 $ calculés ; spec ≈ 8,47 $ sous 10 $
 
 ## Échecs tentés (à ne pas refaire)
 
-- Attendus de test tirés des constantes du module : un réglage faux passe inaperçu → valeurs de la spec en clair
-- Deux mutations de même taille dans la même seconde partageaient un `.pyc` → outil corrigé (gotcha) ; ni commit ni édition pendant un lancement
-- D'autres commandes pendant la suite complète : `test_serveur_perdu_en_fin_de_tour` échoue sous la charge (gotcha) → la suite seule
-- `banc contre-epreuve --enregistrer` pour un pilote : sa note de tête parle d'une contre-épreuve → corrigée à la main (gotcha)
+- D'autres commandes pendant la suite complète : `test_serveur_perdu_en_fin_de_tour` échoue sous la charge (gotcha) → la suite seule ; rien de modifié sous `banc/` pendant une campagne
+- Attendus de test tirés des constantes du module → valeurs de la spec en clair (leçon du 2026-10-17)
 
 ## Blocked on
 
-- Rien : T14.2 (gel) d'abord, à tête reposée (choix de Julien) ; T2.2 avant le 2026-11-07, avec la nouvelle clé de Julien
+- L'accord de Julien sur le pré-classement de T17.1 ; T2.2 attend sa nouvelle clé (avant le 2026-11-07)
 
 ## Next (par ordre)
 
-1. **T14.2** (NEO-33) : gel du jalon 3, table `[[jalon]]` en tête de `revues.toml` (`gel = AAAA-MM-JJTHH:MM:SS`, `pilote = "pilote-3"`), commit noté au plan ; seuils de D12 rappelés ; plafond de `g-1` ≈ 8,64 $ (1,5 × 5,1 + 1) ; relu par Julien. Aucune revue avant : les décisions de `pilote-3` ne sont protégées qu'une fois déclarées
-2. **T15.2 et T15.3** : `g-1` (3 passes, ≈ 5,1 $) et `t2-controle` (≈ 1,6 $), feu vert de Julien ; puis `banc controle-traces`, `scripts/traces.sh` et la mesure de T17.1 (`banc recherche-seule --campagne g-1`)
-3. **T2.2** avant le 2026-11-07 (avant `g-1` si la campagne risque de déborder) : nouvelle clé de Julien, déposée par le presse-papier (pipe, sans affichage) ; `banc.sh acces` (~0,003 $) ; sa PR (NEO-29)
+1. **NEO-33** : « Résultats du 2026-10-20 (T15.2, T15.3) », PR n°44 en lien, montré puis publié (critère 2 : séries notées après la revue)
+2. **T17.1** : accord (cas limites : Mégapagos Q9, Roucarnage Q16, Monaflèmit Q26) ; précision D13, case cochée, PR de la phase 17 (NEO-35) ; NEO-35 montré puis publié
+3. **T16.1** : revue assistée de `g-1` puis `t2-controle` (`banc contre-epreuve` : 8 cas par campagne que Julien revoit seul, pré-analyse scellée)
+4. **T16.3** : Console (jour UTC du 2026-10-19 : pilote 0,943 $, `g-1` 2,797 $, `t2-controle` 0,766 $ pour Claude) et export (22 h et 23 h UTC, où `g-1` et `t2-controle` se mêlent) ; **T2.2** avant le 2026-11-07
 
 ## Continuation State (machine-readable — grammaire fixe `Clé: valeur`, 1 ligne chacune)
 
 Spec: 003-graphrag-descriptions
-Task: T14.2
-Fichiers en cours: aucun
-Bloqué sur: rien
+Task: T17.1
+Fichiers en cours: logs/recherche-seule/g-1-pre-classement.md
+Bloqué sur: accord de Julien sur le pré-classement
 Commande de reprise: git switch main && git pull
 
 → **Journal des sessions** (append-only) : [HANDOFF-journal.md](HANDOFF-journal.md) — non auto-chargé.
